@@ -1,0 +1,5 @@
+Option,season,Mode,Cod_Limit,Cod_Size,Cod_open,Cod_mortality_mt,Had_Limit,Had_Size,Had_open,Had_mortality_mt,Angler_trips,Cod_per_under,Had_per_under
+SQ,1,Private,1,22,Sept1-Oct31,200,10,17,May1-Feb28,578,249614,34,100
+SQ,1,ForHire,1,22,Sept1-Oct31,188,15,18,May1-Feb28,523,"235,131",58,100
+SQ,2,Private,,,,,10,17,Apr1-Apr30,,,,
+SQ,2,ForHire,,,,,15,18,Apr1-Apr30,,,,

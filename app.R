@@ -182,67 +182,62 @@ server <- function(input, output, session){
   shinyjs::onclick("HADaddSeason",
                    shinyjs::toggle(id = "HadSeason3", anim = TRUE))
 
-  source(here::here(paste0("model_run.R")), local = TRUE)
-  predictions_1 <- predictions_1 %>% rbind(predictions)
+  #source(here::here(paste0("model_run.R")), local = TRUE)
+  #predictions_1 <- predictions_1 %>% rbind(predictions)
 
   #### Regulations ####
   regulations <- eventReactive(input$runmeplease,{
 
+    sq <- read.csv(here::here("output_test.csv")) %>%
+      dplyr::mutate(season = as.character(season))
+
+
     dat <- NULL
-    #### MA regs ####
-    CodFHseason1 <- data.frame(Species = c("Cod"), Mode = c("For Hire"),
-                               Season = paste(input$CodFH_seas1[1], "-", input$CodFH_seas1[2]),
-                               BagLimit = paste(input$CodFH_1_bag),
-                               Length = paste(input$CodFH_1_len))
-    CodPRseason1 <- data.frame(Species = c("Cod"), Mode = c("Private"),
-                               Season = paste(input$CodPR_seas1[1], "-", input$CodPR_seas1[2]),
-                               BagLimit = paste(input$CodPR_1_bag),
-                               Length = paste(input$CodPR_1_len))
+    #### regs ####
 
-    CodFHseason2 <- data.frame(Species = c("Cod"), Mode = c("For Hire"),
-                               Season = paste(input$CodFH_seas2[1], "-", input$CodFH_seas2[2]),
-                               BagLimit = paste(input$CodFH_2_bag),
-                               Length = paste(input$CodFH_2_len))
-    CodPRseason2 <- data.frame(Species = c("Cod"), Mode = c("Private"),
-                               Season = paste(input$CodPR_seas2[1], "-", input$CodPR_seas2[2]),
-                               BagLimit = paste(input$CodPR_2_bag),
-                               Length = paste(input$CodPR_2_len))
-    Codreg <- rbind(CodFHseason1, CodFHseason2, CodPRseason1,  CodPRseason2)
 
-    HadFHseason1 <- data.frame(Species = c("Haddock"), Mode = c("For Hire"),
-                               Season = paste(input$HadFH_seas1[1], "-", input$HadFH_seas1[2]),
-                               BagLimit = paste(input$HadFH_1_bag),
-                               Length = paste(input$HadFH_1_len))
-    HadPRseason1 <- data.frame(Species = c("Haddock"), Mode = c("Private"),
-                               Season = paste(input$HadPR_seas1[1], "-", input$HadPR_seas1[2]),
-                               BagLimit = paste(input$HadPR_1_bag),
-                               Length = paste(input$HadPR_1_len))
+    cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Cod_Limit = c(input$CodFH_1_bag), Cod_Size = c(input$CodFH_1_len),
+                            Cod_open = c(paste(input$CodFH_seas1[1], "-", input$CodFH_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    cod_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Cod_Limit = c(input$CodPR_1_bag), Cod_Size = c(input$CodPR_1_len),
+                               Cod_open = c(paste(input$CodPR_seas1[1], "-", input$CodPR_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    cod_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Cod_Limit = c(input$CodFH_2_bag), Cod_Size = c(input$CodFH_2_len),
+                               Cod_open = c(paste(input$CodFH_seas2[1], "-", input$CodFH_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    cod_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Cod_Limit = c(input$CodPR_2_bag), Cod_Size = c(input$CodPR_2_len),
+                               Cod_open = c(paste(input$CodPR_seas2[1], "-", input$CodPR_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
 
-    HadFHseason2 <- data.frame(Species = c("Haddock"), Mode = c("For Hire"),
-                               Season = paste(input$HadFH_seas2[1], "-", input$HadFH_seas2[2]),
-                               BagLimit = paste(input$HadFH_2_bag),
-                               Length = paste(input$HadFH_2_len))
-    HadPRseason2 <- data.frame(Species = c("Haddock"), Mode = c("Private"),
-                               Season = paste(input$HadPR_seas2[1], "-", input$HadPR_seas2[2]),
-                               BagLimit = paste(input$HadPR_2_bag),
-                               Length = paste(input$HadPR_2_len))
-    HadFHseason3 <- data.frame(Species = c("Haddock"), Mode = c("For Hire"),
-                               Season = paste(input$HadFH_seas3[1], "-", input$HadFH_seas3[2]),
-                               BagLimit = paste(input$HadFH_3_bag),
-                               Length = paste(input$HadFH_3_len))
-    HadPRseason3 <- data.frame(Species = c("Haddock"), Mode = c("Private"),
-                               Season = paste(input$HadPR_seas3[1], "-", input$HadPR_seas3[2]),
-                               BagLimit = paste(input$HadPR_3_bag),
-                               Length = paste(input$HadPR_3_len))
-    Hadreg <- rbind(HadFHseason1, HadFHseason2,  HadFHseason3, HadPRseason1,  HadPRseason2, HadPRseason3)
+    cod <- rbind(cod_alt_FH_1,cod_alt_PR_1, cod_alt_FH_2, cod_alt_PR_2) %>%
+      dplyr::filter(Cod_Limit > 0)
 
-    regs_output<- rbind(Codreg, Hadreg) %>%
-      dplyr::filter(!BagLimit == "0",
-                    !BagLimit == "0 , 0") %>%
-      dplyr::mutate(Season = stringr::str_remove(Season, pattern = "2023-"),
-                    Season = stringr::str_remove(Season, pattern = "2023-"))
+    had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_1_bag), Had_Size = c(input$HadFH_1_len),
+                               Had_open = c(paste(input$HadFH_seas1[1], "-", input$HadFH_seas1[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    had_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Had_Limit = c(input$HadPR_1_bag), Had_Size = c(input$HadPR_1_len),
+                               Had_open = c(paste(input$HadPR_seas1[1], "-", input$HadPR_seas1[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    had_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_2_bag), Had_Size = c(input$HadFH_2_len),
+                               Had_open = c(paste(input$HadFH_seas2[1], "-", input$HadFH_seas2[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    had_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Had_Limit = c(input$HadPR_2_bag), Had_Size = c(input$HadPR_2_len),
+                               Had_open = c(paste(input$HadPR_seas2[1], "-", input$HadPR_seas2[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    had_alt_FH_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_3_bag), Had_Size = c(input$HadFH_3_len),
+                               Had_open = c(paste(input$HadFH_seas3[1], "-", input$HadFH_seas3[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    had_alt_PR_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("Private"), Had_Limit = c(input$HadPR_3_bag), Had_Size = c(input$HadPR_3_len),
+                               Had_open = c(paste(input$HadPR_seas3[1], "-", input$HadPR_seas3[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+
+    had <- rbind(had_alt_FH_1, had_alt_PR_1, had_alt_FH_2, had_alt_PR_2, had_alt_FH_3, had_alt_PR_3) %>%
+      dplyr::filter(Had_Limit > 0)
+
+    out<- cod %>% dplyr::full_join(had, by = c("Mode", "season", "Option", "Angler_trips"))
+    #regs_output <-out
+    regs_output <- rbind(sq,out)
+    #regs_output<- dplyr::left_join(cod, had, by = "option") #%>%
+      #dplyr::mutate(Season = stringr::str_remove(Season, pattern = "2023-"),
+      #              Season = stringr::str_remove(Season, pattern = "2023-"))
     return(regs_output)
     })
+
+  ###Output Tables
+  output$regtableout <- renderTable({
+    regulations()
+  })
+
 
 }
 shiny::shinyApp(ui = ui, server = server)
