@@ -225,11 +225,34 @@ server <- function(input, output, session){
       dplyr::filter(Had_Limit > 0)
 
     out<- cod %>% dplyr::full_join(had, by = c("Mode", "season", "Option", "Angler_trips"))
-    #regs_output <-out
-    regs_output <- rbind(sq,out)
-    #regs_output<- dplyr::left_join(cod, had, by = "option") #%>%
-      #dplyr::mutate(Season = stringr::str_remove(Season, pattern = "2023-"),
-      #              Season = stringr::str_remove(Season, pattern = "2023-"))
+
+    regs_output <- rbind(sq,out) %>%
+     #sq %>%
+      dplyr::select(Option,season,Mode,Cod_Limit,Cod_Size,Cod_open,Cod_mortality_mt,Cod_per_under,
+                    Had_Limit,Had_Size,Had_open,Had_mortality_mt,Had_per_under,Angler_trips) %>%
+      dplyr::mutate(Cod_open = stringr::str_replace_all(Cod_open, "2023-", ""),
+                    Cod_open = stringr::str_replace_all(Cod_open, "2024-", ""),
+                    Had_open = stringr::str_replace_all(Had_open, "2023-", ""),
+                    Had_open = stringr::str_replace_all(Had_open, "2024-", "")) %>%
+      dplyr::group_by(Option, Mode) %>%
+      dplyr::summarise(Cod_Limit = paste0(sort(unique(Cod_Limit)), collapse = ","),
+                       Cod_Size = paste0(sort(unique(Cod_Size)), collapse = ","),
+                       Cod_open = paste0(sort(unique(Cod_open)), collapse = ","),
+                       Cod_mortality_mt = paste0(sort(unique(Cod_mortality_mt)), collapse = ","),
+                       Cod_per_under = paste0(sort(unique(Cod_per_under)), collapse = ","),
+                       Had_Limit = paste0(sort(unique(Had_Limit)), collapse = ","),
+                       Had_Size = paste0(sort(unique(Had_Size)), collapse = ","),
+                       Had_open = paste0(sort(unique(Had_open)), collapse = ","),
+                       Had_mortality_mt = paste0(sort(unique(Had_mortality_mt)), collapse = ","),
+                       Had_per_under = paste0(sort(unique(Had_per_under)), collapse = ","),
+                       Angler_trips = paste0(sort(unique(Angler_trips)), collapse = ",")) %>%
+      dplyr::rename("Cod Size" = Cod_Size, "Cod Limit" = Cod_Limit, "Cod Open Season" = Cod_open,
+                    "Cod Total Mortality mt (median)" = Cod_mortality_mt,
+                    "% Under Cod ACL (out of 100 smulations)" = Cod_per_under,
+                    "Had Size" = Had_Size, "Had Limit" = Had_Limit, "Had Open Season" = Had_open,
+                    "Had Total Mortality mt (median)" = Had_mortality_mt,
+                    "% Under Had ACL (out of 100 smulations)" = Had_per_under, "Angler Trips (median)" = Angler_trips)
+
     return(regs_output)
     })
 
