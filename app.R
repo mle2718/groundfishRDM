@@ -195,6 +195,67 @@ server <- function(input, output, session){
     dat <- NULL
     #### regs ####
 
+    # ###### testing ##################################################################################################################################################################
+    # CodFH_1_bag <- 1
+    # CodFH_2_bag <- 3
+    # CodFH_1_len <- 22
+    # CodFH_2_len <- 23
+    # CodPR_1_bag <- 1
+    # CodPR_2_bag <- 3
+    # CodPR_1_len <- 22
+    # CodPR_2_len <- 23
+    # CodFH_seas1 <- c("2023-09-01", "2023-10-31")
+    # CodFH_seas2 <- c("2024-01-01", "2024-03-15")
+    # CodPR_seas1 <- c("2023-09-01", "2023-10-31")
+    # CodPR_seas2 <- c("2024-01-01", "2024-03-15")
+    #
+    # cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Cod_Limit = c(CodFH_1_bag), Cod_Size = c(CodFH_1_len),
+    #                            Cod_open = c(paste(CodFH_seas1[1], "-", CodFH_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    # cod_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Cod_Limit = c(CodPR_1_bag), Cod_Size = c(CodPR_1_len),
+    #                            Cod_open = c(paste(CodPR_seas1[1], "-", CodPR_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    # cod_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Cod_Limit = c(CodFH_2_bag), Cod_Size = c(CodFH_2_len),
+    #                            Cod_open = c(paste(CodFH_seas2[1], "-", CodFH_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    # cod_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Cod_Limit = c(CodPR_2_bag), Cod_Size = c(CodPR_2_len),
+    #                            Cod_open = c(paste(CodPR_seas2[1], "-", CodPR_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
+    #
+    # HadFH_1_bag <- 1
+    # HadFH_2_bag <- 3
+    # HadFH_3_bag <- 5
+    # HadFH_1_len <- 22
+    # HadFH_2_len <- 23
+    # HadFH_3_len <- 24
+    # HadPR_1_bag <- 1
+    # HadPR_2_bag <- 3
+    # HadPR_3_bag <- 5
+    # HadPR_1_len <- 22
+    # HadPR_2_len <- 23
+    # HadPR_3_len <- 24
+    # HadFH_seas1 <- c("2023-05-01", "2023-02-28")
+    # HadFH_seas2 <- c("2024-04-01", "2024-04-14")
+    # HadFH_seas3 <- c("2024-04-15", "2024-04-29")
+    # HadPR_seas1 <- c("2023-05-01", "2023-02-31")
+    # HadPR_seas2 <- c("2024-04-01", "2024-04-14")
+    # HadPR_seas3 <- c("2024-04-15", "2024-04-29")
+    #
+    #
+    #
+    # had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Had_Limit = c(HadFH_1_bag), Had_Size = c(HadFH_1_len),
+    #                            Had_open = c(paste(HadFH_seas1[1], "-", HadFH_seas1[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    # had_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Had_Limit = c(HadPR_1_bag), Had_Size = c(HadPR_1_len),
+    #                            Had_open = c(paste(HadPR_seas1[1], "-", HadPR_seas1[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    # had_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Had_Limit = c(HadFH_2_bag), Had_Size = c(HadFH_2_len),
+    #                            Had_open = c(paste(HadFH_seas2[1], "-", HadFH_seas2[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    # had_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Had_Limit = c(HadPR_2_bag), Had_Size = c(HadPR_2_len),
+    #                            Had_open = c(paste(HadPR_seas2[1], "-", HadPR_seas2[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    # had_alt_FH_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("For Hire"), Had_Limit = c(HadFH_3_bag), Had_Size = c(HadFH_3_len),
+    #                            Had_open = c(paste(HadFH_seas3[1], "-", HadFH_seas3[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    # had_alt_PR_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("Private"), Had_Limit = c(HadPR_3_bag), Had_Size = c(HadPR_3_len),
+    #                            Had_open = c(paste(HadPR_seas3[1], "-", HadPR_seas3[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
+    #
+    #################################################################################################################################################################################
+
+
+
 
     cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Cod_Limit = c(input$CodFH_1_bag), Cod_Size = c(input$CodFH_1_len),
                             Cod_open = c(paste(input$CodFH_seas1[1], "-", input$CodFH_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
@@ -205,7 +266,7 @@ server <- function(input, output, session){
     cod_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Cod_Limit = c(input$CodPR_2_bag), Cod_Size = c(input$CodPR_2_len),
                                Cod_open = c(paste(input$CodPR_seas2[1], "-", input$CodPR_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
 
-    cod <- rbind(cod_alt_FH_1,cod_alt_PR_1, cod_alt_FH_2, cod_alt_PR_2) %>%
+    cod <- rbind(cod_alt_FH_1, cod_alt_FH_2, cod_alt_PR_1, cod_alt_PR_2) %>%
       dplyr::filter(Cod_Limit > 0)
 
     had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_1_bag), Had_Size = c(input$HadFH_1_len),
@@ -230,28 +291,32 @@ server <- function(input, output, session){
      #sq %>%
       dplyr::select(Option,season,Mode,Cod_Limit,Cod_Size,Cod_open,Cod_mortality_mt,Cod_per_under,
                     Had_Limit,Had_Size,Had_open,Had_mortality_mt,Had_per_under,Angler_trips) %>%
-      dplyr::mutate(Cod_open = stringr::str_replace_all(Cod_open, "2023-", ""),
-                    Cod_open = stringr::str_replace_all(Cod_open, "2024-", ""),
-                    Had_open = stringr::str_replace_all(Had_open, "2023-", ""),
-                    Had_open = stringr::str_replace_all(Had_open, "2024-", "")) %>%
+      #dplyr::mutate(Cod_open = stringr::str_replace_all(Cod_open, "2023-", ""),
+      #              Cod_open = stringr::str_replace_all(Cod_open, "2024-", ""),
+      #              Had_open = stringr::str_replace_all(Had_open, "2023-", ""),
+      #              Had_open = stringr::str_replace_all(Had_open, "2024-", "")) %>%
       dplyr::group_by(Option, Mode) %>%
-      dplyr::summarise(Cod_Limit = paste0(sort(unique(Cod_Limit)), collapse = ","),
-                       Cod_Size = paste0(sort(unique(Cod_Size)), collapse = ","),
-                       Cod_open = paste0(sort(unique(Cod_open)), collapse = ","),
-                       Cod_mortality_mt = paste0(sort(unique(Cod_mortality_mt)), collapse = ","),
-                       Cod_per_under = paste0(sort(unique(Cod_per_under)), collapse = ","),
-                       Had_Limit = paste0(sort(unique(Had_Limit)), collapse = ","),
-                       Had_Size = paste0(sort(unique(Had_Size)), collapse = ","),
-                       Had_open = paste0(sort(unique(Had_open)), collapse = ","),
-                       Had_mortality_mt = paste0(sort(unique(Had_mortality_mt)), collapse = ","),
-                       Had_per_under = paste0(sort(unique(Had_per_under)), collapse = ","),
-                       Angler_trips = paste0(sort(unique(Angler_trips)), collapse = ",")) %>%
+      dplyr::summarise(Cod_Limit = paste0(sort(unique(Cod_Limit)), collapse = " , "),
+                       Cod_Size = paste0(sort(unique(Cod_Size)), collapse = " , "),
+                       Cod_open = paste0(sort(unique(Cod_open)), collapse = " , "),
+                       Cod_mortality_mt = paste0(sort(unique(Cod_mortality_mt)), collapse = " , "),
+                       Cod_per_under = paste0(sort(unique(Cod_per_under)), collapse = " , "),
+                       Had_Limit = paste0(sort(unique(Had_Limit)), collapse = " , "),
+                       Had_Size = paste0(sort(unique(Had_Size)), collapse = " , "),
+                       Had_open = paste0(sort(unique(Had_open)), collapse = " , "),
+                       Had_mortality_mt = paste0(sort(unique(Had_mortality_mt)), collapse = " , "),
+                       Had_per_under = paste0(sort(unique(Had_per_under)), collapse = " , "),
+                       Angler_trips = paste0(sort(unique(Angler_trips)), collapse = " , "),
+                       Cod_open = dplyr::case_when(Option == "SQ" ~ stringr::str_replace_all(Cod_open, "^.*?,", ""), TRUE ~ Cod_open),
+                       Angler_trips = stringr::str_replace_all(Angler_trips, "^.*?,", "")) %>%
       dplyr::rename("Cod Size" = Cod_Size, "Cod Limit" = Cod_Limit, "Cod Open Season" = Cod_open,
                     "Cod Total Mortality mt (median)" = Cod_mortality_mt,
                     "% Under Cod ACL (out of 100 smulations)" = Cod_per_under,
                     "Had Size" = Had_Size, "Had Limit" = Had_Limit, "Had Open Season" = Had_open,
                     "Had Total Mortality mt (median)" = Had_mortality_mt,
-                    "% Under Had ACL (out of 100 smulations)" = Had_per_under, "Angler Trips (median)" = Angler_trips)
+                    "% Under Had ACL (out of 100 smulations)" = Had_per_under, "Angler Trips (median)" = Angler_trips) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup()
 
     return(regs_output)
     })
@@ -260,7 +325,13 @@ server <- function(input, output, session){
   output$regtableout <- renderTable({
     regulations()
   })
+  output$downloadData <- downloadHandler(
+    filename = function(){"RecDSToutput.xlsx"},
+    content = function(filename) {
 
+      df_list <- list(Regulations=regulations())
+      openxlsx::write.xlsx(x = df_list , file = filename, row.names = FALSE)
+    })
 
 }
 shiny::shinyApp(ui = ui, server = server)
