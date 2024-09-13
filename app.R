@@ -2,6 +2,7 @@
 library(shiny)
 library(shinyjs)
 library(dplyr)
+library(googlesheets4)
 
 #### Start UI ####
 ui <- fluidPage(
@@ -325,10 +326,24 @@ server <- function(input, output, session){
   output$regtableout <- renderTable({
     regulations()
   })
+
+  # observeEvent(input$runmeplease, {
+  #
+  #   #httr::write_disk(here::here("output2.csv"))
+  #
+  #   dat<- htmlTable::htmlTable(regulations(), rnames = FALSE)
+  #
+  #   mailR::send.mail(from="kimberly.bastille@gmail.com",to="kimberly.bastille@noaa.gov",subject="subject",
+  #            body= dat,
+  #            smtp=list(host.name='http://smtp.gmail.com', user.name = "kimberly.bastille@noaa.gov", passwd = "passowrd"), # Change password
+  #            authenticate = T,
+  #            send = T)#,
+  #            #attach.files = c(here::here("output2.csv")))
+  # })
+
   output$downloadData <- downloadHandler(
     filename = function(){"RecDSToutput.xlsx"},
     content = function(filename) {
-
       df_list <- list(Regulations=regulations())
       openxlsx::write.xlsx(x = df_list , file = filename, row.names = FALSE)
     })
