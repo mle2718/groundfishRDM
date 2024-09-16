@@ -327,19 +327,12 @@ server <- function(input, output, session){
     regulations()
   })
 
-  # observeEvent(input$runmeplease, {
-  #
-  #   #httr::write_disk(here::here("output2.csv"))
-  #
-  #   dat<- htmlTable::htmlTable(regulations(), rnames = FALSE)
-  #
-  #   mailR::send.mail(from="kimberly.bastille@gmail.com",to="kimberly.bastille@noaa.gov",subject="subject",
-  #            body= dat,
-  #            smtp=list(host.name='http://smtp.gmail.com', user.name = "kimberly.bastille@noaa.gov", passwd = "passowrd"), # Change password
-  #            authenticate = T,
-  #            send = T)#,
-  #            #attach.files = c(here::here("output2.csv")))
-  # })
+  observeEvent(input$runmeplease, {
+
+    dat<- regulations()
+    readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
+
+  })
 
   output$downloadData <- downloadHandler(
     filename = function(){"RecDSToutput.xlsx"},
