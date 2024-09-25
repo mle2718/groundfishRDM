@@ -1,8 +1,11 @@
 print("start model")
+library(magrittr)
+devtools::install_github("NEFSC/READ.SSB.groundfishRecDST")
+
 
 predictions_all = list()
 
-size_data_read = readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data/projected_CaL_cod_hadd.csv")
+size_data_read <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data/projected_CaL_cod_hadd.csv")
 Disc_mort<- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data/Discard_Mortality.csv", show_col_types = FALSE)
 directed_trips<-directed_trips<-read.csv(file.path("C:/Users/kimberly.bastille/Desktop/codhad_data/directed_trips/directed_trips_calib_150draws.csv"))
 
@@ -40,6 +43,7 @@ directed_trips<-directed_trips<-read.csv(file.path("C:/Users/kimberly.bastille/D
 #     had_min=dplyr::case_when(mode == "pr" & day_i >= lubridate::yday(input$HadPR_seas3[1]) & day_i <= lubridate::yday(input$HadPR_seas3[2]) ~ as.numeric(input$HadPR_3_len), TRUE ~ had_min))
 
 
+
 future::plan(future::multisession, workers = 36)
 get_predictions_out<- function(x){
 
@@ -51,7 +55,7 @@ get_predictions_out<- function(x){
   pds_fh_0 =  feather::read_feather(paste0("C:/Users/kimberly.bastille/Desktop/codhad_data/calibration/pds_new_fh_0_",x, ".feather"))
   pds_pr_0 =  feather::read_feather(paste0("C:/Users/kimberly.bastille/Desktop/codhad_data/calibration/pds_new_pr_0_",x, ".feather"))
 
-  calibration_data_table<- rbind(pds_fh_1, pds_pr_1,  pds_fh_0, pds_pr_0)
+  calibration_data<- rbind(pds_fh_1, pds_pr_1,  pds_fh_0, pds_pr_0)
 
   rm(pds_fh_1, pds_pr_1, pds_fh_0, pds_pr_0)
 
@@ -61,7 +65,7 @@ get_predictions_out<- function(x){
   costs_fh_0 =  feather::read_feather(paste0("C:/Users/kimberly.bastille/Desktop/codhad_data/calibration/costs_fh_0_",x, ".feather"))
   costs_pr_0 =  feather::read_feather(paste0("C:/Users/kimberly.bastille/Desktop/codhad_data/calibration/costs_pr_0_",x, ".feather"))
 
-  costs_new_all<- rbind(costs_fh_1, costs_pr_1,costs_fh_0, costs_pr_0)
+  costs<- rbind(costs_fh_1, costs_pr_1,costs_fh_0, costs_pr_0)
 
   rm(costs_fh_1, costs_pr_1, costs_fh_0, costs_pr_0)
 
@@ -75,11 +79,11 @@ get_predictions_out<- function(x){
     #               #month = as.numeric(month),
     #               period2 = paste0(month24, "-", day, "-", mode))
 
-
-  test<- READ.SSB.groundfish.RecDST::predict_rec_catch(x = x,
+  #source(here::here(predict_rec_catch()))
+  test<- predict_rec_catch(x = x,
                                                        directed_trips_table = directed_trips2,
-                                                       calibration_data_table = calibration_output_by_period,
-                                                       costs_new_all = costs_new_all,
+                                                       calibration_data_table = calibration_data,
+                                                       costs_new_all = costs,
                                                        size_data_read = size_data_read,
                                                        discard_mortality_dat = Disc_mort)
 
@@ -98,7 +102,7 @@ run_list <- c(1, 3:4, 6:8, 10:11, 13:17, 19:20, 22:28, 32, 34:38, 40, 42:46, 48:
               51, 53, 55:58, 60:62, 64:66, 68, 70:71, 73:74, 76:83, 85:90, 94:98, 100:102,
               107:109, 115:120, 122, 124:125, 128, 130:131, 133:136, 138:142, 144:148, 150)
 
-predictions_out10<- furrr::future_map_dfr(1:3, ~get_predictions_out(.), .id = "draw")
+predictions_out10<- furrr::future_map_dfr(6:8, ~get_predictions_out(.), .id = "draw")
 
 
 #predictions_out10<- predictions_out10 %>%
