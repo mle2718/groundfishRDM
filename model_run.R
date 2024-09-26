@@ -52,7 +52,7 @@ dplyr::n_distinct(baseline_comparison1$draw)
 
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:12]
+mrip_index  <- mrip_index[1:4]
 
 pred<- NULL
 for (x in mrip_index){
@@ -119,13 +119,16 @@ for (x in mrip_index){
 
 #predictions_out10<- furrr::future_map_dfr(1:100, ~get_predictions_out(.), .id = "draw")
 
-predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
+#predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
 
 
 predictions_out <- pred %>%
   dplyr::group_by(Category, mode, catch_disposition, param,  number_weight, draw_out) %>%
   dplyr::reframe(Value = sum(Value)) %>%
   dplyr::ungroup()
+
+
+
 
 
 #
