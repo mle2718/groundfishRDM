@@ -186,6 +186,10 @@ server <- function(input, output, session){
   #source(here::here(paste0("model_run.R")), local = TRUE)
   #predictions_1 <- predictions_1 %>% rbind(predictions)
 
+  predictions <- eventReactive(input$runmeplease,{
+    source(here::here(paste0("model_run.R")), local = TRUE)
+    return(predictions)
+  })
   #### Regulations ####
   regulations <- eventReactive(input$runmeplease,{
 
@@ -256,6 +260,12 @@ server <- function(input, output, session){
     #################################################################################################################################################################################
 
 
+
+
+    predictions<- #predictions() %>%
+      predictions_out %>%
+      dplyr::group_by(Category, mode, catch_disposition, param, number_weight) %>%
+      dplyr::reframe(Value = median(Value))
 
 
     cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Cod_Limit = c(input$CodFH_1_bag), Cod_Size = c(input$CodFH_1_len),
