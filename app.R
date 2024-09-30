@@ -188,13 +188,18 @@ server <- function(input, output, session){
 
   predictions <- eventReactive(input$runmeplease,{
     source(here::here(paste0("model_run.R")), local = TRUE)
-    return(predictions)
+    return(predictions_out)
+    print("predicitions out")
   })
+
   #### Regulations ####
   regulations <- reactive({
 
+    print("start regs")
     sq <- read.csv(here::here("output_test.csv")) %>%
       dplyr::mutate(season = as.character(season))
+
+    print(sq)
 
 
     dat <- NULL
@@ -263,7 +268,7 @@ server <- function(input, output, session){
 
 
     predictions1<- #predictions() %>%
-      predictions()
+      predictions_out
 
     print(class(predictions1))
 
@@ -290,21 +295,25 @@ server <- function(input, output, session){
       dplyr::rename("Mode" = mode,
                     "Angler_trips" = Value)
 
-    predicitons2<-  pred2 %>%
+    predictions2<-  pred2 %>%
       dplyr::group_by(Category, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
       dplyr::rename("Cod_mortality_mt" = cod,
                     "Had_mortality_mt" = had,
                     "Mode" = mode) %>%
-      dplyr::left_join(angler_trips)
+      dplyr::left_join(angler_trips) %>%
+      dplyr::mutate(Mode = dplyr::recode(Mode, "fh" = "ForHire",
+                                         "pr" = "Private"))
 
 
-    cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Cod_Limit = c(input$CodFH_1_bag), Cod_Size = c(input$CodFH_1_len),
+    print("predictions2")
+    print(predictions2)
+    cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("ForHire"), Cod_Limit = c(input$CodFH_1_bag), Cod_Size = c(input$CodFH_1_len),
                             Cod_open = c(paste(input$CodFH_seas1[1], "-", input$CodFH_seas1[2])),  Cod_per_under = "Value")
     cod_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Cod_Limit = c(input$CodPR_1_bag), Cod_Size = c(input$CodPR_1_len),
                                Cod_open = c(paste(input$CodPR_seas1[1], "-", input$CodPR_seas1[2])),  Cod_per_under = "Value")
-    cod_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Cod_Limit = c(input$CodFH_2_bag), Cod_Size = c(input$CodFH_2_len),
+    cod_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("ForHire"), Cod_Limit = c(input$CodFH_2_bag), Cod_Size = c(input$CodFH_2_len),
                                Cod_open = c(paste(input$CodFH_seas2[1], "-", input$CodFH_seas2[2])),  Cod_per_under = "Value")
     cod_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Cod_Limit = c(input$CodPR_2_bag), Cod_Size = c(input$CodPR_2_len),
                                Cod_open = c(paste(input$CodPR_seas2[1], "-", input$CodPR_seas2[2])),  Cod_per_under = "Value")
@@ -312,15 +321,15 @@ server <- function(input, output, session){
     cod <- rbind(cod_alt_FH_1, cod_alt_FH_2, cod_alt_PR_1, cod_alt_PR_2) %>%
       dplyr::filter(Cod_Limit > 0)
 
-    had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_1_bag), Had_Size = c(input$HadFH_1_len),
+    had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("ForHire"), Had_Limit = c(input$HadFH_1_bag), Had_Size = c(input$HadFH_1_len),
                                Had_open = c(paste(input$HadFH_seas1[1], "-", input$HadFH_seas1[2])),  Had_per_under = "Value")
     had_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Had_Limit = c(input$HadPR_1_bag), Had_Size = c(input$HadPR_1_len),
                                Had_open = c(paste(input$HadPR_seas1[1], "-", input$HadPR_seas1[2])), Had_per_under = "Value")
-    had_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_2_bag), Had_Size = c(input$HadFH_2_len),
+    had_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("ForHire"), Had_Limit = c(input$HadFH_2_bag), Had_Size = c(input$HadFH_2_len),
                                Had_open = c(paste(input$HadFH_seas2[1], "-", input$HadFH_seas2[2])),  Had_per_under = "Value")
     had_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Had_Limit = c(input$HadPR_2_bag), Had_Size = c(input$HadPR_2_len),
                                Had_open = c(paste(input$HadPR_seas2[1], "-", input$HadPR_seas2[2])),  Had_per_under = "Value")
-    had_alt_FH_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("For Hire"), Had_Limit = c(input$HadFH_3_bag), Had_Size = c(input$HadFH_3_len),
+    had_alt_FH_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("ForHire"), Had_Limit = c(input$HadFH_3_bag), Had_Size = c(input$HadFH_3_len),
                                Had_open = c(paste(input$HadFH_seas3[1], "-", input$HadFH_seas3[2])), Had_per_under = "Value")
     had_alt_PR_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("Private"), Had_Limit = c(input$HadPR_3_bag), Had_Size = c(input$HadPR_3_len),
                                Had_open = c(paste(input$HadPR_seas3[1], "-", input$HadPR_seas3[2])), Had_per_under = "Value")
@@ -329,7 +338,7 @@ server <- function(input, output, session){
       dplyr::filter(Had_Limit > 0)
 
     out<- cod %>% dplyr::full_join(had, by = c("Mode", "season", "Option")) %>%
-      dplyr::full_join(predictions2)
+      dplyr::full_join(predictions2, by = "Mode")
 
     regs_output <- rbind(sq,out) %>%
      #sq %>%
@@ -362,20 +371,22 @@ server <- function(input, output, session){
       dplyr::slice(1) %>%
       dplyr::ungroup()
 
+    print(regs_output)
     return(regs_output)
     })
 
   ###Output Tables
   output$regtableout <- renderTable({
+
     regulations()
-  })
+    })
 
   observeEvent(input$runmeplease, {
 
     dat<- regulations()
     readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
 
-  })
+    })
 
   output$downloadData <- downloadHandler(
     filename = function(){"RecDSToutput.xlsx"},

@@ -47,7 +47,8 @@
 
 
 
-predict_rec_catch <- function( x,
+predict_rec_catch <- function( x, draw,
+                               select_mode, select_season,
                                baseline_comparison1,
                                directed_trips_table,
                                calibration_data_table,
@@ -77,10 +78,10 @@ predict_rec_catch <- function( x,
   # dplyr::n_distinct(baseline_comparison1$draw)
 
 
-  baseline_comparison<-baseline_comparison1 %>%
-    dplyr::filter(mrip_index==x) %>%
-    dplyr::mutate(all_cod_keep_2_release=ifelse(tot_keep_cod_model>0 & tot_cod_keep_mrip==0, 1, 0),
-                  all_hadd_keep_2_release=ifelse(tot_keep_hadd_model>0 & tot_hadd_keep_mrip==0, 1, 0))
+  # baseline_comparison<-baseline_comparison1 %>%
+  #   dplyr::filter(mrip_index==x) %>%
+  #   dplyr::mutate(all_cod_keep_2_release=ifelse(tot_keep_cod_model>0 & tot_cod_keep_mrip==0, 1, 0),
+  #                 all_hadd_keep_2_release=ifelse(tot_keep_hadd_model>0 & tot_hadd_keep_mrip==0, 1, 0))
 
   #mrip_index <- c(unique(baseline_comparison1$mrip_index))
 
@@ -92,36 +93,36 @@ predict_rec_catch <- function( x,
 
     #baseline_comparison<- baseline_comparison1 %>% dplyr::filter(mrip_index == x)
 
-    select_mode = unique(baseline_comparison$mode)
-    select_season = unique(baseline_comparison$open)
-
-    k <- unique(baseline_comparison$draw)
+    # select_mode = unique(baseline_comparison1$mode)
+    # select_season = unique(baseline_comparison1$open)
+    #
+    #k <- unique(baseline_comparison1$draw)
 
     #indicate whether we need to allocate keeps to releases, or releases to keeps, for both species
-    cod_keep_2_release<-mean(baseline_comparison$cod_keep_2_release)
-    cod_release_2_keep<-mean(baseline_comparison$cod_release_2_keep)
-    hadd_keep_2_release<-mean(baseline_comparison$hadd_keep_2_release)
-    hadd_release_2_keep<-mean(baseline_comparison$hadd_release_2_keep)
+    cod_keep_2_release<-mean(baseline_comparison1$cod_keep_2_release)
+    cod_release_2_keep<-mean(baseline_comparison1$cod_release_2_keep)
+    hadd_keep_2_release<-mean(baseline_comparison1$hadd_keep_2_release)
+    hadd_release_2_keep<-mean(baseline_comparison1$hadd_release_2_keep)
 
     #indicate whether we need to allocate ALL keep as release, for both species
-    all_cod_keep_2_release<-mean(baseline_comparison$all_cod_keep_2_release)
-    all_hadd_keep_2_release<-mean(baseline_comparison$all_hadd_keep_2_release)
+    all_cod_keep_2_release<-mean(baseline_comparison1$all_cod_keep_2_release)
+    all_hadd_keep_2_release<-mean(baseline_comparison1$all_hadd_keep_2_release)
 
     #Pull in the h_star_values computed from the calibration
-    h_star_cod_release_to_keep_variable<-mean(baseline_comparison$h_star_cod_release_to_keep_variable)
-    h_star_hadd_release_to_keep_variable<-mean(baseline_comparison$h_star_hadd_release_to_keep_variable)
-    h_star_cod_keep_to_release_variable<-mean(baseline_comparison$h_star_cod_keep_to_release_variable)
-    h_star_hadd_keep_to_release_variable<-mean(baseline_comparison$h_star_hadd_keep_to_release_variable)
+    h_star_cod_release_to_keep_variable<-mean(baseline_comparison1$h_star_cod_release_to_keep_variable)
+    h_star_hadd_release_to_keep_variable<-mean(baseline_comparison1$h_star_hadd_release_to_keep_variable)
+    h_star_cod_keep_to_release_variable<-mean(baseline_comparison1$h_star_cod_keep_to_release_variable)
+    h_star_hadd_keep_to_release_variable<-mean(baseline_comparison1$h_star_hadd_keep_to_release_variable)
 
     #Pull in data that is draw-specific
     calendar_2024_adjust <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data//next year calendar adjustments.csv", show_col_types = FALSE) %>%
-      dplyr::filter(draw == k)
+      dplyr::filter(draw == draw)
     #calibration_data_table = feather::read_feather(paste0("C:/Users/andrew.carr-harris/Desktop/cod_hadd_RDM/pds_new_", select_mode,"_", select_season, "_", k,".feather"))
     #costs_new_all = feather::read_feather(paste0("C:/Users/andrew.carr-harris/Desktop/cod_hadd_RDM/costs_", select_mode,"_", select_season, "_", k,".feather"))
 
     n_drawz = 50
     n_catch_draws = 30
-    set.seed(k)
+    set.seed(draw)
 
     #l_w_conversion =
     cod_lw_a = 0.000005132
@@ -132,7 +133,7 @@ predict_rec_catch <- function( x,
 
     directed_trips<-directed_trips_table %>%
       tibble::tibble() %>%
-      dplyr::filter(draw == k,
+      dplyr::filter(draw == draw,
                     mode == select_mode) %>%
       dplyr::mutate(open = dplyr::case_when(cod_bag > 0 ~ 1, TRUE ~ 0))
 
@@ -217,12 +218,12 @@ predict_rec_catch <- function( x,
 
 
     cod_size_data <- size_data_read %>%
-      dplyr::filter(species == "cod", season == seas,  draw==k) %>%
+      dplyr::filter(species == "cod", season == seas,  draw==draw) %>%
       dplyr::filter(!is.na(proj_CaL_prob_smooth)) %>%
       dplyr::select(-proj_CaL_prob_raw)
 
     had_size_data <- size_data_read %>%
-      dplyr::filter(species == "hadd", season == seas,  draw==k) %>%
+      dplyr::filter(species == "hadd", season == seas,  draw==draw) %>%
       dplyr::filter(!is.na(proj_CaL_prob_smooth)) %>%
       dplyr::select(-proj_CaL_prob_raw)
 
@@ -821,6 +822,28 @@ predict_rec_catch <- function( x,
 
       ##code for reallocating cod keep to release
       if (cod_keep_2_release==1){
+        if (all_cod_keep_2_release==1){
+
+          length_data <- length_data %>%
+            rename_with(~paste0("relnew_cod", sub("keep_cod_*", "_", .)),
+                        starts_with('keep_cod_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keepnew_cod", sub("release_cod_*", "_", .)),
+                        starts_with('release_cod_'))
+
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keep_cod", sub("keepnew_cod_*", "_", .)),
+                        starts_with('keepnew_cod_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("release_cod", sub("relnew_cod_*", "_", .)),
+                        starts_with('relnew_cod_'))
+
+        }
+
+        if (all_cod_keep_2_release==0){
 
         length_data<- length_data %>%
           dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
@@ -890,7 +913,7 @@ predict_rec_catch <- function( x,
         length_data<-length_data2 %>%
           dplyr::select(-keep_to_release)
 
-
+        }
       }
 
       ##code for reallocating haddock release to keep
@@ -972,6 +995,30 @@ predict_rec_catch <- function( x,
       ##code for reallocating haddock keep as release
       if (hadd_keep_2_release==1){
 
+        if (all_hadd_keep_2_release==1){
+
+          length_data <- length_data %>%
+            rename_with(~paste0("relnew_had", sub("keep_had_*", "_", .)),
+                        starts_with('keep_had_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keepnew_had", sub("release_had_*", "_", .)),
+                        starts_with('release_had_'))
+
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keep_had", sub("keepnew_had_*", "_", .)),
+                        starts_with('keepnew_had_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("release_had", sub("relnew_had_*", "_", .)),
+                        starts_with('relnew_had_'))
+
+        }
+
+        if (all_hadd_keep_2_release==0){
+
+
         length_data<- length_data %>%
           dplyr::left_join(trip_data_hadd_hstar, by=c("period2","tripid"))
         length_data[is.na(length_data)] <- 0
@@ -1040,6 +1087,7 @@ predict_rec_catch <- function( x,
         length_data<-length_data2 %>%
           dplyr::select(-keep_to_release)
 
+        }
 
       }
 
@@ -1150,6 +1198,29 @@ predict_rec_catch <- function( x,
 
       if (cod_keep_2_release==1){
 
+        if (all_cod_keep_2_release==1){
+
+          length_data <- length_data %>%
+            rename_with(~paste0("relnew_cod", sub("keep_cod_*", "_", .)),
+                        starts_with('keep_cod_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keepnew_cod", sub("release_cod_*", "_", .)),
+                        starts_with('release_cod_'))
+
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keep_cod", sub("keepnew_cod_*", "_", .)),
+                        starts_with('keepnew_cod_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("release_cod", sub("relnew_cod_*", "_", .)),
+                        starts_with('relnew_cod_'))
+
+        }
+
+        if (all_cod_keep_2_release==0){
+
         length_data<- length_data %>%
           dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
         length_data[is.na(length_data)] <- 0
@@ -1220,8 +1291,7 @@ predict_rec_catch <- function( x,
 
 
       }
-
-
+      }
 
     }
     print("code_check_8")
@@ -1324,6 +1394,29 @@ predict_rec_catch <- function( x,
       ##code for reallocating haddock keep as release
       if (hadd_keep_2_release==1){
 
+        if (all_hadd_keep_2_release==1){
+
+          length_data <- length_data %>%
+            rename_with(~paste0("relnew_had", sub("keep_had_*", "_", .)),
+                        starts_with('keep_had_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keepnew_had", sub("release_had_*", "_", .)),
+                        starts_with('release_had_'))
+
+
+          length_data <- length_data %>%
+            rename_with(~paste0("keep_had", sub("keepnew_had_*", "_", .)),
+                        starts_with('keepnew_had_'))
+
+          length_data <- length_data %>%
+            rename_with(~paste0("release_had", sub("relnew_had_*", "_", .)),
+                        starts_with('relnew_had_'))
+
+        }
+
+        if (all_hadd_keep_2_release==0){
+
         length_data<- length_data %>%
           dplyr::left_join(trip_data_hadd_hstar, by=c("period2","tripid"))
         length_data[is.na(length_data)] <- 0
@@ -1392,6 +1485,7 @@ predict_rec_catch <- function( x,
         length_data<-length_data2 %>%
           dplyr::select(-keep_to_release)
 
+        }
 
       }
     }
@@ -1483,38 +1577,62 @@ predict_rec_catch <- function( x,
 
     mean_trip_data <- mean_trip_data %>%
       data.table::as.data.table()
+
     print("code check 10")
 
     all_vars<-c()
-    all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode")]
+    all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode", "catch_draw")]
 
     mean_trip_data<-mean_trip_data %>% data.table::as.data.table()
 
     mean_trip_data <- mean_trip_data %>%
-      .[,lapply(.SD, base::mean), by = c("tripid", "period2"), .SDcols = all_vars]
+      .[,lapply(.SD, base::mean), by = c("tripid", "period2", "catch_draw"), .SDcols = all_vars]
 
     # Get rid of things we don't need.
-    mean_trip_data <- mean_trip_data %>%
+    mean_trip_data <- mean_trip_data  %>%
       dplyr::filter(alt==1) %>%
-      dplyr::select(-c(alt, beta_cost,beta_opt_out, beta_opt_out_age,
+      dplyr::select(-c(alt, beta_cost, beta_opt_out, beta_opt_out_age,
                        beta_opt_out_likely, beta_opt_out_prefer, #beta_sqrt_cod_hadd_keep,
                        beta_sqrt_cod_keep, beta_sqrt_cod_release, beta_sqrt_hadd_keep,
-                       beta_sqrt_hadd_release, days_fished, open, catch_draw, expon_v0,
+                       beta_sqrt_hadd_release, days_fished, open, expon_v0,
                        v0_col_sum, expon_vA, opt_out, v0, v0_optout, vA, vA_optout, vA_col_sum, cost, age))
 
-    # Multiply the average trip probability by each of the catch variables to get probability-weighted catch
-    list_names <- c("tot_keep_cod_new","tot_rel_cod_new", "tot_cat_cod_new",
-                    "tot_keep_hadd_new", "tot_rel_hadd_new" , "tot_cat_hadd_new"  )
 
     mean_trip_data <- mean_trip_data %>%
       data.table::as.data.table()
+
+     ################################################# old version of prodablilty weight
+    # # Multiply the average trip probability by each of the catch variables to get probability-weighted catch
+    # list_names <- c("tot_keep_cod_new","tot_rel_cod_new", "tot_cat_cod_new",
+    #                 "tot_keep_hadd_new", "tot_rel_hadd_new" , "tot_cat_hadd_new"  )
+    #
+    # mean_trip_data<-mean_trip_data %>%
+    #   .[,as.vector(list_names) := lapply(.SD, function(x) x * as.numeric(probA)), .SDcols = list_names] %>%
+    #   .[]
+    #
+    # # Multiply the average trip probability in baseline year by each of the catch variables in the basleine year to get probability-weighted catch
+    # list_names <- c("tot_keep_cod_base","tot_rel_cod_base", "tot_cat_cod_base",
+    #                 "tot_keep_hadd_base", "tot_rel_hadd_base" , "tot_cat_hadd_base"  )
+    #
+    # mean_trip_data <- mean_trip_data %>%
+    #   data.table::as.data.table() %>%
+    #   .[,as.vector(list_names) := lapply(.SD, function(x) x * prob0), .SDcols = list_names] %>%
+    #   .[]
+    #  ######### Old version proability weight ########################################
+
+    ######### New probablity weighted calc ##############################################
+    # Multiply the trip probability by each of the catch variables to get probability-weighted catch
+    # Update 9/97/24 - multiply CS by probA to get probability-weighted change CS
+    list_names <- c("tot_keep_cod_new","tot_rel_cod_new", "tot_cat_cod_new",
+                    "tot_keep_hadd_new", "tot_rel_hadd_new" , "tot_cat_hadd_new" , "change_CS" )
 
 
     mean_trip_data<-mean_trip_data %>%
       .[,as.vector(list_names) := lapply(.SD, function(x) x * as.numeric(probA)), .SDcols = list_names] %>%
       .[]
 
-    # Multiply the average trip probability in baseline year by each of the catch variables in the basleine year to get probability-weighted catch
+
+    # Multiply the trip probability in baseline year by each of the catch variables in the basleine year to get probability-weighted catch
     list_names <- c("tot_keep_cod_base","tot_rel_cod_base", "tot_cat_cod_base",
                     "tot_keep_hadd_base", "tot_rel_hadd_base" , "tot_cat_hadd_base"  )
 
@@ -1524,28 +1642,59 @@ predict_rec_catch <- function( x,
       .[]
 
 
+    mean_trip_data_prob_catch_draw<-mean_trip_data %>%
+      dplyr::select("period2","tripid", "catch_draw", "probA")
+
+
+    #Average the outcomes over catch draws
+    all_vars<-c()
+    all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode", "catch_draw")]
+    all_vars
+
+    mean_trip_data <- mean_trip_data %>%
+      .[,lapply(.SD, base::mean), by = c("tripid", "period2", "catch_draw"), .SDcols = all_vars]
+    ######## New probablity weighted calc ################
+
     mean_trip_data <- mean_trip_data %>%
       dplyr::mutate(n_choice_occasions = rep(1,nrow(.))) %>%
       dplyr::left_join(period_names, by = c("period2"))
 
     print("code check 11")
+
+
+    ######################################## Old ############################################
     #===============================#
     # Take mean of catch_draw for length
+    # all_vars<-c()
+    # all_vars <- names(length_data)[!names(length_data) %in% c("period2","tripid", "catch_draw" )]
+    # all_vars
+    #
+    # length_data<- length_data %>%
+    #   data.table::data.table() %>%
+    #   .[,lapply(.SD, base::mean), by = c("period2","tripid"), .SDcols = all_vars]
+    #
+    #
+    # length_data2<- mean_trip_data %>%
+    #   dplyr::select(period2, tripid, probA) %>%
+    #   dplyr::left_join(length_data, by = c("period2", "tripid")) #%>%
+    #
+    # all_vars<-c()
+    # all_vars <- names(length_data2)[!names(length_data2) %in% c("period2","tripid", "probA" )]
+    # all_vars
+    #
+    #
+    # length_data3 <- length_data2 %>%
+    #   data.table::as.data.table()  %>%
+    #   .[,as.vector(all_vars) := lapply(.SD, function(x) x * as.numeric(probA)), .SDcols = all_vars] %>%
+    #   .[]
+##################### old ##################################################
+
+    ################## NEW ###################################
+    length_data2<- mean_trip_data_prob_catch_draw %>%
+      dplyr::left_join(length_data, by = c("period2", "tripid", "catch_draw"))
+
     all_vars<-c()
-    all_vars <- names(length_data)[!names(length_data) %in% c("period2","tripid", "catch_draw" )]
-    all_vars
-
-    length_data<- length_data %>%
-      data.table::data.table() %>%
-      .[,lapply(.SD, base::mean), by = c("period2","tripid"), .SDcols = all_vars]
-
-
-    length_data2<- mean_trip_data %>%
-      dplyr::select(period2, tripid, probA) %>%
-      dplyr::left_join(length_data, by = c("period2", "tripid")) #%>%
-
-    all_vars<-c()
-    all_vars <- names(length_data2)[!names(length_data2) %in% c("period2","tripid", "probA" )]
+    all_vars <- names(length_data2)[!names(length_data2) %in% c("period2","tripid", "probA", "catch_draw")]
     all_vars
 
 
@@ -1554,6 +1703,16 @@ predict_rec_catch <- function( x,
       .[,as.vector(all_vars) := lapply(.SD, function(x) x * as.numeric(probA)), .SDcols = all_vars] %>%
       .[]
 
+
+
+    all_vars<-c()
+    all_vars <- names(length_data3)[!names(length_data3) %in% c("period2","tripid", "catch_draw")]
+    all_vars
+
+    length_data3<- length_data3 %>%
+      data.table::data.table() %>%
+      .[,lapply(.SD, base::mean), by = c("period2","tripid"), .SDcols = all_vars]
+    ######################### NEW #######################################
     #===============================#
 
     mean_trip_data <- mean_trip_data%>%
@@ -1566,8 +1725,9 @@ predict_rec_catch <- function( x,
       dplyr::select(c(n_choice_occasions, period2)) %>%
       dplyr::left_join(mean_trip_data, by = c("period2")) %>%
       dplyr::mutate(ndraws = c(50)) %>%
-      tidyr::separate(period2, into = c("month", "day", "mode")) %>%
-      dplyr::mutate(month = as.numeric(month)) %>%
+      #tidyr::separate(period2, into = c("month", "day", "mode")) %>%
+      dplyr::mutate(month = as.numeric(stringr::str_extract(period2, "(\\d+)")),
+                    mode = stringr::str_extract(period2, "[a-z]+")) %>%
 
       # ## Here we adjust the number of choice occasions to simulate to account for
       ## different numbers of weekend vs. weekday in the projection year versus the calibration
@@ -1577,7 +1737,7 @@ predict_rec_catch <- function( x,
       #For Kim: When we run the projections for 2024, change the "n_choice_occasions*1" below to "n_choice_occasions*expansion_factor" - I already did this
       dplyr::mutate(n_choice_occasions = n_choice_occasions*expansion_factor) %>%
       dplyr::mutate(expand = n_choice_occasions/ndraws) %>%
-      dplyr::mutate(period2 = paste0(month, "_", day, "_", mode)) %>%
+      #dplyr::mutate(period2 = paste0(month, "_", day, "_", mode)) %>%
       dplyr::arrange(period2)
 
 
@@ -1599,7 +1759,9 @@ predict_rec_catch <- function( x,
       .[]
 
     length_expanded <- length_expand %>%
-      tidyr::separate(period2, into = c("month", "day", "mode"), sep = "_") %>%
+      dplyr::mutate(month = as.numeric(stringr::str_extract(period2, "(\\d+)")),
+                    day = as.numeric(stringr::str_extract(period2, "(?<=_)\\d+")),
+                    mode = stringr::str_extract(period2, "[a-z]+")) %>%
       dplyr::mutate(day = as.numeric(day),
                     month = as.numeric(month),
                     period2 = paste0(month, "_", day, "_", mode))
@@ -1642,6 +1804,7 @@ predict_rec_catch <- function( x,
       dplyr::rename(mode1 = Mode) %>%
       dplyr::ungroup()
 
+    print("code check 13")
 
     l_w_sum <- length_weight %>%
       dplyr::mutate(Var1 = paste0(Species, "_", mode1, "_", keep_release)) %>%
@@ -1657,14 +1820,14 @@ predict_rec_catch <- function( x,
     trip_level_output <- sims %>%
       dplyr::select(c(period2,  n_choice_occasions, tripid, expand, change_CS, CS_base, CS_alt,  probA, prob0,
                       tot_keep_cod_new, tot_rel_cod_new, tot_keep_hadd_new, tot_rel_hadd_new,
-                      tot_keep_cod_base, tot_rel_cod_base, tot_keep_hadd_base,tot_rel_hadd_base)) %>%
-      tidyr::separate(period2, into = c("month", "day", "mode"), sep = "_") %>%
-      dplyr::mutate(day = as.numeric(day),
-                    month = as.numeric(month),
-                    period2 = paste0(month, "_", day, "_", mode)) %>%
+                      tot_keep_cod_base, tot_rel_cod_base, tot_keep_hadd_base,tot_rel_hadd_base, mode)) %>%
+      # tidyr::separate(period2, into = c("month", "day", "mode"), sep = "_") %>%
+      # dplyr::mutate(day = as.numeric(day),
+      #               month = as.numeric(month),
+      #               period2 = paste0(month, "_", day, "_", mode)) %>%
       as.data.frame()
 
-
+    print("code check 14")
     #Metrics at the choice occasion level
     prediction_output_by_period2 <- trip_level_output %>%
 
@@ -1714,7 +1877,7 @@ predict_rec_catch <- function( x,
       dplyr::mutate(number_weight=dplyr::case_when(is.na(number_weight) & Category=="CV"~"Dollars",TRUE ~ number_weight)) %>%
       dplyr::mutate(number_weight=dplyr::case_when(is.na(number_weight) & Category=="ntrips"~"Ntrips",TRUE ~ number_weight)) %>%
       dplyr::mutate(number_weight=dplyr::case_when(is.na(number_weight) & Category=="nchoiceoccasions"~"n_choice_occasions",TRUE ~ number_weight),
-                    season = select_season, draw_out = k, mrip_index = i)
+                    season = select_season, draw_out = draw, mrip_index = x)
 
     #predict_out <- rbind(predict_out, predictions)
    # }
