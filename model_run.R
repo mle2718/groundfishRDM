@@ -49,16 +49,16 @@ baseline_comparison1<-readRDS("C:/Users/kimberly.bastille/Desktop/codhad_data/ca
   dplyr::filter(draw_id<=100)
 dplyr::n_distinct(baseline_comparison1$draw)
 
-
+calendar_adjust1 <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data//next year calendar adjustments.csv", show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1]
+mrip_index  <- mrip_index[1:8]
 
-pred<- NULL
-for (x in mrip_index){
+#pred<- NULL
+#for (x in mrip_index){
 
-#future::plan(future::multisession, workers = 6)
-#get_predictions_out<- function(x){
+future::plan(future::multisession, workers = 6)
+get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%
     dplyr::filter(mrip_index==x) %>%
@@ -81,6 +81,9 @@ for (x in mrip_index){
   # calibration_data_table_base <- split(calibration_output_by_period, calibration_output_by_period$state)
   # cost_files_all_base <- split(costs_new_all, costs_new_all$state)
 
+  calendar_adjust<- calendar_adjust1 %>%
+    dplyr::filter(draw == k,
+                  mode == select_mode)
 
   directed_trips2 <- directed_trips %>%
     dplyr::filter(draw == k, mode == select_mode) #%>%
@@ -94,13 +97,14 @@ for (x in mrip_index){
                            select_season = select_season, select_mode = select_mode,
                            directed_trips_table = directed_trips2,
                            calibration_data_table = calibration_data,
+                           calendar_adjust = calendar_adjust,
                            costs_new_all = costs,
                            size_data_read = size_data_read,
                            discard_mortality_dat = Disc_mort)
 
   print("test")
   print(test)
-  pred <- pred %>% rbind(test)
+  #pred <- pred %>% rbind(test)
 
 }
 #})
@@ -110,7 +114,7 @@ for (x in mrip_index){
 
 #predictions_out10<- furrr::future_map_dfr(1:100, ~get_predictions_out(.), .id = "draw")
 
-#predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
+predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
 
 
 predictions_out <- pred %>%

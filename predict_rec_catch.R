@@ -55,6 +55,7 @@ predict_rec_catch <- function( x, draw,
                                size_data_read,
                                costs_new_all,
                                catch_data_all,
+                               calendar_adjust,
                                discard_mortality_dat,
                                n_drawz = 50,
                                n_catch_draws = 30,
@@ -113,12 +114,6 @@ predict_rec_catch <- function( x, draw,
     h_star_hadd_release_to_keep_variable<-mean(baseline_comparison1$h_star_hadd_release_to_keep_variable)
     h_star_cod_keep_to_release_variable<-mean(baseline_comparison1$h_star_cod_keep_to_release_variable)
     h_star_hadd_keep_to_release_variable<-mean(baseline_comparison1$h_star_hadd_keep_to_release_variable)
-
-    #Pull in data that is draw-specific
-    calendar_2024_adjust <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data//next year calendar adjustments.csv", show_col_types = FALSE) %>%
-      dplyr::filter(draw == draw)
-    #calibration_data_table = feather::read_feather(paste0("C:/Users/andrew.carr-harris/Desktop/cod_hadd_RDM/pds_new_", select_mode,"_", select_season, "_", k,".feather"))
-    #costs_new_all = feather::read_feather(paste0("C:/Users/andrew.carr-harris/Desktop/cod_hadd_RDM/costs_", select_mode,"_", select_season, "_", k,".feather"))
 
     n_drawz = 50
     n_catch_draws = 30
@@ -1648,11 +1643,11 @@ predict_rec_catch <- function( x, draw,
 
     #Average the outcomes over catch draws
     all_vars<-c()
-    all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode", "catch_draw")]
+    all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode")]
     all_vars
 
     mean_trip_data <- mean_trip_data %>%
-      .[,lapply(.SD, base::mean), by = c("tripid", "period2", "catch_draw"), .SDcols = all_vars]
+      .[,lapply(.SD, base::mean), by = c("tripid", "period2"), .SDcols = all_vars]
     ######## New probablity weighted calc ################
 
     mean_trip_data <- mean_trip_data %>%
@@ -1731,7 +1726,7 @@ predict_rec_catch <- function( x, draw,
 
       # ## Here we adjust the number of choice occasions to simulate to account for
       ## different numbers of weekend vs. weekday in the projection year versus the calibration
-      dplyr::left_join(calendar_2024_adjust, by=c("month", "mode")) %>%
+      dplyr::left_join(calendar_adjust, by=c("month", "mode")) %>%
 
       #multiply the number of choice occasions in the baseline year by the expansion factor
       #For Kim: When we run the projections for 2024, change the "n_choice_occasions*1" below to "n_choice_occasions*expansion_factor" - I already did this
