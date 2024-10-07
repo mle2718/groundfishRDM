@@ -1,5 +1,0 @@
-Option,season,Mode,Cod_Limit,Cod_Size,Cod_open,Cod_mortality_mt,Had_Limit,Had_Size,Had_open,Had_mortality_mt,Angler_trips,Cod_per_under,Had_per_under,Angler_satisfaction
-SQ,1,Private,1,22,2023-09-01 - 2023-10-31,200,10,17,2023-05-01 - 2024-02-28,578,249614,34,100,Test
-SQ,1,ForHire,1,22,2023-09-01 - 2023-10-31,188,15,18,2023-05-01 - 2024-02-29,523,"235,131",58,100,Test
-SQ,2,Private,,,,,10,17,2024-04-01 - 2024-04-30,,,,,
-SQ,2,ForHire,,,,,15,18,2024-04-01 - 2024-04-31,,,,,

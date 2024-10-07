@@ -117,13 +117,10 @@ get_predictions_out<- function(x){
 predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
 
 
-predictions_out <- pred %>%
-  dplyr::group_by(Category, mode, catch_disposition, param,  number_weight, draw_out) %>%
-  dplyr::reframe(Value = sum(Value)) %>%
-  dplyr::ungroup()
-
-
-
+# predictions_out <- pred %>%
+#   dplyr::group_by(Category, mode, catch_disposition, param,  number_weight, draw_out) %>%
+#   dplyr::reframe(Value = sum(Value)) %>%
+#   dplyr::ungroup()
 
 
 #

@@ -152,6 +152,19 @@ ui <- fluidPage(
     #### Results ####
     tabPanel("Results",
 
+             actionButton("displaymode", "Display Results by Mode"),
+#
+#
+#
+#              shinyjs::hidden( div(ID = "displaymode",
+#                                   output$regs_by_mode <- renderTable({
+#                                     regulations_by_mode()
+#                                   }),
+#
+#                                   output$keep_by_mode<- renderTable({
+#                                     keep_release()
+#                                   })     )),
+
              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                               tags$div("Calculating...This will take ~15-20 min per state selected.",id="loadmessage")), #Warning for users
 
@@ -174,249 +187,169 @@ server <- function(input, output, session){
 
   library(magrittr)
 
+
   #### Toggle extra seasons on UI ####
   # Allows for extra seasons to show and hide based on click
   shinyjs::onclick("CODaddSeason",
                    shinyjs::toggle(id = "CodSeason2", anim = TRUE))
   shinyjs::onclick("HADaddSeason",
                    shinyjs::toggle(id = "HadSeason3", anim = TRUE))
+  shinyjs::onclick("displaymode",
+                   shinyjs::toggle(id = "Predictions_mode", anim = TRUE))
 
-  #source(here::here(paste0("model_run.R")), local = TRUE)
-  #predictions_1 <- predictions_1 %>% rbind(predictions)
 
   predictions <- eventReactive(input$runmeplease,{
     source(here::here(paste0("model_run.R")), local = TRUE)
+
+    predictions_out <- read.csv(here::here("sq_predictions.csv")) %>%
+      dplyr::mutate(option = c("SQ")) %>%
+      dplyr::select(!X) %>%
+      rbind(predictions_out10) %>%
+      dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ Value/2205, TRUE ~ Value))
     return(predictions_out)
-    print("predicitions out")
   })
 
   #### Regulations ####
-  regulations <- reactive({
-
-
+  regs_agg <- reactive({
 
     print("start regs")
-    sq <- read.csv(here::here("output_test.csv")) %>%
-      dplyr::mutate(season = as.character(season))
+    SQ_regulations <- read.csv(here::here("SQ_regulations.csv"))
 
-    print(sq)
+    Regs<- data.frame(Opt = c("alt"),
+                      Var = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",
+                              "Cod1_PR_bag", "Cod1_PR_size", "Cod1_PR_Season",
+                              "Had1_FH_bag", "Had1_FH_size", "Had1_FH_Season",
+                              "Had1_PR_bag", "Had1_PR_size", "Had1_PR_Season",
+                              "Had2_FH_bag", "Had2_FH_size", "Had2_FH_Season",
+                              "Had2_PR_bag", "Had2_PR_size", "Had2_PR_Season",
+                              "Cod2_FH_bag", "Cod2_FH_size", "Cod2_FH_Season",
+                              "Cod2_PR_bag", "Cod2_PR_size", "Cod2_PR_Season",
+                              "Had3_FH_bag", "Had3_FH_size", "Had3_FH_Season",
+                              "Had3_PR_bag", "Had3_PR_size", "Had3_PR_Season"),
+                      Val = c(input$CodFH_1_bag, input$CodFH_1_len, paste0(input$CodFH_seas1[1], " - ", input$CodFH_seas1[2]),
+                              input$CodPR_1_bag, input$CodPR_1_len, paste0(input$CodPR_seas1[1], " - ", input$CodPR_seas1[2]),
+                              input$HadFH_1_bag, input$HadFH_1_len, paste0(input$HadFH_seas1[1], " - ", input$HadFH_seas1[2]),
+                              input$HadPR_1_bag, input$HadPR_1_len, paste0(input$HadPR_seas1[1], " - ", input$HadPR_seas1[2]),
+                              input$HadFH_2_bag, input$HadFH_2_len, paste0(input$HadFH_seas2[1], " - ", input$HadFH_seas2[2]),
+                              input$HadPR_2_bag, input$HadPR_2_len, paste0(input$HadPR_seas2[1], " - ", input$HadPR_seas2[2]),
+                              input$CodFH_2_bag, input$CodFH_2_len, paste0(input$CodFH_seas2[1], " - ", input$CodFH_seas2[2]),
+                              input$CodPR_2_bag, input$CodPR_2_len, paste0(input$CodPR_seas2[1], " - ", input$CodPR_seas2[2]),
+                              input$HadFH_3_bag, input$HadFH_3_len, paste0(input$HadFH_seas3[1], " - ", input$HadFH_seas3[2]),
+                              input$HadPR_3_bag, input$HadPR_3_len, paste0(input$HadPR_seas3[1], " - ", input$HadPR_seas3[2])))
 
-
-    dat <- NULL
-    #### regs ####
-
-    # ###### testing ##################################################################################################################################################################
-    # CodFH_1_bag <- 1
-    # CodFH_2_bag <- 3
-    # CodFH_1_len <- 22
-    # CodFH_2_len <- 23
-    # CodPR_1_bag <- 1
-    # CodPR_2_bag <- 3
-    # CodPR_1_len <- 22
-    # CodPR_2_len <- 23
-    # CodFH_seas1 <- c("2023-09-01", "2023-10-31")
-    # CodFH_seas2 <- c("2024-01-01", "2024-03-15")
-    # CodPR_seas1 <- c("2023-09-01", "2023-10-31")
-    # CodPR_seas2 <- c("2024-01-01", "2024-03-15")
-    #
-    # cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Cod_Limit = c(CodFH_1_bag), Cod_Size = c(CodFH_1_len),
-    #                            Cod_open = c(paste(CodFH_seas1[1], "-", CodFH_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
-    # cod_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Cod_Limit = c(CodPR_1_bag), Cod_Size = c(CodPR_1_len),
-    #                            Cod_open = c(paste(CodPR_seas1[1], "-", CodPR_seas1[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
-    # cod_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Cod_Limit = c(CodFH_2_bag), Cod_Size = c(CodFH_2_len),
-    #                            Cod_open = c(paste(CodFH_seas2[1], "-", CodFH_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
-    # cod_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Cod_Limit = c(CodPR_2_bag), Cod_Size = c(CodPR_2_len),
-    #                            Cod_open = c(paste(CodPR_seas2[1], "-", CodPR_seas2[2])), Cod_mortality_mt = "Value", Angler_trips = "Value", Cod_per_under = "Value")
-    #
-    # HadFH_1_bag <- 1
-    # HadFH_2_bag <- 3
-    # HadFH_3_bag <- 5
-    # HadFH_1_len <- 22
-    # HadFH_2_len <- 23
-    # HadFH_3_len <- 24
-    # HadPR_1_bag <- 1
-    # HadPR_2_bag <- 3
-    # HadPR_3_bag <- 5
-    # HadPR_1_len <- 22
-    # HadPR_2_len <- 23
-    # HadPR_3_len <- 24
-    # HadFH_seas1 <- c("2023-05-01", "2023-02-28")
-    # HadFH_seas2 <- c("2024-04-01", "2024-04-14")
-    # HadFH_seas3 <- c("2024-04-15", "2024-04-29")
-    # HadPR_seas1 <- c("2023-05-01", "2023-02-31")
-    # HadPR_seas2 <- c("2024-04-01", "2024-04-14")
-    # HadPR_seas3 <- c("2024-04-15", "2024-04-29")
-    #
-    #
-    #
-    # had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("For Hire"), Had_Limit = c(HadFH_1_bag), Had_Size = c(HadFH_1_len),
-    #                            Had_open = c(paste(HadFH_seas1[1], "-", HadFH_seas1[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
-    # had_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Had_Limit = c(HadPR_1_bag), Had_Size = c(HadPR_1_len),
-    #                            Had_open = c(paste(HadPR_seas1[1], "-", HadPR_seas1[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
-    # had_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("For Hire"), Had_Limit = c(HadFH_2_bag), Had_Size = c(HadFH_2_len),
-    #                            Had_open = c(paste(HadFH_seas2[1], "-", HadFH_seas2[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
-    # had_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Had_Limit = c(HadPR_2_bag), Had_Size = c(HadPR_2_len),
-    #                            Had_open = c(paste(HadPR_seas2[1], "-", HadPR_seas2[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
-    # had_alt_FH_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("For Hire"), Had_Limit = c(HadFH_3_bag), Had_Size = c(HadFH_3_len),
-    #                            Had_open = c(paste(HadFH_seas3[1], "-", HadFH_seas3[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
-    # had_alt_PR_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("Private"), Had_Limit = c(HadPR_3_bag), Had_Size = c(HadPR_3_len),
-    #                            Had_open = c(paste(HadPR_seas3[1], "-", HadPR_seas3[2])), Had_mortality_mt = "Value", Angler_trips = "Value", Had_per_under = "Value")
-    #
-    #################################################################################################################################################################################
+    Regs<- Regs %>% rbind(SQ_regulations)
 
 
+    Regs_out<- Regs %>%
+      tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
+      tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
+      dplyr::filter(!bag == 0) %>%
+      dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season)) %>%
+      dplyr::group_by(Species,Opt) %>%
+      distinct(all_regs, .keep_all = TRUE) %>%
+      dplyr::mutate(mode = dplyr::case_when(length(Species) == 1 ~ "All", TRUE ~ mode)) %>%
+      dplyr::select(!all_regs) %>%
+      dplyr::mutate(Species = stringr::str_extract(Species, "[a-z]+"))
 
-
-    predictions1<- #predictions() %>%
-      predictions()
-
-    under_acl<- predictions1 %>%
-      dplyr::filter(Category == c("cod", "had"),
-                    catch_disposition == c("keep", "release"),
-                    number_weight == "Weight") %>%
-      dplyr::group_by(Category, mode, draw_out) %>%
-      dplyr::summarise(Catch = sum(Value)) %>%
-      dplyr::group_by(Category, mode) %>%
-      dplyr::summarise(under_acl = dplyr::case_when(Category == "cod" ~ sum( Catch <= 100000)),
-                       under_acl = dplyr::case_when(Category == "had" ~ sum( Catch <= 300000), TRUE ~ under_acl)) %>%
-      dplyr::slice(1) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = under_acl) %>%
-      dplyr::rename("Mode" = mode)
-
-
-    print(class(predictions1))
-
-    predictions<- data.frame(predictions1)
-
-    print(class(predictions))
-    print(head(predictions))
-
-    predictions<- predictions%>%
-      ## ADD N_Under limit
-      dplyr::group_by(Category, mode, catch_disposition, param, number_weight) %>%
-      dplyr::reframe(Value = median(Value)) %>%
-      dplyr::ungroup()
-
-    pred2<- predictions %>%
-      dplyr::filter(Category %in% c("cod", "had"),
-                    catch_disposition %in% c("keep", "Discmortality"),
-                    number_weight == "Weight") %>%
-      dplyr::mutate(Value = Value/2205)
-
-    angler_trips <- predictions %>%
-      dplyr::filter(number_weight %in% c("Ntrips", "Dollars")) %>%
-      dplyr::select(Value, mode, number_weight) %>%
-      tidyr::pivot_wider(names_from = number_weight, values_from = Value) %>%
-      dplyr::rename("Mode" = mode,
-                    "Angler_trips" = Ntrips,
-                    "Angler_satisfaction" = Dollars)
-
-    options(scipen = 100, digits = 3)
-
-    predictions2<-  pred2 %>%
-      dplyr::group_by(Category, mode) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
-      dplyr::rename("Cod_mortality_mt" = cod,
-                    "Had_mortality_mt" = had,
-                    "Mode" = mode) %>%
-      dplyr::left_join(angler_trips) %>%
-      dplyr::left_join(under_acl) %>%
-      dplyr::rename("Cod_per_under" = cod,
-                    "Had_per_under" = had) %>%
-      dplyr::mutate(Mode = dplyr::recode(Mode, "fh" = "ForHire",
-                                         "pr" = "Private"))
-
-
-    print("predictions2")
-    print(predictions2)
-    cod_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("ForHire"), Cod_Limit = c(input$CodFH_1_bag), Cod_Size = c(input$CodFH_1_len),
-                            Cod_open = c(paste(input$CodFH_seas1[1], "-", input$CodFH_seas1[2])))
-    cod_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Cod_Limit = c(input$CodPR_1_bag), Cod_Size = c(input$CodPR_1_len),
-                               Cod_open = c(paste(input$CodPR_seas1[1], "-", input$CodPR_seas1[2])))
-    cod_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("ForHire"), Cod_Limit = c(input$CodFH_2_bag), Cod_Size = c(input$CodFH_2_len),
-                               Cod_open = c(paste(input$CodFH_seas2[1], "-", input$CodFH_seas2[2])))
-    cod_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Cod_Limit = c(input$CodPR_2_bag), Cod_Size = c(input$CodPR_2_len),
-                               Cod_open = c(paste(input$CodPR_seas2[1], "-", input$CodPR_seas2[2])))
-
-    cod <- rbind(cod_alt_FH_1, cod_alt_FH_2, cod_alt_PR_1, cod_alt_PR_2) %>%
-      dplyr::filter(Cod_Limit > 0)
-
-    had_alt_FH_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("ForHire"), Had_Limit = c(input$HadFH_1_bag), Had_Size = c(input$HadFH_1_len),
-                               Had_open = c(paste(input$HadFH_seas1[1], "-", input$HadFH_seas1[2])))
-    had_alt_PR_1 <- data.frame(Option = c("alt"), season = c("1"), Mode = c("Private"), Had_Limit = c(input$HadPR_1_bag), Had_Size = c(input$HadPR_1_len),
-                               Had_open = c(paste(input$HadPR_seas1[1], "-", input$HadPR_seas1[2])))
-    had_alt_FH_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("ForHire"), Had_Limit = c(input$HadFH_2_bag), Had_Size = c(input$HadFH_2_len),
-                               Had_open = c(paste(input$HadFH_seas2[1], "-", input$HadFH_seas2[2])))
-    had_alt_PR_2 <- data.frame(Option = c("alt"), season = c("2"), Mode = c("Private"), Had_Limit = c(input$HadPR_2_bag), Had_Size = c(input$HadPR_2_len),
-                               Had_open = c(paste(input$HadPR_seas2[1], "-", input$HadPR_seas2[2])))
-    had_alt_FH_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("ForHire"), Had_Limit = c(input$HadFH_3_bag), Had_Size = c(input$HadFH_3_len),
-                               Had_open = c(paste(input$HadFH_seas3[1], "-", input$HadFH_seas3[2])))
-    had_alt_PR_3 <- data.frame(Option = c("alt"), season = c("3"), Mode = c("Private"), Had_Limit = c(input$HadPR_3_bag), Had_Size = c(input$HadPR_3_len),
-                               Had_open = c(paste(input$HadPR_seas3[1], "-", input$HadPR_seas3[2])))
-
-    had <- rbind(had_alt_FH_1, had_alt_PR_1, had_alt_FH_2, had_alt_PR_2, had_alt_FH_3, had_alt_PR_3) %>%
-      dplyr::filter(Had_Limit > 0)
-
-    out<- cod %>% dplyr::full_join(had, by = c("Mode", "season", "Option")) %>%
-      dplyr::full_join(predictions2, by = "Mode")
-
-    regs_output <- rbind(sq,out) %>%
-     #sq %>%
-      dplyr::select(Option,season,Mode,Cod_Limit,Cod_Size,Cod_open,Cod_mortality_mt,Cod_per_under,
-                    Had_Limit,Had_Size,Had_open,Had_mortality_mt,Had_per_under,Angler_trips) %>%
-      #dplyr::mutate(Cod_open = stringr::str_replace_all(Cod_open, "2023-", ""),
-      #              Cod_open = stringr::str_replace_all(Cod_open, "2024-", ""),
-      #              Had_open = stringr::str_replace_all(Had_open, "2023-", ""),
-      #              Had_open = stringr::str_replace_all(Had_open, "2024-", "")) %>%
-      dplyr::group_by(Option, Mode) %>%
-      dplyr::summarise(Cod_Limit = paste0(sort(unique(Cod_Limit)), collapse = " , "),
-                       Cod_Size = paste0(sort(unique(Cod_Size)), collapse = " , "),
-                       Cod_open = paste0(sort(unique(Cod_open)), collapse = " , "),
-                       Cod_mortality_mt = paste0(sort(unique(Cod_mortality_mt)), collapse = " , "),
-                       Cod_per_under = paste0(sort(unique(Cod_per_under)), collapse = " , "),
-                       Had_Limit = paste0(sort(unique(Had_Limit)), collapse = " , "),
-                       Had_Size = paste0(sort(unique(Had_Size)), collapse = " , "),
-                       Had_open = paste0(sort(unique(Had_open)), collapse = " , "),
-                       Had_mortality_mt = paste0(sort(unique(Had_mortality_mt)), collapse = " , "),
-                       Had_per_under = paste0(sort(unique(Had_per_under)), collapse = " , "),
-                       Angler_trips = paste0(sort(unique(Angler_trips)), collapse = " , "),
-                       Cod_open = dplyr::case_when(Option == "SQ" ~ stringr::str_replace_all(Cod_open, "^.*?,", ""), TRUE ~ Cod_open),
-                       Angler_trips = stringr::str_replace_all(Angler_trips, "^.*?,", "")) %>%
-      dplyr::rename("Cod Size" = Cod_Size, "Cod Limit" = Cod_Limit, "Cod Open Season" = Cod_open,
-                    "Cod Total Mortality mt (median)" = Cod_mortality_mt,
-                    "% Under Cod ACL (out of 100 smulations)" = Cod_per_under,
-                    "Had Size" = Had_Size, "Had Limit" = Had_Limit, "Had Open Season" = Had_open,
-                    "Had Total Mortality mt (median)" = Had_mortality_mt,
-                    "% Under Had ACL (out of 100 smulations)" = Had_per_under, "Angler Trips (median)" = Angler_trips) %>%
-      dplyr::slice(1) %>%
-      dplyr::ungroup()
-
-    print(regs_output)
-    return(regs_output)
+    return(Regs_out)
     })
 
   #### keep release discards ####
-  keep_release <- reactive({
-    keep_release_output<- predictions() %>%
-      dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality"))  %>%
-      dplyr::group_by(Category, mode, catch_disposition, number_weight) %>%
+  keep_agg <- reactive({
+
+    keep_agg<- predictions() %>%
+      #predictions_out %>%
+      dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
+      dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::group_by(option, Category, catch_disposition, number_weight) %>%
       dplyr::summarise(Value = median(Value)) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = Value)
-    return(keep_release_output)
+      tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
+      dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
+                    perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
+      dplyr::select(Category, catch_disposition, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
+      dplyr::rename(Species = Category, Variable = catch_disposition,
+                    `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
+                    `Total Weight (mt)` = alt_Weight, `Percent difference in weight of fish` = perc_diff_wt)
+
+    return(keep_agg)
+
+    })
+
+
+  keep_by_mode <- reactive({
+    keep_by_mode<- predictions() %>%
+      #predictions_out %>%
+      dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
+      dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::group_by(option, Category, catch_disposition, number_weight, mode) %>%
+      dplyr::summarise(Value = median(Value)) %>%
+      tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
+      dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
+                    perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
+      dplyr::select(Category, catch_disposition, mode, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
+      dplyr::rename(Species = Category, Variable = catch_disposition,
+                    `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
+                    `Total Weight (mt)` = alt_Weight, `Percent difference in weight of fish` = perc_diff_wt)
+    return(keep_by_mode)
+  })
+#####################
+
+  ##### Ntrips & welfare #######
+  welfare_agg <- reactive({
+
+    welfare_agg<- predictions() %>%
+      #predictions_out %>%
+      dplyr::filter(Category %in% c("CV", "ntrips")) %>%
+      dplyr::group_by(option, Category, draw_out) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::group_by(option, Category) %>%
+      dplyr::summarise(Value = median(Value)) %>%
+      tidyr::pivot_wider(names_from = option, values_from = Value) %>%
+      dplyr::mutate(perc_diff = (alt-SQ)/SQ)%>%
+      dplyr::select(!SQ) %>%
+      dplyr::mutate(Category = dplyr::recode(Category, CV = "Angler Satisfaction ($)",
+                                             ntrips = "Angler Trips (N)")) %>%
+      dplyr::rename(`Percent difference in median values` = perc_diff)
+
+    return(welfare_agg)
+
   })
 
+
+  welfare_by_mode <- reactive({
+    welfare_by_mode<- predictions() %>%
+      #predictions_out %>%
+      dplyr::filter(Category %in% c("CV", "ntrips")) %>%
+      dplyr::group_by(option, Category, draw_out, mode) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::group_by(option, Category, mode) %>%
+      dplyr::summarise(Value = median(Value)) %>%
+      tidyr::pivot_wider(names_from = option, values_from = Value) %>%
+      dplyr::mutate(perc_diff = (alt-SQ)/SQ)%>%
+      dplyr::select(!SQ) %>%
+      dplyr::mutate(Category = dplyr::recode(Category, CV = "Angler Satisfaction ($)",
+                                             ntrips = "Angler Trips (N)")) %>%
+      dplyr::rename(`Percent difference in median values` = perc_diff)
+    return(welfare_by_mode)
+  })
 
   ###Output Tables
   output$regtableout <- renderTable({
 
-    regulations()
+    regs_agg()
   })
 
   output$keep_tableout<- renderTable({
-    keep_release()
+    keep_agg()
   })
 
+  output$welfare_tableout<- renderTable({
+    welfare_agg()
+  })
 
   observeEvent(input$runmeplease, {
 
@@ -428,9 +361,18 @@ server <- function(input, output, session){
   output$downloadData <- downloadHandler(
     filename = function(){"RecDSToutput.xlsx"},
     content = function(filename) {
-      df_list <- list(Regulations=regulations())
+      df_list <- list(Regulations=regulations(), Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
+                      Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_mode())
       openxlsx::write.xlsx(x = df_list , file = filename, row.names = FALSE)
     })
 
+
+
+
+  ### Save local verison of output
+  observeEvent(input$runmeplease, {
+    dat<- predictions()
+    readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
+  })
 }
 shiny::shinyApp(ui = ui, server = server)

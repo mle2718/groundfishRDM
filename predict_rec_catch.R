@@ -1872,7 +1872,7 @@ predict_rec_catch <- function( x, draw,
       dplyr::mutate(number_weight=dplyr::case_when(is.na(number_weight) & Category=="CV"~"Dollars",TRUE ~ number_weight)) %>%
       dplyr::mutate(number_weight=dplyr::case_when(is.na(number_weight) & Category=="ntrips"~"Ntrips",TRUE ~ number_weight)) %>%
       dplyr::mutate(number_weight=dplyr::case_when(is.na(number_weight) & Category=="nchoiceoccasions"~"n_choice_occasions",TRUE ~ number_weight),
-                    season = select_season, draw_out = draw, mrip_index = x)
+                    season = select_season, draw_out = draw, mrip_index = x, option = c("alt"))
 
     #predict_out <- rbind(predict_out, predictions)
    # }
