@@ -150,21 +150,7 @@ ui <- fluidPage(
 
 
     #### Results ####
-    tabPanel("Results",
-
-             actionButton("displaymode", "Display Results by Mode"),
-#
-#
-#
-#              shinyjs::hidden( div(ID = "displaymode",
-#                                   output$regs_by_mode <- renderTable({
-#                                     regulations_by_mode()
-#                                   }),
-#
-#                                   output$keep_by_mode<- renderTable({
-#                                     keep_release()
-#                                   })     )),
-
+    tabPanel("Results - Aggregated",
              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                               tags$div("Calculating...This will take ~15-20 min per state selected.",id="loadmessage")), #Warning for users
 
@@ -172,9 +158,16 @@ ui <- fluidPage(
              # Add table outputs
              ## KB - Make tables DTs - should fix RMD documentation issue
              tableOutput(outputId = "regtableout"),
+             tableOutput(outputId = "catch_tableout"),
              tableOutput(outputId = "welfare_tableout"),
              tableOutput(outputId = "keep_tableout"),
              plotOutput(outputId = "fig")),
+     #### By Mode ####
+     tabPanel("Results - By Mode",
+              tableOutput(outputId = "regtableout"),
+              tableOutput(outputId = "catchmode"),
+              tableOutput(outputId = "welfaremode"),
+              tableOutput(outputId = "keepmode")),
 
     #### Documentation ####
     tabPanel("Documentation",
@@ -244,15 +237,61 @@ server <- function(input, output, session){
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
       dplyr::filter(!bag == 0) %>%
-      dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season)) %>%
+      dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season),
+                    bag_size = paste0( bag, "_", size),
+                    bag_season = paste0( bag,"_", Season),
+                    size_season = paste0( size, "_", Season)) %>%
       dplyr::group_by(Species,Opt) %>%
-      distinct(all_regs, .keep_all = TRUE) %>%
+      dplyr::distinct(all_regs, .keep_all = TRUE) %>%
       dplyr::mutate(mode = dplyr::case_when(length(Species) == 1 ~ "All", TRUE ~ mode)) %>%
       dplyr::select(!all_regs) %>%
-      dplyr::mutate(Species = stringr::str_extract(Species, "[a-z]+"))
+      dplyr::mutate(Species = stringr::str_extract(Species, "[:alpha:]+"))
 
     return(Regs_out)
     })
+
+  ##### Catch ###########
+  catch_agg <- reactive({
+
+    catch_agg<- #predictions() %>%
+      predictions_out %>%
+      dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                    number_weight == "Weight") %>%
+      dplyr::group_by(option, Category, draw_out) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99 ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(Category == "had" & Value <= 500 ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(option, Category) %>%
+      dplyr::summarise(under_acl = sum(under_acl),
+                       Value = median(Value)) %>%
+      tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
+      dplyr::select(Category, Value_SQ, Value_alt, under_acl_alt) %>%
+      dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
+                    `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL` = under_acl_alt)
+
+    return(catch_agg)
+  })
+
+  catch_by_mode <- reactive({
+
+    catch_by_mode<- #predictions() %>%
+      predictions_out %>%
+      dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                    number_weight == "Weight") %>%
+      dplyr::group_by(option, Category, draw_out, mode) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99 ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(Category == "had" & Value <= 500 ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(option, Category, mode) %>%
+      dplyr::summarise(under_acl = sum(under_acl),
+                       Value = median(Value)) %>%
+      tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
+      dplyr::select(Category, Value_SQ, Value_alt, under_acl_alt, mode) %>%
+      dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
+                    `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL` = under_acl_alt)
+
+    return(catch_by_mode)
+  })
 
   #### keep release discards ####
   keep_agg <- reactive({
@@ -339,8 +378,11 @@ server <- function(input, output, session){
 
   ###Output Tables
   output$regtableout <- renderTable({
-
     regs_agg()
+  })
+
+  output$catchtableout <- renderTable({
+    catch_agg()
   })
 
   output$keep_tableout<- renderTable({
@@ -351,28 +393,36 @@ server <- function(input, output, session){
     welfare_agg()
   })
 
-  observeEvent(input$runmeplease, {
+  ### Tables for by mode tab
+  output$regmode <- renderTable({
+    regs_by_mode()
+  })
 
+  output$catchmode <- renderTable({
+    catch_by_mode()
+  })
+
+  output$keepmode<- renderTable({
+    keep_by_mode()
+  })
+
+  output$welfaremode<- renderTable({
+    welfare_by_mode()
+  })
+
+  observeEvent(input$runmeplease, {
     dat<- predictions()
     readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
-
     })
 
   output$downloadData <- downloadHandler(
     filename = function(){"RecDSToutput.xlsx"},
     content = function(filename) {
-      df_list <- list(Regulations=regulations(), Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
+      df_list <- list(Regulations=regulations(), Catch_Mortality_aggregated = catch_agg(), Catch_Mortality_by_mode = catch_by_mode(),
+                      Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
                       Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_mode())
       openxlsx::write.xlsx(x = df_list , file = filename, row.names = FALSE)
     })
 
-
-
-
-  ### Save local verison of output
-  observeEvent(input$runmeplease, {
-    dat<- predictions()
-    readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
-  })
 }
 shiny::shinyApp(ui = ui, server = server)

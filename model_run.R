@@ -52,7 +52,7 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data//next year calendar adjustments.csv", show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:8]
+mrip_index  <- mrip_index[1:12]
 
 #pred<- NULL
 #for (x in mrip_index){
