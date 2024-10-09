@@ -140,15 +140,25 @@ predict_rec_catch <- function( x, draw,
     #2b) If the fishery is closed the entire current and previous season, floor_subl_harvest=mean(catch_length)-0.5*sd(catch_length).
 
     # 1) and 2a) below:
-    floor_subl_cod_harv<-min(directed_trips$cod_min_y2)-2
-    floor_subl_hadd_harv<-min(directed_trips$hadd_min_y2)-2
+    #floor_subl_cod_harv<-min(directed_trips$cod_min_y2)-2
+    #floor_subl_hadd_harv<-min(directed_trips$hadd_min_y2)-2
 
-    if (floor_subl_cod_harv==98){
-      floor_subl_cod_harv<-min(directed_trips$cod_min)-2
+    #if (floor_subl_cod_harv==98){
+    #   floor_subl_cod_harv<-min(directed_trips$cod_min)-2
+    # }
+    #
+    # if (floor_subl_hadd_harv==98){
+    #   floor_subl_hadd_harv<-min(directed_trips$hadd_min)-2
+    # }
+    floor_subl_cod_harv<-min(directed_trips$cod_min_y2)-(2*2.54)
+    floor_subl_hadd_harv<-min(directed_trips$hadd_min_y2)-(2*2.54)
+
+    if (floor_subl_cod_harv==248.92){
+      floor_subl_cod_harv<-min(directed_trips$cod_min)-(2*2.54)
     }
 
-    if (floor_subl_hadd_harv==98){
-      floor_subl_hadd_harv<-min(directed_trips$hadd_min)-2
+    if (floor_subl_hadd_harv==248.92){
+      floor_subl_hadd_harv<-min(directed_trips$hadd_min)-(2*2.54)
     }
 
 
@@ -274,9 +284,13 @@ predict_rec_catch <- function( x, draw,
       #2b) If the fishery is closed the entire current and previous season, floor_subl_harvest=mean(catch_length)-0.5*sd(catch_length).
 
       # 2b) below:
-      if (floor_subl_cod_harv==98){
+      # if (floor_subl_cod_harv==98){
+      #   floor_subl_cod_harv=mean(catch_size_data$fitted_length)-0.5*sd(catch_size_data$fitted_length)
+      # }
+      if (floor_subl_cod_harv==248.92){
         floor_subl_cod_harv=mean(catch_size_data$fitted_length)-0.5*sd(catch_size_data$fitted_length)
       }
+
 
 
       # Impose regulations, calculate keep and release per trip
@@ -407,11 +421,12 @@ predict_rec_catch <- function( x, draw,
       #2b) If the fishery is closed the entire current and previous season, floor_subl_harvest=mean(catch_length)-0.5*sd(catch_length).
 
       # 2b) below:
-
-      if (floor_subl_hadd_harv==98){
+#       if (floor_subl_hadd_harv==98){
+#         floor_subl_hadd_harv=mean(catch_size_data_had$fitted_length)-0.5*sd(catch_size_data_had$fitted_length)
+#       }
+      if (floor_subl_hadd_harv==248.92){
         floor_subl_hadd_harv=mean(catch_size_data_had$fitted_length)-0.5*sd(catch_size_data_had$fitted_length)
       }
-
 
       # Impose regulations, calculate keep and release per trip
       ####### Start Here #################
@@ -1093,7 +1108,7 @@ predict_rec_catch <- function( x, draw,
     if(cod_catch_check ==0 & had_catch_check==0){
       length_data <- cod_zero_catch %>%  dplyr::left_join(had_zero_catch, by = c("period2","tripid", "catch_draw")) %>%
         dplyr::select("period2","tripid", "catch_draw") %>%
-        dplyr::mutate(keep_cod_9=0, release_cod_9=0, keep_had_9=0, release_had_9=0)
+        dplyr::mutate(keep_cod_1=0, release_cod_1=0, keep_had_1=0, release_had_1=0)
 
     }
 
@@ -1102,7 +1117,7 @@ predict_rec_catch <- function( x, draw,
     if(cod_catch_check !=0 & had_catch_check==0){
       keep_release_hadd<-had_zero_catch %>%
         dplyr::select("period2","tripid", "catch_draw") %>%
-        dplyr::mutate(keep_had_9=0, release_had_9=0)
+        dplyr::mutate(keep_had_1=0, release_had_1=0)
 
       length_data <- keep_release_cod %>%
         dplyr::full_join(keep_release_hadd, by = c("period2","tripid", "catch_draw"))
@@ -1295,7 +1310,7 @@ predict_rec_catch <- function( x, draw,
     if(cod_catch_check ==0 & had_catch_check==1){
       keep_release_cod<-cod_zero_catch %>%
         dplyr::select("period2","tripid", "catch_draw") %>%
-        dplyr::mutate(keep_cod_9=0, release_cod_9=0)
+        dplyr::mutate(keep_cod_1=0, release_cod_1=0)
 
       length_data <- keep_release_hadd %>%
         dplyr::full_join(keep_release_cod, by = c("period2","tripid", "catch_draw"))
@@ -1780,8 +1795,8 @@ predict_rec_catch <- function( x, draw,
       tidyr::pivot_longer(cols = !month & !mode,  names_to = "Var", values_to = "Number_at_Length") %>%
       tidyr::separate(Var, into = c("keep_release", "Species", "length"), sep = "_") %>%
       dplyr::rename(Month=month, Mode=mode) %>%
-      dplyr::mutate(length_in = as.numeric(length),
-                    length_cm = length_in*2.54)  %>%  #Convert to cm
+      dplyr::mutate(#length_in = as.numeric(length),
+                    length_cm = as.numeric(length))  %>%  #Convert to cm
       dplyr::mutate(weight = dplyr::case_when(Species == "cod" ~ cod_lw_a*length_cm^cod_lw_b, TRUE~0),
                     weight = dplyr::case_when(Species == "had" ~ had_lw_a*length_cm^had_lw_b, TRUE ~ weight),
                     weight = weight*2.20462262185, #convert to lbs
