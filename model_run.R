@@ -5,10 +5,9 @@ library(magrittr)
 
 predictions_all = list()
 
-size_data_read <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data/projected_CaL_cod_hadd.csv")
+size_data_read <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data/projected_CaL_cod_hadd_cm.csv")
 Disc_mort<- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data/Discard_Mortality.csv", show_col_types = FALSE)
-directed_trips<-read.csv(file.path("C:/Users/kimberly.bastille/Desktop/codhad_data/directed_trips/directed_trip_doy_added.csv"))
-
+directed_trips<-read.csv(file.path("C:/Users/kimberly.bastille/Desktop/codhad_data/directed_trips/directed_trips_doy_cm.csv"))
 
 # directed_trips<- directed_trips %>%
 #   dplyr::mutate(
@@ -52,10 +51,10 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv("C:/Users/kimberly.bastille/Desktop/codhad_data//next year calendar adjustments.csv", show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:12]
+mrip_index  <- mrip_index[1:8]
 
-#pred<- NULL
-#for (x in mrip_index){
+# pred<- NULL
+# for (x in mrip_index){
 
 future::plan(future::multisession, workers = 6)
 get_predictions_out<- function(x){

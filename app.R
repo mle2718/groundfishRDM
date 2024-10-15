@@ -155,21 +155,27 @@ ui <- fluidPage(
                               tags$div("Calculating...This will take ~15-20 min per state selected.",id="loadmessage")), #Warning for users
 
              downloadButton(outputId = "downloadData", "Download"),
+             actionButton("bymode", "Results by Mode"),
              # Add table outputs
              ## KB - Make tables DTs - should fix RMD documentation issue
              tableOutput(outputId = "regtableout"),
-             tableOutput(outputId = "catch_tableout"),
-             tableOutput(outputId = "welfare_tableout"),
-             tableOutput(outputId = "keep_tableout"),
-             plotOutput(outputId = "fig")),
-     #### By Mode ####
-     tabPanel("Results - By Mode",
-              tableOutput(outputId = "regtableout"),
-              tableOutput(outputId = "catchmode"),
-              tableOutput(outputId = "welfaremode"),
-              tableOutput(outputId = "keepmode")),
 
-    #### Documentation ####
+             tableOutput(outputId = "catch_tableout"),
+             #tableOutput(outputId = "catchmode"),
+
+             tableOutput(outputId = "welfare_tableout"),
+             #tableOutput(outputId = "welfaremode"),
+
+             tableOutput(outputId = "keep_tableout")),
+             #tableOutput(outputId = "keepmode")),
+     #### By Mode ####
+     # tabPanel("Results - By Mode",
+     #          tableOutput(outputId = "regtableout"),
+     #          tableOutput(outputId = "catchmode"),
+     #          tableOutput(outputId = "welfaremode"),
+     #          tableOutput(outputId = "keepmode"))#,
+
+    ### Documentation ####
     tabPanel("Documentation",
              htmlOutput("documentation"))
 
@@ -180,24 +186,26 @@ server <- function(input, output, session){
 
   library(magrittr)
 
-
   #### Toggle extra seasons on UI ####
   # Allows for extra seasons to show and hide based on click
   shinyjs::onclick("CODaddSeason",
                    shinyjs::toggle(id = "CodSeason2", anim = TRUE))
   shinyjs::onclick("HADaddSeason",
                    shinyjs::toggle(id = "HadSeason3", anim = TRUE))
-  shinyjs::onclick("displaymode",
-                   shinyjs::toggle(id = "Predictions_mode", anim = TRUE))
 
 
-  predictions <- eventReactive(input$runmeplease,{
+  pred <- eventReactive(input$runmeplease,{
     source(here::here(paste0("model_run.R")), local = TRUE)
+    return(predictions_out10)
+    print("predicitions out")
+  })
+
+  predictions <- reactive({
 
     predictions_out <- read.csv(here::here("sq_predictions.csv")) %>%
       dplyr::mutate(option = c("SQ")) %>%
       dplyr::select(!X) %>%
-      rbind(predictions_out10) %>%
+      rbind(pred()) %>%
       dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ Value/2205, TRUE ~ Value))
     return(predictions_out)
   })
@@ -233,24 +241,30 @@ server <- function(input, output, session){
     Regs<- Regs %>% rbind(SQ_regulations)
 
 
-    Regs_out<- Regs %>%
+    Regs_out <- SQ_regulations %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
       dplyr::filter(!bag == 0) %>%
-      dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season),
-                    bag_size = paste0( bag, "_", size),
-                    bag_season = paste0( bag,"_", Season),
-                    size_season = paste0( size, "_", Season)) %>%
-      dplyr::group_by(Species,Opt) %>%
-      dplyr::distinct(all_regs, .keep_all = TRUE) %>%
-      dplyr::mutate(mode = dplyr::case_when(length(Species) == 1 ~ "All", TRUE ~ mode)) %>%
-      dplyr::select(!all_regs) %>%
-      dplyr::mutate(Species = stringr::str_extract(Species, "[:alpha:]+"))
+      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
+      dplyr::mutate(had_bag = dplyr::case_when(bag_Had1 == bag_Had2 ~ paste0(bag_Had1), TRUE ~ paste0(bag_Had1, " , ", bag_Had2)),
+                    had_size = dplyr::case_when(size_Had1 == size_Had2 ~ paste0(size_Had1), TRUE ~ paste0(size_Had1, " , ", size_Had2)),
+                    had_Season = dplyr::case_when(Season_Had1 == Season_Had2 ~ paste0(Season_Had1), TRUE ~ paste0(Season_Had1, " , ", Season_Had2)))
+
+      # dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season),
+      #               bag_size = paste0( bag, "_", size),
+      #               bag_season = paste0( bag,"_", Season),
+      #               size_season = paste0( size, "_", Season)) %>%
+      # dplyr::group_by(Species,Opt) %>%
+      # dplyr::distinct(all_regs, .keep_all = TRUE) %>%
+      # dplyr::mutate(mode = dplyr::case_when(length(Species) == 1 ~ "All", TRUE ~ mode)) %>%
+      # dplyr::select(!all_regs) %>%
+      # dplyr::mutate(Species = stringr::str_extract(Species, "[:alpha:]+"))
 
     return(Regs_out)
     })
 
   ##### Catch ###########
+  which_catch_out<- reactiveVal(TRUE)
   catch_agg <- reactive({
 
     catch_agg<- #predictions() %>%
@@ -294,10 +308,11 @@ server <- function(input, output, session){
   })
 
   #### keep release discards ####
+  which_keep_out<- reactiveVal(TRUE)
   keep_agg <- reactive({
 
-    keep_agg<- predictions() %>%
-      #predictions_out %>%
+    keep_agg<- #predictions() %>%
+      predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -318,8 +333,8 @@ server <- function(input, output, session){
 
 
   keep_by_mode <- reactive({
-    keep_by_mode<- predictions() %>%
-      #predictions_out %>%
+    keep_by_mode<- #predictions() %>%
+      predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -338,10 +353,11 @@ server <- function(input, output, session){
 #####################
 
   ##### Ntrips & welfare #######
+  which_welfare_out<- reactiveVal(TRUE)
   welfare_agg <- reactive({
 
-    welfare_agg<- predictions() %>%
-      #predictions_out %>%
+    welfare_agg<- #predictions() %>%
+      predictions_out %>%
       dplyr::filter(Category %in% c("CV", "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -381,35 +397,59 @@ server <- function(input, output, session){
     regs_agg()
   })
 
-  output$catchtableout <- renderTable({
-    catch_agg()
+  #### Catch tables
+  observeEvent(input$bymode, {
+    which_catch_out(!which_catch_out())
   })
 
-  output$keep_tableout<- renderTable({
-    keep_agg()
+  which_catch<- reactive({
+    if(which_catch_out()){
+      catch_agg()
+    } else{
+      catch_by_mode()
+    }
   })
 
-  output$welfare_tableout<- renderTable({
-    welfare_agg()
+  output$catch_tableout <- renderTable({
+    which_catch()
   })
 
-  ### Tables for by mode tab
-  output$regmode <- renderTable({
-    regs_by_mode()
+  ### Keep Release
+  observeEvent(input$bymode, {
+    which_keep_out(!which_keep_out())
   })
 
-  output$catchmode <- renderTable({
-    catch_by_mode()
+  which_keep<- reactive({
+    if(which_keep_out()){
+      keep_agg()
+    } else{
+      keep_by_mode()
+    }
   })
 
-  output$keepmode<- renderTable({
-    keep_by_mode()
+  output$keep_tableout <- renderTable({
+    which_keep()
   })
 
-  output$welfaremode<- renderTable({
-    welfare_by_mode()
+
+  #### Welfare
+  observeEvent(input$bymode, {
+    which_welfare_out(!which_welfare_out())
   })
 
+  which_welfare<- reactive({
+    if(which_welfare_out()){
+      welfare_agg()
+    } else{
+      welfare_by_mode()
+    }
+  })
+
+  output$welfare_tableout <- renderTable({
+    which_welfare()
+  })
+
+  ### Save data
   observeEvent(input$runmeplease, {
     dat<- predictions()
     readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
