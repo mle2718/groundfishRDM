@@ -201,7 +201,7 @@ server <- function(input, output, session){
 
   predictions <- reactive({
 
-    predictions_out <- read.csv(here::here("sq_predictions.csv")) %>%
+    predictions_out <- read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
       dplyr::mutate(option = c("SQ")) %>%
       dplyr::select(!X) %>%
       rbind(pred()) %>%
@@ -213,7 +213,7 @@ server <- function(input, output, session){
   regs_agg <- reactive({
 
     print("start regs")
-    SQ_regulations <- read.csv(here::here("SQ_regulations.csv"))
+    SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv"))
 
     Regs<- data.frame(Opt = c("alt"),
                       Var = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",

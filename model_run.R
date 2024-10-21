@@ -113,7 +113,7 @@ get_predictions_out<- function(x){
 # This will spit out a dataframe with 100 predictions
 
 
-#write.csv(test, file = here::here("SQ_predictions_cm.csv"))
+#write.csv(pred, file = here::here("SQ_predictions_cm.csv"))
 predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
 
 
