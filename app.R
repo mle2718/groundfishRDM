@@ -2,7 +2,6 @@
 library(shiny)
 library(shinyjs)
 library(dplyr)
-library(googlesheets4)
 
 #### Start UI ####
 ui <- fluidPage(
@@ -202,7 +201,7 @@ server <- function(input, output, session){
 
   predictions <- reactive({
 
-    predictions_out <- read.csv(here::here("sq_predictions.csv")) %>%
+    predictions_out <- read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
       dplyr::mutate(option = c("SQ")) %>%
       dplyr::select(!X) %>%
       rbind(pred()) %>%
@@ -214,7 +213,7 @@ server <- function(input, output, session){
   regs_agg <- reactive({
 
     print("start regs")
-    SQ_regulations <- read.csv(here::here("SQ_regulations.csv"))
+    SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv"))
 
     Regs<- data.frame(Opt = c("alt"),
                       Var = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",
@@ -241,7 +240,7 @@ server <- function(input, output, session){
     Regs<- Regs %>% rbind(SQ_regulations)
 
 
-    Regs_out <- SQ_regulations %>%
+    Regs_out <- Regs %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
       dplyr::filter(!bag == 0) %>%
@@ -267,8 +266,8 @@ server <- function(input, output, session){
   which_catch_out<- reactiveVal(TRUE)
   catch_agg <- reactive({
 
-    catch_agg<- #predictions() %>%
-      predictions_out %>%
+    catch_agg<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out) %>%
@@ -288,8 +287,8 @@ server <- function(input, output, session){
 
   catch_by_mode <- reactive({
 
-    catch_by_mode<- #predictions() %>%
-      predictions_out %>%
+    catch_by_mode<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out, mode) %>%
@@ -311,8 +310,8 @@ server <- function(input, output, session){
   which_keep_out<- reactiveVal(TRUE)
   keep_agg <- reactive({
 
-    keep_agg<- #predictions() %>%
-      predictions_out %>%
+    keep_agg<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -333,8 +332,8 @@ server <- function(input, output, session){
 
 
   keep_by_mode <- reactive({
-    keep_by_mode<- #predictions() %>%
-      predictions_out %>%
+    keep_by_mode<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -356,8 +355,8 @@ server <- function(input, output, session){
   which_welfare_out<- reactiveVal(TRUE)
   welfare_agg <- reactive({
 
-    welfare_agg<- #predictions() %>%
-      predictions_out %>%
+    welfare_agg<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(Category %in% c("CV", "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
