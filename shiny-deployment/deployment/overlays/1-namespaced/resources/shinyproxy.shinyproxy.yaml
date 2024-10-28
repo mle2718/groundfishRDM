@@ -4,10 +4,15 @@ metadata:
   name: shinyproxy
   namespace: shinyproxy
 spec:
+  logging:
+    requestdump: true
+    level:
+      DEBUG
   server:
     secureCookies: true
     frameOptions: sameorigin
     forward-headers-strategy: native
+    servlet.session.timeout: 3600
   spring:
     session:
       store-type: redis
@@ -29,7 +34,7 @@ spec:
       namespace: shinyproxy
       internal-networking: true
       image-pull-policy: Always
-    authentication: simple
+    authentication: none
     admin-groups: scientists
     my-apps-mode: Inline
     users:
@@ -79,22 +84,14 @@ spec:
     - op: add
       path: /spec/serviceAccountName
       value: shinyproxy-sa
-  kubernetesIngressPatches: |
+  kubernetesServicePatches: |
     - op: add
       path: /metadata/annotations
       value:
-        nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-        nginx.ingress.kubernetes.io/ssl-redirect: "true"
-        nginx.ingress.kubernetes.io/proxy-body-size: 300m
-    - op: add
-      path: /spec/ingressClassName
-      value: nginx
-    - op: add
-      path: /spec/tls
-      value:
-        - hosts:
-          - shinyproxy-demo.local
-         # secretName: example # uncomment and change this line if needed
+        service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    - op: replace
+      path: /spec/type
+      value: LoadBalancer
   image: openanalytics/shinyproxy:3.1.1
   imagePullPolicy: Always
   fqdn: shinyproxy-demo.local
