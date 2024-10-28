@@ -1,5 +1,0 @@
-# namespace to run the 01_hello app in
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: my-namespace
