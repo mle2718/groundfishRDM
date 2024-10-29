@@ -237,10 +237,10 @@ server <- function(input, output, session){
                               input$HadFH_3_bag, input$HadFH_3_len, paste0(input$HadFH_seas3[1], " - ", input$HadFH_seas3[2]),
                               input$HadPR_3_bag, input$HadPR_3_len, paste0(input$HadPR_seas3[1], " - ", input$HadPR_seas3[2])))
 
-    Regs<- Regs %>% rbind(SQ_regulations)
+    Regs1<- Regs %>% rbind(SQ_regulations)
 
 
-    Regs_out <- Regs %>%
+    Regs_out <- SQ_regulations %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
       dplyr::filter(!bag == 0) %>%
@@ -299,9 +299,9 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
-      dplyr::select(Category, Value_SQ, Value_alt, under_acl_alt, mode) %>%
+      dplyr::select(Category, Value_SQ, Value_alt,  mode) %>%
       dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
-                    `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL` = under_acl_alt)
+                    `Alternative Total Mortality (mt)` = Value_alt)
 
     return(catch_by_mode)
   })
@@ -363,11 +363,10 @@ server <- function(input, output, session){
       dplyr::group_by(option, Category) %>%
       dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
-      dplyr::mutate(perc_diff = (alt-SQ)/SQ)%>%
       dplyr::select(!SQ) %>%
-      dplyr::mutate(Category = dplyr::recode(Category, CV = "Angler Satisfaction ($)",
+      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Consumer Surplus ($)",
                                              ntrips = "Angler Trips (N)")) %>%
-      dplyr::rename(`Percent difference in median values` = perc_diff)
+      tidyr::pivot_wider(names_from = Category, values_from = alt)
 
     return(welfare_agg)
 
@@ -383,11 +382,10 @@ server <- function(input, output, session){
       dplyr::group_by(option, Category, mode) %>%
       dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
-      dplyr::mutate(perc_diff = (alt-SQ)/SQ)%>%
       dplyr::select(!SQ) %>%
-      dplyr::mutate(Category = dplyr::recode(Category, CV = "Angler Satisfaction ($)",
+      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Consumer Surplus ($)",
                                              ntrips = "Angler Trips (N)")) %>%
-      dplyr::rename(`Percent difference in median values` = perc_diff)
+      tidyr::pivot_wider(names_from = Category, values_from = alt)
     return(welfare_by_mode)
   })
 
