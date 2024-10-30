@@ -16,9 +16,9 @@ spec:
     readOnly: true
     volumeHandle: output  # make sure this volumeid is unique for every identical share in the cluster
     volumeAttributes:
-      resourceGroup: RESOURCE_GROUP  # optional, only set this when storage account is not in the same resource group as node
+      resourceGroup: ${RESOURCE_GROUP}  # optional, only set this when storage account is not in the same resource group as node
       shareName: output
-      storageAccount: STORAGE_ACCOUNT_NAME
+      storageAccount: ${STORAGE_ACCOUNT_NAME}
     nodeStageSecretRef:
       name: azure-secret
       namespace: default
