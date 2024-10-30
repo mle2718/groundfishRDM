@@ -58,11 +58,17 @@ spec:
               - name: dataraw
                 persistentVolumeClaim:
                   claimName: azurefile
+              - name: output
+                persistentVolumeClaim:
+                  claimName: output
           - op: add
             path: /spec/containers/0/volumeMounts
             value:
-              - mountPath: /mnt
+              - mountPath: /mnt/input
                 name: dataraw
+                subPath: data-raw
+              - mountPath: /mnt/output
+                name: output
   kubernetesPodTemplateSpecPatches: |
     - op: add
       path: /spec/containers/0/env/-
