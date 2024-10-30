@@ -6,6 +6,6 @@ COMMANDS TO DEPLOY:
 
 3. Deploy
 
-```bash
-kustomize build . | envsubst | kubectl apply -f - --server-side
+```
+./deploy-script.sh
 ```

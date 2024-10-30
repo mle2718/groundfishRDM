@@ -6,12 +6,12 @@ resources:
   - github.com/openanalytics/shinyproxy-operator/docs/deployment/bases/redis-sentinel?ref=v2.1.0
   - github.com/openanalytics/shinyproxy-operator/docs/deployment/bases/namespaced?ref=v2.1.0
   - github.com/openanalytics/shinyproxy-operator/docs/deployment/bases/shinyproxy?ref=v2.1.0
-  - resources/shinyproxy.namespace.yaml
-  - resources/shinyproxy.shinyproxy.yaml
-  - resources/pv-outputshare.yaml
-  - resources/pvc-outputshare.yaml
-  - resources/pv.yaml
-  - resources/pvc.yaml
+  - local/shinyproxy.namespace.yaml
+  - local/shinyproxy.shinyproxy.yaml
+  - local/pv-outputshare.yaml
+  - local/pvc-outputshare.yaml
+  - local/pv.yaml
+  - local/pvc.yaml
 
 patches:
   - path: patches/redis.secret.yaml
