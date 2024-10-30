@@ -51,6 +51,18 @@ spec:
         description: Application which demonstrates the basics of a Shiny app
         container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
         container-image: openanalytics/shinyproxy-demo
+        kubernetes-pod-patches: |
+          - op: add
+            path: /spec/volumes
+            value:
+              - name: dataraw
+                persistentVolumeClaim:
+                  claimName: azurefile
+          - op: add
+            path: /spec/containers/0/volumeMounts
+            value:
+              - mountPath: /mnt
+                name: dataraw
   kubernetesPodTemplateSpecPatches: |
     - op: add
       path: /spec/containers/0/env/-
