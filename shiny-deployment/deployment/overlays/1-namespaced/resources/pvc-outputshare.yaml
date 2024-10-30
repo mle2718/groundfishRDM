@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: output
+  namespace: shinyproxy
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: azurefile-csi
+  resources:
+    requests:
+      storage: 50Gi
