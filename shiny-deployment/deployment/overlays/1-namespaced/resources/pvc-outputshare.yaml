@@ -5,7 +5,7 @@ metadata:
   namespace: shinyproxy
 spec:
   accessModes:
-    - ReadOnlyMany
+    - ReadWriteMany
   storageClassName: azurefile-csi
   resources:
     requests:
