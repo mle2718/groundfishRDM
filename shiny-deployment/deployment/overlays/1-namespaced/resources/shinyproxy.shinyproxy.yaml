@@ -24,6 +24,8 @@ spec:
           password: ${REDIS_PASSWORD}
           nodes: redis-node-0.redis-headless:26379, redis-node-1.redis-headless:26379, redis-node-2.redis-headless:26379
   proxy:
+    log-as-json: true
+    container-wait-time: 600000000
     store-mode: Redis
     stop-proxies-on-shutdown: false
     title: ShinyProxy
@@ -34,6 +36,7 @@ spec:
       namespace: shinyproxy
       internal-networking: true
       image-pull-policy: Always
+      pod-wait-time: 90000000
     authentication: openid
     openid:
       logout-url: https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/logout
