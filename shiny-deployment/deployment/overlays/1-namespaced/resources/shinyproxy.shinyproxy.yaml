@@ -50,6 +50,8 @@ spec:
         display-name: Gulf of Maine Cod and Haddock
         description: Application which explores alternative management measures
         container-image: ${IMAGE}
+        container-memory-request: 500Gi
+        container-cpu-request: 30
         kubernetes-pod-patches: |
           - op: add
             path: /spec/tolerations
