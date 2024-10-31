@@ -72,7 +72,7 @@ spec:
             value:
               - mountPath: /srv/app/data-raw
                 name: dataraw
-                subPath: data-raw
+                subPath: data-raw/data-raw
               - mountPath: /srv/app/output
                 name: output
   kubernetesPodTemplateSpecPatches: |
