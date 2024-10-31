@@ -17,6 +17,7 @@ RUN install2.r -e -s \
     stringr \
     lubridate \
     tibble \
+    feather \
     data.table \
     knitr \
     openxlsx \

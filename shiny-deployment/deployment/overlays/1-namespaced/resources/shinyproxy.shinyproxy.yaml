@@ -1,0 +1,114 @@
+apiVersion: openanalytics.eu/v1
+kind: ShinyProxy
+metadata:
+  name: shinyproxy
+  namespace: shinyproxy
+spec:
+  logging:
+    requestdump: true
+    level:
+      DEBUG
+  server:
+    secureCookies: true
+    frameOptions: sameorigin
+    forward-headers-strategy: native
+    servlet.session.timeout: 3600
+  spring:
+    session:
+      store-type: redis
+    data:
+      redis:
+        password: ${REDIS_PASSWORD}
+        sentinel:
+          master: shinyproxy
+          password: ${REDIS_PASSWORD}
+          nodes: redis-node-0.redis-headless:26379, redis-node-1.redis-headless:26379, redis-node-2.redis-headless:26379
+  proxy:
+    log-as-json: true
+    container-wait-time: 600000000
+    store-mode: Redis
+    stop-proxies-on-shutdown: false
+    title: ShinyProxy
+    logoUrl: ""
+    landingPage: /
+    containerBackend: kubernetes
+    kubernetes:
+      namespace: shinyproxy
+      internal-networking: true
+      image-pull-policy: Always
+      pod-wait-time: 90000000
+    authentication: openid
+    openid:
+      logout-url: https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/logout
+      auth-url: https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize
+      token-url: https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token
+      jwks-url: https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys
+      client-id: ${CLIENT_ID}
+      userinfo-url: https://graph.microsoft.com/oidc/userinfo
+      with-pkce: true
+      client-secret: ${CLIENT_SECRET}
+    my-apps-mode: Inline
+    specs:
+      - id: codhaddock
+        display-name: Gulf of Maine Cod and Haddock
+        description: Application which explores alternative management measures
+        container-image: ${IMAGE}
+        container-memory-request: 500Gi
+        container-cpu-request: 30
+        kubernetes-pod-patches: |
+          - op: add
+            path: /spec/tolerations
+            value:
+              - key: "sku"
+                operator: "Equal"
+                value: "fx"
+                effect: "NoSchedule"
+          - op: add
+            path: /spec/volumes
+            value:
+              - name: dataraw
+                persistentVolumeClaim:
+                  claimName: azurefile
+              - name: output
+                persistentVolumeClaim:
+                  claimName: output
+          - op: add
+            path: /spec/containers/0/volumeMounts
+            value:
+              - mountPath: /srv/app/data-raw
+                name: dataraw
+                subPath: data-raw/data-raw
+              - mountPath: /srv/app/output
+                name: output
+  kubernetesPodTemplateSpecPatches: |
+    - op: add
+      path: /spec/containers/0/env/-
+      value:
+        name: REDIS_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: redis
+            key: redis-password
+    - op: add
+      path: /spec/containers/0/resources
+      value:
+        limits:
+          cpu: 1
+          memory: 1Gi
+        requests:
+          cpu: 0.5
+          memory: 1Gi
+    - op: add
+      path: /spec/serviceAccountName
+      value: shinyproxy-sa
+  kubernetesServicePatches: |
+    - op: add
+      path: /metadata/annotations
+      value:
+        service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    - op: replace
+      path: /spec/type
+      value: LoadBalancer
+  image: openanalytics/shinyproxy:3.1.1
+  imagePullPolicy: Always
+  fqdn: shinyproxy-demo.local

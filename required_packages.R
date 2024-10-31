@@ -15,7 +15,7 @@ install.packages("data.table")
 install.packages("knitr")
 install.packages("openxlsx")
 install.packages("plyr")
-
+install.packages("feather")
 install.packages("markdown")
 
 install.packages("future")
