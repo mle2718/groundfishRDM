@@ -48,13 +48,13 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adjustments.csv"), show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-#mrip_index  <- mrip_index[1:4]
+#mrip_index  <- mrip_index[397:400]
 
 
 # pred<- NULL
 # for (x in mrip_index){
-
-future::plan(future::multisession, workers = 64)
+#future::plan(future::multisession, workers = 6)
+future::plan(future::multisession, workers = 80)
 get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%

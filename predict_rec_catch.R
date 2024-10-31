@@ -58,8 +58,7 @@ predict_rec_catch <- function( x, draw,
                                calendar_adjust,
                                discard_mortality_dat,
                                n_drawz = 50,
-                               n_catch_draws = 30,
-                               eff_seed=130 ){
+                               n_catch_draws = 30){
 
   options(scipen = 100, digits = 3)
   print("start function")
@@ -196,8 +195,8 @@ predict_rec_catch <- function( x, draw,
       tidyr::uncount(n_draws)
 
     cod_catch_data <- costs_new_all %>%
-      dplyr::mutate(tot_cod_catch = tot_rel_cod_base + tot_rel_cod_base,
-                    tot_had_catch = tot_rel_had_base + tot_rel_had_base) %>%
+      dplyr::mutate(tot_cod_catch = tot_keep_cod_base + tot_rel_cod_base,
+                    tot_had_catch = tot_keep_had_base + tot_rel_had_base) %>%
       dplyr::left_join(open, by = "period2") %>%
       dplyr::select(mode,month,tot_cod_catch,tot_had_catch,
                     tripid,catch_draw,day, period2)
@@ -411,9 +410,6 @@ predict_rec_catch <- function( x, draw,
                                              prob = had_size_data$proj_CaL_prob_smooth,
                                              #prob = had_size_data$fitted_prob,
                                              replace = TRUE))
-
-
-
       #Create as an object the minimum size at which fish are illegally harvested.
       # This object "floor_subl_harvest" will be 2 inches below the minimum size, by mode.
       #1) If the minimum size changes across the season, floor_subl_harvest=min(min_size) - 2.
@@ -421,12 +417,14 @@ predict_rec_catch <- function( x, draw,
       #2b) If the fishery is closed the entire current and previous season, floor_subl_harvest=mean(catch_length)-0.5*sd(catch_length).
 
       # 2b) below:
-#       if (floor_subl_hadd_harv==98){
-#         floor_subl_hadd_harv=mean(catch_size_data_had$fitted_length)-0.5*sd(catch_size_data_had$fitted_length)
-#       }
+
       if (floor_subl_hadd_harv==248.92){
         floor_subl_hadd_harv=mean(catch_size_data_had$fitted_length)-0.5*sd(catch_size_data_had$fitted_length)
       }
+
+      # if (floor_subl_hadd_harv==98){
+      #   floor_subl_hadd_harv=mean(catch_size_data_had$fitted_length)-0.5*sd(catch_size_data_had$fitted_length)
+      # }
 
       # Impose regulations, calculate keep and release per trip
       ####### Start Here #################
@@ -488,7 +486,6 @@ predict_rec_catch <- function( x, draw,
                          floor_subl_hadd_harv_indicator=sum(floor_subl_hadd_harv_indicator),
                          .groups = "drop") %>%
         dplyr::ungroup()
-
 
       had_zero_catch<-had_zero_catch %>%
         dplyr::select(tripid, catch_draw, period2) %>%
@@ -1583,20 +1580,24 @@ predict_rec_catch <- function( x, draw,
       .[, probA :=expon_vA/vA_col_sum] %>%
       .[, prob0 :=expon_v0/v0_col_sum]
 
-    mean_trip_data<- subset(mean_trip_data, alt==1)
+    ######### NOT SURE WHY THIS WAS IN MY CODE _ CAUGHT IN SIDE BY SIDE COMPARE 10/30
+    ####################################################################################
+    # mean_trip_data<- subset(mean_trip_data, alt==1)
+    #
+    # mean_trip_data <- mean_trip_data %>%
+    #   data.table::as.data.table()
+    #
+    # print("code check 10")
+    #
+    # all_vars<-c()
+    # all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode", "catch_draw")]
+    #
+    # mean_trip_data<-mean_trip_data %>% data.table::as.data.table()
+    #
+    # mean_trip_data <- mean_trip_data %>%
+    #   .[,lapply(.SD, base::mean), by = c("tripid", "period2", "catch_draw"), .SDcols = all_vars]
+    #####################################################################################################
 
-    mean_trip_data <- mean_trip_data %>%
-      data.table::as.data.table()
-
-    print("code check 10")
-
-    all_vars<-c()
-    all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c( "period","tripid", "period2", "mode", "catch_draw")]
-
-    mean_trip_data<-mean_trip_data %>% data.table::as.data.table()
-
-    mean_trip_data <- mean_trip_data %>%
-      .[,lapply(.SD, base::mean), by = c("tripid", "period2", "catch_draw"), .SDcols = all_vars]
 
     # Get rid of things we don't need.
     mean_trip_data <- mean_trip_data  %>%
