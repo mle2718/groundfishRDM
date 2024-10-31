@@ -46,9 +46,9 @@ spec:
       client-secret: ${CLIENT_SECRET}
     my-apps-mode: Inline
     specs:
-      - id: 01_hello
-        display-name: Hello Application
-        description: Application which demonstrates the basics of a Shiny app
+      - id: codhaddock
+        display-name: Gulf of Maine Cod and Haddock
+        description: Application which explores alternative management measures
         container-image: ${IMAGE}
         kubernetes-pod-patches: |
           - op: add
@@ -70,10 +70,10 @@ spec:
           - op: add
             path: /spec/containers/0/volumeMounts
             value:
-              - mountPath: /mnt/input
+              - mountPath: /srv/app/data-raw
                 name: dataraw
                 subPath: data-raw
-              - mountPath: /mnt/output
+              - mountPath: /srv/app/output
                 name: output
   kubernetesPodTemplateSpecPatches: |
     - op: add
