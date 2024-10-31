@@ -49,9 +49,15 @@ spec:
       - id: 01_hello
         display-name: Hello Application
         description: Application which demonstrates the basics of a Shiny app
-        container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
-        container-image: openanalytics/shinyproxy-demo
+        container-image: ${IMAGE}
         kubernetes-pod-patches: |
+          - op: add
+            path: /spec/tolerations
+            value:
+              - key: "sku"
+                operator: "Equal"
+                value: "fx"
+                effect: "NoSchedule"
           - op: add
             path: /spec/volumes
             value:
