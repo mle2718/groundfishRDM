@@ -54,7 +54,7 @@ mrip_index <- c(unique(baseline_comparison1$mrip_index))
 # pred<- NULL
 # for (x in mrip_index){
 #future::plan(future::multisession, workers = 6)
-future::plan(future::multisession, workers = 80)
+future::plan(future::multisession, workers = 85)
 get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%
