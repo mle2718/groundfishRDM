@@ -242,6 +242,7 @@ predict_rec_catch <- function( x, draw,
     cod_catch_check<-base::sum(cod_catch_data$tot_cod_catch)
     had_catch_check<-base::sum(cod_catch_data$tot_had_catch)
 
+    trip_data <- data.frame()
     print("code check 2")
     if(cod_catch_check ==0 & had_catch_check==0){
       trip_data<-cod_catch_data
@@ -641,6 +642,8 @@ predict_rec_catch <- function( x, draw,
 
 
         n_row_hadd_hstar<-nrow(trip_data_hadd_hstar)
+
+        print(n_row_hadd_hstar)
 
         trip_data_hadd_hstar<-trip_data_hadd_hstar %>%
           dplyr::mutate(uniform=runif(n_row_hadd_hstar)) %>%

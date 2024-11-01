@@ -149,7 +149,7 @@ ui <- fluidPage(
 
 
     #### Results ####
-    tabPanel("Results - Aggregated",
+    tabPanel("Results",
              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                               tags$div("Calculating...This will take ~15-20 min per state selected.",id="loadmessage")), #Warning for users
 
@@ -240,14 +240,14 @@ server <- function(input, output, session){
     Regs1<- Regs %>% rbind(SQ_regulations)
 
 
-    Regs_out <- SQ_regulations %>%
+    Regs_out <- Regs1 %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
       dplyr::filter(!bag == 0) %>%
-      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
-      dplyr::mutate(had_bag = dplyr::case_when(bag_Had1 == bag_Had2 ~ paste0(bag_Had1), TRUE ~ paste0(bag_Had1, " , ", bag_Had2)),
-                    had_size = dplyr::case_when(size_Had1 == size_Had2 ~ paste0(size_Had1), TRUE ~ paste0(size_Had1, " , ", size_Had2)),
-                    had_Season = dplyr::case_when(Season_Had1 == Season_Had2 ~ paste0(Season_Had1), TRUE ~ paste0(Season_Had1, " , ", Season_Had2)))
+      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) #%>%
+      # dplyr::mutate(had_bag = dplyr::case_when(bag_Had1 == bag_Had2 ~ paste0(bag_Had1), TRUE ~ paste0(bag_Had1, " , ", bag_Had2)),
+      #               had_size = dplyr::case_when(size_Had1 == size_Had2 ~ paste0(size_Had1), TRUE ~ paste0(size_Had1, " , ", size_Had2)),
+      #               had_Season = dplyr::case_when(Season_Had1 == Season_Had2 ~ paste0(Season_Had1), TRUE ~ paste0(Season_Had1, " , ", Season_Had2)))
 
       # dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season),
       #               bag_size = paste0( bag, "_", size),
