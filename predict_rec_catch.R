@@ -1547,6 +1547,8 @@ predict_rec_catch <- function( x, draw,
     mean_trip_data <- trip_data %>%
       data.table::data.table()
 
+    rm(trip_data)
+
     mean_trip_data <- mean_trip_data %>% dplyr::arrange(period2, tripid, catch_draw)
 
 
@@ -1754,7 +1756,7 @@ predict_rec_catch <- function( x, draw,
       #dplyr::mutate(period2 = paste0(month, "_", day, "_", mode)) %>%
       dplyr::arrange(period2)
 
-
+    rm(mean_trip_data)
     ### Keep all sp_length_mode columns and multiple by expand outside function -
     ##### Should be same number of rows - merge on (period2, tripid)
     length_expand <- sims %>%
@@ -1781,6 +1783,7 @@ predict_rec_catch <- function( x, draw,
                     period2 = paste0(month, "_", day, "_", mode))
 
 
+    rm(length_expand)
 
     all_vars<-c()
     all_vars <- names(length_expanded)[!names(length_expanded) %in% c("period2", "mode", "tripid", "expand", "month", "day")]
@@ -1818,6 +1821,7 @@ predict_rec_catch <- function( x, draw,
       dplyr::rename(mode1 = Mode) %>%
       dplyr::ungroup()
 
+    rm(length_expanded)
     print("code check 13")
 
     l_w_sum <- length_weight %>%
@@ -1840,6 +1844,8 @@ predict_rec_catch <- function( x, draw,
       #               month = as.numeric(month),
       #               period2 = paste0(month, "_", day, "_", mode)) %>%
       as.data.frame()
+
+    rm(sims)
 
     print("code check 14")
     #Metrics at the choice occasion level
@@ -1896,6 +1902,7 @@ predict_rec_catch <- function( x, draw,
     #predict_out <- rbind(predict_out, predictions)
    # }
 
+    write.csv(here::here(paste0("output/test_", x, ".csv")))
   #predictions_out_season_mode<- furrr::future_map_dfr(mrip_index, ~get_predictions_season_mode(.), .id = "draw")
 
   return(predictions)
