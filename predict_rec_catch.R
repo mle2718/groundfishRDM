@@ -1902,7 +1902,7 @@ predict_rec_catch <- function( x, draw,
     #predict_out <- rbind(predict_out, predictions)
    # }
 
-    #write.csv(here::here(paste0("output/test_", x, ".csv")))
+    write.csv(here::here(paste0("output/test_", x, ".csv")))
   #predictions_out_season_mode<- furrr::future_map_dfr(mrip_index, ~get_predictions_season_mode(.), .id = "draw")
 
   return(predictions)
