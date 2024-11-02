@@ -449,7 +449,7 @@ server <- function(input, output, session){
   ### Save data
   observeEvent(input$runmeplease, {
     dat<- predictions()
-    readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
+    #readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
     })
 
   output$downloadData <- downloadHandler(
