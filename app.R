@@ -204,6 +204,7 @@ server <- function(input, output, session){
     predictions_out <- read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
       dplyr::mutate(option = c("SQ")) %>%
       dplyr::select(!X) %>%
+      #rbind(predictions_out10) %>%
       rbind(pred()) %>%
       dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ Value/2205, TRUE ~ Value))
     return(predictions_out)
