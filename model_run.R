@@ -54,7 +54,7 @@ mrip_index  <- mrip_index[1:200] ## For testing should be all when ready for fin
 # pred<- NULL
 # for (x in mrip_index){
 #future::plan(future::multisession, workers = 6)
-future::plan(future::multisession, workers = 124)
+future::plan(future::multisession, workers = 100)
 get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%
@@ -104,6 +104,7 @@ get_predictions_out<- function(x){
   print(test)
   #pred <- pred %>% rbind(test)
 
+  write.csv(test, file = here::here(paste0("output/test_", x, ".csv")))
 }
 #})
 # use furrr package to parallelize the get_predictions_out function 100 times
