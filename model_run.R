@@ -9,34 +9,150 @@ size_data_read <- readr::read_csv(here::here("data-raw/projected_CaL_cod_hadd_cm
 Disc_mort<- readr::read_csv(here::here("data-raw/Discard_Mortality.csv"), show_col_types = FALSE)
 directed_trips<-readr::read_csv(here::here("data-raw/directed_trips/directed_trips_doy_cm.csv"))
 
+
+### CORRECT DOY
+###### Cod #########
+CodFH_seas1_1 <- if(lubridate::yday(input$CodFH_seas1[1]) < 121){
+  lubridate::yday(input$CodFH_seas1[1]) + 365
+}else {
+  lubridate::yday(input$CodFH_seas1[1])
+}
+CodFH_seas1_2 <- if(lubridate::yday(input$CodFH_seas1[2]) < 121){
+  lubridate::yday(input$CodFH_seas1[2]) + 365
+} else {
+  lubridate::yday(input$CodFH_seas1[2])
+}
+CodFH_seas2_1 <- if(lubridate::yday(input$CodFH_seas2[1]) < 121){
+  lubridate::yday(input$CodFH_seas2[1]) + 365
+} else {
+  lubridate::yday(input$CodFH_seas2[1])
+}
+CodFH_seas2_2 <- if(lubridate::yday(input$CodFH_seas2[2]) < 121){
+  lubridate::yday(input$CodFH_seas2[2]) + 365
+} else {
+  lubridate::yday(input$CodFH_seas2[2])
+}
+
+CodPR_seas1_1 <- if(lubridate::yday(input$CodPR_seas1[1]) < 121){
+  lubridate::yday(input$CodPR_seas1[1]) + 365
+} else {
+  lubridate::yday(input$CodPR_seas1[1])
+}
+CodPR_seas1_2 <- if(lubridate::yday(input$CodPR_seas1[2]) < 121){
+  lubridate::yday(input$CodPR_seas1[2]) + 365
+} else {
+  lubridate::yday(input$CodPR_seas1[2])
+}
+CodPR_seas2_1 <- if(lubridate::yday(input$CodPR_seas2[1]) < 121){
+  lubridate::yday(input$CodPR_seas2[1]) + 365
+} else {
+  lubridate::yday(input$CodPR_seas2[1])
+}
+CodPR_seas2_2 <- if(lubridate::yday(input$CodPR_seas2[2]) < 121){
+  lubridate::yday(input$CodPR_seas2[2]) + 365
+} else {
+  lubridate::yday(input$CodPR_seas2[2])
+}
+###### haddock
+HadFH_seas1_1 <- if(lubridate::yday(input$HadFH_seas1[1]) < 121){
+  lubridate::yday(input$HadFH_seas1[1]) + 365
+} else {
+  lubridate::yday(input$HadFH_seas1[1])
+}
+HadFH_seas1_2 <- if(lubridate::yday(input$HadFH_seas1[2]) < 121){
+  lubridate::yday(input$HadFH_seas1[2]) + 365
+} else {
+  lubridate::yday(input$HadFH_seas1[2])
+}
+HadFH_seas2_1 <- if(lubridate::yday(input$HadFH_seas2[1]) < 121){
+  lubridate::yday(input$HadFH_seas2[1]) + 365
+} else {
+  lubridate::yday(input$HadFH_seas2[1])
+}
+HadFH_seas2_2 <- if(lubridate::yday(input$HadFH_seas2[2]) < 121){
+  lubridate::yday(input$HadFH_seas2[2]) + 365
+} else {
+  lubridate::yday(input$HadFH_seas2[2])
+}
+HadFH_seas3_1 <- if(lubridate::yday(input$HadFH_seas3[1]) < 121){
+  lubridate::yday(input$HadFH_seas3[1]) + 365
+}
+HadFH_seas3_2 <- if(lubridate::yday(input$HadFH_seas3[2]) < 121){
+  lubridate::yday(input$HadFH_seas3[2]) + 365
+} else {
+  lubridate::yday(input$HadFH_seas3[2])
+}
+
+
+HadPR_seas1_1 <- if(lubridate::yday(input$HadPR_seas1[1]) < 121){
+  lubridate::yday(input$HadPR_seas1[1]) + 365
+} else {
+  lubridate::yday(input$HadPR_seas1[1])
+}
+HadPR_seas1_2 <- if(lubridate::yday(input$HadPR_seas1[2]) < 121){
+  lubridate::yday(input$HadPR_seas1[2]) + 365
+} else {
+  lubridate::yday(input$HadPR_seas1[2])
+}
+HadPR_seas2_1 <- if(lubridate::yday(input$HadPR_seas2[1]) < 121){
+  lubridate::yday(input$HadPR_seas2[1]) + 365
+} else {
+  lubridate::yday(input$HadPR_seas2[1])
+}
+HadPR_seas2_2 <- if(lubridate::yday(input$HadPR_seas2[2]) < 121){
+  lubridate::yday(input$HadPR_seas2[2]) + 365
+} else {
+  lubridate::yday(input$HadPR_seas2[2])
+}
+HadPR_seas3_1 <- if(lubridate::yday(input$HadPR_seas3[1]) < 121){
+  lubridate::yday(input$HadPR_seas3[1]) + 365
+} else {
+  lubridate::yday(input$HadPR_seas3[1])
+}
+HadPR_seas3_2 <- if(lubridate::yday(input$HadPR_seas3[2]) < 121){
+  lubridate::yday(input$HadPR_seas3[2]) + 365
+} else {
+  lubridate::yday(input$HadPR_seas3[2])
+}
+
+
+print(directed_trips)
+
+
+
 directed_trips<- directed_trips %>%
   dplyr::mutate(
-    cod_bag_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$CodFH_seas1[1]) & doy <= lubridate::yday(input$CodFH_seas1[2]) ~ as.numeric(input$CodFH_1_bag), TRUE ~ 0),
-    cod_bag_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$CodPR_seas1[1]) & doy <= lubridate::yday(input$CodPR_seas1[2]) ~ as.numeric(input$CodPR_1_bag), TRUE ~ cod_bag_y2),
-    cod_bag_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$CodFH_seas2[1]) & doy <= lubridate::yday(input$CodFH_seas2[2]) ~ as.numeric(input$CodFH_2_bag), TRUE ~ cod_bag_y2),
-    cod_bag_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$CodPR_seas2[1]) & doy <= lubridate::yday(input$CodPR_seas2[2]) ~ as.numeric(input$CodPR_2_bag), TRUE ~ cod_bag_y2),
+    cod_bag_y2=dplyr::case_when(mode == "fh" & doy >= CodFH_seas1_1 & doy <= CodFH_seas1_2 ~ as.numeric(input$CodFH_1_bag), TRUE ~ 0),
+    cod_bag_y2=dplyr::case_when(mode == "pr" & doy >= CodPR_seas1_1 & doy <= CodPR_seas1_2 ~ as.numeric(input$CodPR_1_bag), TRUE ~ cod_bag_y2),
+    cod_bag_y2=dplyr::case_when(mode == "fh" & doy >= CodFH_seas2_1 & doy <= CodFH_seas2_2 ~ as.numeric(input$CodFH_2_bag), TRUE ~ cod_bag_y2),
+    cod_bag_y2=dplyr::case_when(mode == "pr" & doy >= CodPR_seas2_1 & doy <= CodPR_seas2_2 ~ as.numeric(input$CodPR_2_bag), TRUE ~ cod_bag_y2),
 
-    cod_min_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$CodFH_seas1[1]) & doy <= lubridate::yday(input$CodFH_seas1[2]) ~ as.numeric((input$CodFH_1_len*2.54)), TRUE ~ 500),
-    cod_min_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$CodPR_seas1[1]) & doy <= lubridate::yday(input$CodPR_seas1[2]) ~ as.numeric((input$CodPR_1_len*2.54)), TRUE ~ cod_min_y2),
-    cod_min_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$CodFH_seas2[1]) & doy <= lubridate::yday(input$CodFH_seas2[2]) ~ as.numeric((input$CodFH_2_len*2.54)), TRUE ~ cod_min_y2),
-    cod_min_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$CodPR_seas2[1]) & doy <= lubridate::yday(input$CodPR_seas2[2]) ~ as.numeric((input$CodPR_2_len*2.54)), TRUE ~ cod_min_y2))
+    cod_min_y2=dplyr::case_when(mode == "fh" & doy >= CodFH_seas1_1 & doy <= CodFH_seas1_2 ~ as.numeric((input$CodFH_1_len*2.54)), TRUE ~ 500),
+    cod_min_y2=dplyr::case_when(mode == "pr" & doy >= CodPR_seas1_1 & doy <= CodPR_seas1_2 ~ as.numeric((input$CodPR_1_len*2.54)), TRUE ~ cod_min_y2),
+    cod_min_y2=dplyr::case_when(mode == "fh" & doy >= CodFH_seas2_1 & doy <= CodFH_seas2_2 ~ as.numeric((input$CodFH_2_len*2.54)), TRUE ~ cod_min_y2),
+    cod_min_y2=dplyr::case_when(mode == "pr" & doy >= CodPR_seas2_1 & doy <= CodPR_seas2_2 ~ as.numeric((input$CodPR_2_len*2.54)), TRUE ~ cod_min_y2))
+
 
 
 directed_trips<- directed_trips %>%
   dplyr::mutate(
-    hadd_bag_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$HadFH_seas1[1]) & doy <= lubridate::yday(input$HadFH_seas1[2]) ~ as.numeric(input$HadFH_1_bag), TRUE ~ 0),
-    hadd_bag_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$HadPR_seas1[1]) & doy <= lubridate::yday(input$HadPR_seas1[2]) ~ as.numeric(input$HadPR_1_bag), TRUE ~ hadd_bag_y2),
-    hadd_bag_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$HadFH_seas2[1]) & doy <= lubridate::yday(input$HadFH_seas2[2]) ~ as.numeric(input$HadFH_2_bag), TRUE ~ hadd_bag_y2),
-    hadd_bag_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$HadPR_seas2[1]) & doy <= lubridate::yday(input$HadPR_seas2[2]) ~ as.numeric(input$HadPR_2_bag), TRUE ~ hadd_bag_y2),
-    hadd_bag_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$HadFH_seas3[1]) & doy <= lubridate::yday(input$HadFH_seas3[2]) ~ as.numeric(input$HadFH_3_bag), TRUE ~ hadd_bag_y2),
-    hadd_bag_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$HadPR_seas3[1]) & doy <= lubridate::yday(input$HadPR_seas3[2]) ~ as.numeric(input$HadPR_3_bag), TRUE ~ hadd_bag_y2),
 
-    hadd_min_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$HadFH_seas1[1]) & doy <= lubridate::yday(input$HadFH_seas1[2]) ~ as.numeric((input$HadFH_1_len*2.54)), TRUE ~ 500),
-    hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$HadPR_seas1[1]) & doy <= lubridate::yday(input$HadPR_seas1[2]) ~ as.numeric((input$HadPR_1_len*2.54)), TRUE ~ hadd_min_y2),
-    hadd_min_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$HadFH_seas2[1]) & doy <= lubridate::yday(input$HadFH_seas2[2]) ~ as.numeric((input$HadFH_2_len*2.54)), TRUE ~ hadd_min_y2),
-    hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$HadPR_seas2[1]) & doy <= lubridate::yday(input$HadPR_seas2[2]) ~ as.numeric((input$HadPR_2_len*2.54)), TRUE ~ hadd_min_y2),
-    hadd_min_y2=dplyr::case_when(mode == "fh" & doy >= lubridate::yday(input$HadFH_seas3[1]) & doy <= lubridate::yday(input$HadFH_seas3[2]) ~ as.numeric((input$HadFH_3_len*2.54)), TRUE ~ hadd_min_y2),
-    hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= lubridate::yday(input$HadPR_seas3[1]) & doy <= lubridate::yday(input$HadPR_seas3[2]) ~ as.numeric((input$HadPR_3_len*2.54)), TRUE ~ hadd_min_y2))
+    hadd_bag_y2=dplyr::case_when(mode == "fh" & doy >= HadFH_seas1_1 & doy <= HadFH_seas1_2 ~ as.numeric(input$HadFH_1_bag), TRUE ~ 0),
+    hadd_bag_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas1_1 & doy <= HadPR_seas1_2 ~ as.numeric(input$HadPR_1_bag), TRUE ~ hadd_bag_y2),
+    hadd_bag_y2=dplyr::case_when(mode == "fh" & doy >= HadFH_seas2_1 & doy <= HadFH_seas2_2 ~ as.numeric(input$HadFH_2_bag), TRUE ~ hadd_bag_y2),
+    hadd_bag_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas2_1 & doy <= HadPR_seas2_2 ~ as.numeric(input$HadPR_2_bag), TRUE ~ hadd_bag_y2),
+    hadd_bag_y2=dplyr::case_when(mode == "fh" & doy >= HadFH_seas3_1 & doy <= HadFH_seas3_2 ~ as.numeric(input$HadFH_3_bag), TRUE ~ hadd_bag_y2),
+    hadd_bag_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas3_1 & doy <= HadPR_seas3_2 ~ as.numeric(input$HadPR_3_bag), TRUE ~ hadd_bag_y2),
+
+    hadd_min_y2=dplyr::case_when(mode == "fh" & doy >= HadFH_seas1_1 & doy <= HadFH_seas1_2 ~ as.numeric((input$HadFH_1_len*2.54)), TRUE ~ 500),
+    hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas1_1 & doy <= HadPR_seas1_2 ~ as.numeric((input$HadPR_1_len*2.54)), TRUE ~ hadd_min_y2),
+    hadd_min_y2=dplyr::case_when(mode == "fh" & doy >= HadFH_seas2_1 & doy <= HadFH_seas2_2 ~ as.numeric((input$HadFH_2_len*2.54)), TRUE ~ hadd_min_y2),
+    hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas2_1 & doy <= HadPR_seas2_2 ~ as.numeric((input$HadPR_2_len*2.54)), TRUE ~ hadd_min_y2),
+    hadd_min_y2=dplyr::case_when(mode == "fh" & doy >= HadFH_seas3_1 & doy <= HadFH_seas3_2 ~ as.numeric((input$HadFH_3_len*2.54)), TRUE ~ hadd_min_y2),
+    hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas3_1 & doy <= HadPR_seas3_2 ~ as.numeric((input$HadPR_3_len*2.54)), TRUE ~ hadd_min_y2))
+
+
+#write.csv(directed_trips, file = "dtrips_before_select.csv")
 
 baseline_comparison1<-readRDS(here::here("data-raw/calibration_comparison.rds")) %>%
   dplyr::arrange(draw, mrip_index) %>%
@@ -54,7 +170,7 @@ mrip_index  <- mrip_index[1:400] ## For testing should be all when ready for fin
 # pred<- NULL
 # for (x in mrip_index){
 #future::plan(future::multisession, workers = 6)
-future::plan(future::multisession, workers = 120)
+future::plan(future::multisession, workers = 110)
 get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%
@@ -84,10 +200,14 @@ get_predictions_out<- function(x){
 
   directed_trips2 <- directed_trips %>%
     dplyr::filter(draw == k, mode == select_mode)
-  print(directed_trips2)
+  # print(unique(directed_trips2$cod_min_y2))
+  # print(unique(directed_trips2$cod_bag_y2))
+  # print(unique(directed_trips2$hadd_min_y2))
+  # print(unique(directed_trips2$hadd_bag_y2))
 
-  #directed_trips2<- read.csv(here::here("dtrips_test.csv"))
-  #write.csv(directed_trips2, here::here("dtrips_test.csv"))
+  # print(directed_trips2)
+  #directed_trips2<- read.csv(here::here("dtrips_test_BASE.csv"))
+  #write.csv(directed_trips2, here::here("dtrips_test_AFTER.csv"))
 
   source(here::here("predict_rec_catch.R"))
   test<- predict_rec_catch(x = x, draw = k,
@@ -113,7 +233,7 @@ get_predictions_out<- function(x){
 
 
 #write.csv(pred, file = here::here("SQ_predictions_cm.csv"))
-predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.), .id = "draw")
+predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.))
 
 
 # predictions_out <- pred %>%

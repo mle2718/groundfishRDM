@@ -648,7 +648,7 @@ predict_rec_catch <- function( x, draw,
         trip_data_hadd_hstar<-trip_data_hadd_hstar %>%
           dplyr::mutate(uniform=runif(n_row_hadd_hstar)) %>%
           dplyr::arrange(uniform) %>%
-          dplyr::mutate(tripid2=1:n_row_hadd_hstar)
+          dplyr::mutate(tripid2=c(1:n_row_hadd_hstar))
 
 
         n_occasions_keep_all_hadd=round(h_star_hadd_release_to_keep_variable*nrow(trip_data_hadd_hstar))
@@ -703,7 +703,7 @@ predict_rec_catch <- function( x, draw,
           trip_data_hadd_hstar<-trip_data_hadd_hstar %>%
             dplyr::mutate(uniform=runif(n_row_hadd_hstar)) %>%
             dplyr::arrange(uniform) %>%
-            dplyr::mutate(tripid2=1:n_row_hadd_hstar)
+            dplyr::mutate(tripid2=c(1:n_row_hadd_hstar))
 
           n_occasions_release_all_hadd=round(h_star_hadd_keep_to_release_variable*nrow(trip_data_hadd_hstar))
 

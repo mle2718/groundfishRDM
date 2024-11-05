@@ -18,9 +18,9 @@ ui <- fluidPage(
                 column(6,
                        titlePanel("Cod"),
                        sliderInput(inputId = "CodFH_seas1", label ="For Hire Open Season 1",
-                                   min = as.Date("2023-05-01","%Y-%m-%d"),
-                                   max = as.Date("2024-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2023-09-01","%Y-%m-%d"),as.Date("2023-10-31","%Y-%m-%d")),
+                                   min = as.Date("2024-05-01","%Y-%m-%d"),
+                                   max = as.Date("2025-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2024-09-01","%Y-%m-%d"),as.Date("2024-10-31","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -30,9 +30,9 @@ ui <- fluidPage(
                                 sliderInput(inputId = "CodFH_1_len", label = "Min Length",
                                             min = 15, max = 30, value = 22, step = .5))),
                        sliderInput(inputId = "CodPR_seas1", label ="Private Open Season 1",
-                                   min = as.Date("2023-05-01","%Y-%m-%d"),
-                                   max = as.Date("2024-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2023-09-01","%Y-%m-%d"),as.Date("2023-10-31","%Y-%m-%d")),
+                                   min = as.Date("2024-05-01","%Y-%m-%d"),
+                                   max = as.Date("2025-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2024-09-01","%Y-%m-%d"),as.Date("2024-10-31","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -45,9 +45,9 @@ ui <- fluidPage(
                        actionButton("CODaddSeason", "Add Season"),
                        shinyjs::hidden( div(ID = "CodSeason2",
                                             sliderInput(inputId = "CodFH_seas2", label ="For Hire Open Season 2",
-                                                        min = as.Date("2023-05-01","%Y-%m-%d"),
-                                                        max = as.Date("2024-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2024-04-30","%Y-%m-%d"),as.Date("2024-04-30","%Y-%m-%d")),
+                                                        min = as.Date("2024-05-01","%Y-%m-%d"),
+                                                        max = as.Date("2025-04-30","%Y-%m-%d"),
+                                                        value=c(as.Date("2025-04-30","%Y-%m-%d"),as.Date("2025-04-30","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -57,9 +57,9 @@ ui <- fluidPage(
                                                      sliderInput(inputId = "CodFH_2_len", label ="Min Length",
                                                                  min = 15, max = 25, value = 10, step = .5))),
                                             sliderInput(inputId = "CodPR_seas2", label ="Private Open Season 2",
-                                                        min = as.Date("2023-05-01","%Y-%m-%d"),
-                                                        max = as.Date("2024-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2024-04-30","%Y-%m-%d"),as.Date("2024-04-30","%Y-%m-%d")),
+                                                        min = as.Date("2024-05-01","%Y-%m-%d"),
+                                                        max = as.Date("2025-04-30","%Y-%m-%d"),
+                                                        value=c(as.Date("2025-04-30","%Y-%m-%d"),as.Date("2025-04-30","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -71,9 +71,9 @@ ui <- fluidPage(
                 column(6,
                        titlePanel("Haddock"),
                        sliderInput(inputId = "HadFH_seas1", label ="For Hire Open Season 1",
-                                   min = as.Date("2023-05-01","%Y-%m-%d"),
-                                   max = as.Date("2024-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2023-05-01","%Y-%m-%d"),as.Date("2024-02-28","%Y-%m-%d")),
+                                   min = as.Date("2024-05-01","%Y-%m-%d"),
+                                   max = as.Date("2025-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2024-05-01","%Y-%m-%d"),as.Date("2025-02-28","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -83,9 +83,9 @@ ui <- fluidPage(
                                 sliderInput(inputId = "HadFH_1_len", label = "Min Length",
                                             min = 15, max = 30, value = 18, step = .5))),
                        sliderInput(inputId = "HadPR_seas1", label ="Private Open Season 1",
-                                   min = as.Date("2023-05-01","%Y-%m-%d"),
-                                   max = as.Date("2024-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2023-05-01","%Y-%m-%d"),as.Date("2024-02-28","%Y-%m-%d")),
+                                   min = as.Date("2024-05-01","%Y-%m-%d"),
+                                   max = as.Date("2025-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2024-05-01","%Y-%m-%d"),as.Date("2025-02-28","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -96,9 +96,9 @@ ui <- fluidPage(
                                             min = 15, max = 30, value = 17, step = .5))),
 
                        sliderInput(inputId = "HadFH_seas2", label ="For Hire Open Season 2",
-                                   min = as.Date("2023-05-01","%Y-%m-%d"),
-                                   max = as.Date("2024-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2024-04-01","%Y-%m-%d"),as.Date("2024-04-30","%Y-%m-%d")),
+                                   min = as.Date("2024-05-01","%Y-%m-%d"),
+                                   max = as.Date("2025-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2025-04-01","%Y-%m-%d"),as.Date("2025-04-30","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -108,9 +108,9 @@ ui <- fluidPage(
                                 sliderInput(inputId = "HadFH_2_len", label = "Min Length",
                                             min = 15, max = 30, value = 18, step = .5))),
                        sliderInput(inputId = "HadPR_seas2", label ="Private Open Season 2",
-                                   min = as.Date("2023-05-01","%Y-%m-%d"),
-                                   max = as.Date("2024-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2024-04-01","%Y-%m-%d"),as.Date("2024-04-30","%Y-%m-%d")),
+                                   min = as.Date("2024-05-01","%Y-%m-%d"),
+                                   max = as.Date("2025-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2025-04-01","%Y-%m-%d"),as.Date("2025-04-30","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -123,9 +123,9 @@ ui <- fluidPage(
                        actionButton("HADaddSeason", "Add Season"),
                        shinyjs::hidden( div(ID = "HadSeason3",
                                             sliderInput(inputId = "HadFH_seas3", label ="For Hire Open Season 3",
-                                                        min = as.Date("2023-05-01","%Y-%m-%d"),
-                                                        max = as.Date("2024-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2024-04-30","%Y-%m-%d"),as.Date("2024-04-30","%Y-%m-%d")),
+                                                        min = as.Date("2024-05-01","%Y-%m-%d"),
+                                                        max = as.Date("2025-04-30","%Y-%m-%d"),
+                                                        value=c(as.Date("2025-04-30","%Y-%m-%d"),as.Date("2025-04-30","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -135,9 +135,9 @@ ui <- fluidPage(
                                                      sliderInput(inputId = "HadFH_3_len", label ="Min Length",
                                                                  min = 15, max = 25, value = 10, step = .5))),
                                             sliderInput(inputId = "HadPR_seas3", label ="Private Open Season 3",
-                                                        min = as.Date("2023-05-01","%Y-%m-%d"),
-                                                        max = as.Date("2024-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2024-04-30","%Y-%m-%d"),as.Date("2024-04-30","%Y-%m-%d")),
+                                                        min = as.Date("2024-05-01","%Y-%m-%d"),
+                                                        max = as.Date("2025-04-30","%Y-%m-%d"),
+                                                        value=c(as.Date("2025-04-30","%Y-%m-%d"),as.Date("2025-04-30","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -202,7 +202,7 @@ server <- function(input, output, session){
   predictions <- reactive({
 
     predictions_out <- read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
-      dplyr::mutate(option = c("SQ")) %>%
+      #dplyr::mutate(option = c("SQ")) %>%
       dplyr::select(!X) %>%
       #rbind(predictions_out10) %>%
       rbind(pred()) %>%
@@ -260,6 +260,7 @@ server <- function(input, output, session){
       # dplyr::select(!all_regs) %>%
       # dplyr::mutate(Species = stringr::str_extract(Species, "[:alpha:]+"))
 
+    print("regs out")
     return(Regs_out)
     })
 
@@ -288,6 +289,7 @@ server <- function(input, output, session){
 
   catch_by_mode <- reactive({
 
+    print("start catch mode")
     catch_by_mode<- predictions() %>%
       #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
