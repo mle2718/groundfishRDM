@@ -242,10 +242,19 @@ server <- function(input, output, session){
 
 
     Regs_out <- Regs1 %>%
+      #SQ_regulations %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
       dplyr::filter(!bag == 0) %>%
-      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) #%>%
+      #tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
+      dplyr::rename(Option = Opt,
+                    Mode = mode,
+                    `Bag Limit` = bag,
+                    `Min Size (in)` = size) %>%
+      tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
+      dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
+                    Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private"))
+
       # dplyr::mutate(had_bag = dplyr::case_when(bag_Had1 == bag_Had2 ~ paste0(bag_Had1), TRUE ~ paste0(bag_Had1, " , ", bag_Had2)),
       #               had_size = dplyr::case_when(size_Had1 == size_Had2 ~ paste0(size_Had1), TRUE ~ paste0(size_Had1, " , ", size_Had2)),
       #               had_Season = dplyr::case_when(Season_Had1 == Season_Had2 ~ paste0(Season_Had1), TRUE ~ paste0(Season_Had1, " , ", Season_Had2)))
@@ -451,8 +460,34 @@ server <- function(input, output, session){
 
   ### Save data
   observeEvent(input$runmeplease, {
-    dat<- predictions()
-    #readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
+    dat<- pred()
+
+    Regs<- data.frame(Category = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",
+                              "Cod1_PR_bag", "Cod1_PR_size", "Cod1_PR_Season",
+                              "Had1_FH_bag", "Had1_FH_size", "Had1_FH_Season",
+                              "Had1_PR_bag", "Had1_PR_size", "Had1_PR_Season",
+                              "Had2_FH_bag", "Had2_FH_size", "Had2_FH_Season",
+                              "Had2_PR_bag", "Had2_PR_size", "Had2_PR_Season",
+                              "Cod2_FH_bag", "Cod2_FH_size", "Cod2_FH_Season",
+                              "Cod2_PR_bag", "Cod2_PR_size", "Cod2_PR_Season",
+                              "Had3_FH_bag", "Had3_FH_size", "Had3_FH_Season",
+                              "Had3_PR_bag", "Had3_PR_size", "Had3_PR_Season"),
+                      Value = c(input$CodFH_1_bag, input$CodFH_1_len, paste0(input$CodFH_seas1[1], " - ", input$CodFH_seas1[2]),
+                              input$CodPR_1_bag, input$CodPR_1_len, paste0(input$CodPR_seas1[1], " - ", input$CodPR_seas1[2]),
+                              input$HadFH_1_bag, input$HadFH_1_len, paste0(input$HadFH_seas1[1], " - ", input$HadFH_seas1[2]),
+                              input$HadPR_1_bag, input$HadPR_1_len, paste0(input$HadPR_seas1[1], " - ", input$HadPR_seas1[2]),
+                              input$HadFH_2_bag, input$HadFH_2_len, paste0(input$HadFH_seas2[1], " - ", input$HadFH_seas2[2]),
+                              input$HadPR_2_bag, input$HadPR_2_len, paste0(input$HadPR_seas2[1], " - ", input$HadPR_seas2[2]),
+                              input$CodFH_2_bag, input$CodFH_2_len, paste0(input$CodFH_seas2[1], " - ", input$CodFH_seas2[2]),
+                              input$CodPR_2_bag, input$CodPR_2_len, paste0(input$CodPR_seas2[1], " - ", input$CodPR_seas2[2]),
+                              input$HadFH_3_bag, input$HadFH_3_len, paste0(input$HadFH_seas3[1], " - ", input$HadFH_seas3[2]),
+                              input$HadPR_3_bag, input$HadPR_3_len, paste0(input$HadPR_seas3[1], " - ", input$HadPR_seas3[2])),
+                      mode = c("NA"), catch_disposition = c("NA"), param = c("NA"), number_weight = c("NA"),
+                      season = c("NA"), draw_out = c("NA"), mrip_index = c("NA"),option= c("NA"))
+
+    dat_out<- dat %>% rbind(Regs)
+    readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
+
     })
 
   output$downloadData <- downloadHandler(
