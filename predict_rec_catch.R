@@ -60,7 +60,7 @@ predict_rec_catch <- function( x, draw,
                                n_drawz = 50,
                                n_catch_draws = 30){
 
-  options(scipen = 100, digits = 3)
+  #options(scipen = 100, digits = 3)
   print("start function")
 
 
@@ -116,7 +116,7 @@ predict_rec_catch <- function( x, draw,
 
     n_drawz = 50
     n_catch_draws = 30
-    set.seed(draw)
+    set.seed(5)
 
     #l_w_conversion =
     cod_lw_a = 0.000005132
@@ -203,7 +203,7 @@ predict_rec_catch <- function( x, draw,
 
 
     cod_catch_data <- cod_catch_data %>%
-      #dplyr::mutate(day = as.numeric(stringr::str_extract(day, "\\d+"))) %>%
+      dplyr::mutate(day = as.numeric(stringr::str_extract(day, "\\d+"))) %>%
       dplyr::group_by(period2) %>%
       dplyr::slice_sample(n = n_drawz*n_catch_draws, replace = TRUE)   %>%
       dplyr::mutate(catch_draw = rep(1:n_catch_draws, length.out = n_drawz*n_catch_draws),
@@ -220,14 +220,15 @@ predict_rec_catch <- function( x, draw,
       seas = "closed"
     }
 
+    CaL_draw<- baseline_comparison$draw
 
     cod_size_data <- size_data_read %>%
-      dplyr::filter(species == "cod", season == seas,  draw==draw) %>%
+      dplyr::filter(species == "cod" & season == seas& draw==CaL_draw) %>%
       dplyr::filter(!is.na(proj_CaL_prob_smooth)) %>%
       dplyr::select(-proj_CaL_prob_raw)
 
     had_size_data <- size_data_read %>%
-      dplyr::filter(species == "hadd", season == seas,  draw==draw) %>%
+      dplyr::filter(species == "hadd", season == seas,  draw==CaL_draw) %>%
       dplyr::filter(!is.na(proj_CaL_prob_smooth)) %>%
       dplyr::select(-proj_CaL_prob_raw)
 
@@ -272,7 +273,7 @@ predict_rec_catch <- function( x, draw,
 
       # generate lengths for each fish
       catch_size_data <- cod_catch_data %>%
-        dplyr::mutate(fitted_length = sample(cod_size_data$length,
+        dplyr::mutate(fitted_length = base::sample(cod_size_data$length,
                                              nrow(.),
                                              prob = cod_size_data$proj_CaL_prob_smooth,
                                              replace = TRUE))
@@ -386,7 +387,7 @@ predict_rec_catch <- function( x, draw,
     #########################
     ###  Haddock  ####
     #########################
-    print("code check 4")
+
 
     if (had_catch_check!=0){
       # subset trips with zero catch, as no size draws are required
@@ -398,19 +399,27 @@ predict_rec_catch <- function( x, draw,
       #expand the sf_catch_data so that each row represents a fish
       row_inds <- seq_len(nrow(had_catch_data))
 
-      had_catch_data<- had_catch_data %>%
-        dplyr::slice(rep(row_inds,tot_had_catch))
+      had_catch_data<-had_catch_data %>%
+        dplyr::slice(rep(row_inds,tot_had_catch))   %>%
+        dplyr::mutate(fishid=dplyr::row_number())
 
-      rownames(had_catch_data) <- NULL
-      had_catch_data$fishid <- 1:nrow(had_catch_data)
+      # had_catch_data<- had_catch_data %>%
+      #   dplyr::slice(rep(row_inds,tot_had_catch))
+      #
+      # #rownames(had_catch_data) <- NULL
+      # had_catch_data$fishid <- 1:nrow(had_catch_data)
 
       # generate lengths for each fish
+      #set.seed(5)
       catch_size_data_had <- had_catch_data %>%
-        dplyr::mutate(fitted_length = sample(had_size_data$length,
+        dplyr::mutate(fitted_length = base::sample(had_size_data$length,
                                              nrow(.),
                                              prob = had_size_data$proj_CaL_prob_smooth,
                                              #prob = had_size_data$fitted_prob,
                                              replace = TRUE))
+
+
+
       #Create as an object the minimum size at which fish are illegally harvested.
       # This object "floor_subl_harvest" will be 2 inches below the minimum size, by mode.
       #1) If the minimum size changes across the season, floor_subl_harvest=min(min_size) - 2.
@@ -426,6 +435,7 @@ predict_rec_catch <- function( x, draw,
       # if (floor_subl_hadd_harv==98){
       #   floor_subl_hadd_harv=mean(catch_size_data_had$fitted_length)-0.5*sd(catch_size_data_had$fitted_length)
       # }
+
 
       # Impose regulations, calculate keep and release per trip
       ####### Start Here #################
@@ -452,7 +462,7 @@ predict_rec_catch <- function( x, draw,
       catch_size_data_had<- catch_size_data_had %>%
         dplyr::select(fishid, fitted_length, tripid, keep, release, period2, catch_draw, mode)  %>%
         dplyr::rename(mode1=mode) %>%
-        dplyr::mutate(floor_subl_hadd_harv_indicator=dplyr::case_when(release==1 & fitted_length>=floor_subl_hadd_harv~1,TRUE~0))
+        dplyr::mutate(floor_subl_hadd_harv_indicator=case_when(release==1 & fitted_length>=floor_subl_hadd_harv~1,TRUE~0))
 
       new_size_data <- catch_size_data_had %>%
         dplyr::group_by(period2, catch_draw, tripid, fitted_length) %>%
@@ -488,6 +498,7 @@ predict_rec_catch <- function( x, draw,
                          .groups = "drop") %>%
         dplyr::ungroup()
 
+
       had_zero_catch<-had_zero_catch %>%
         dplyr::select(tripid, catch_draw, period2) %>%
         dplyr::mutate(tot_keep_hadd_new=0,
@@ -509,6 +520,9 @@ predict_rec_catch <- function( x, draw,
 
     }
 
+
+
+    ####################################################### CHAOOOOOOSSSSSS ####################################################
     #### ADDDDDDDDDDDDDD
     if (had_catch_check==0 & cod_catch_check!=0){
 
@@ -528,6 +542,9 @@ predict_rec_catch <- function( x, draw,
     print("code_check_5")
     trip_data<- trip_data %>% as.data.frame()
 
+    ###########################################################################################################################
+    ############################################################ BEGIN REALLOCATION ###########################################
+    ############################################################################################################################
     if (cod_catch_check!=0){
 
       #If we need to re-allocate cod releases as harvest, cod_release_2_keep will equal 1
@@ -555,7 +572,7 @@ predict_rec_catch <- function( x, draw,
 
         trip_data<-trip_data %>%
           dplyr::left_join(trip_data_cod_hstar, by = c("period2","tripid")) %>%
-          dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
+          dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
           dplyr::mutate(tot_keep_cod_new1=ifelse(release_to_keep==1 & floor_subl_cod_harv_indicator>0,
                                                  tot_keep_cod_new+floor_subl_cod_harv_indicator, tot_keep_cod_new),
                         tot_rel_cod_new1= ifelse(release_to_keep==1 & floor_subl_cod_harv_indicator>0,
@@ -611,7 +628,7 @@ predict_rec_catch <- function( x, draw,
 
           trip_data<-trip_data %>%
             dplyr::left_join(trip_data_cod_hstar, by = c("period2","tripid")) %>%
-            dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
+            dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
             dplyr::mutate(tot_rel_cod_new1=ifelse(keep_to_release==1,tot_keep_cod_new+tot_rel_cod_new, tot_rel_cod_new),
                           tot_keep_cod_new1= ifelse(keep_to_release==1, 0, tot_keep_cod_new )) %>%
             dplyr::mutate(tot_keep_cod_new= tot_keep_cod_new1,
@@ -628,7 +645,6 @@ predict_rec_catch <- function( x, draw,
 
     }
 
-    print("code check 6")
     if (had_catch_check!=0){
 
       #If we need to re-allocate hadd releases as harvest, hadd_release_2_keep will equal 1
@@ -643,12 +659,10 @@ predict_rec_catch <- function( x, draw,
 
         n_row_hadd_hstar<-nrow(trip_data_hadd_hstar)
 
-        print(n_row_hadd_hstar)
-
         trip_data_hadd_hstar<-trip_data_hadd_hstar %>%
           dplyr::mutate(uniform=runif(n_row_hadd_hstar)) %>%
           dplyr::arrange(uniform) %>%
-          dplyr::mutate(tripid2=c(1:n_row_hadd_hstar))
+          dplyr::mutate(tripid2=1:n_row_hadd_hstar)
 
 
         n_occasions_keep_all_hadd=round(h_star_hadd_release_to_keep_variable*nrow(trip_data_hadd_hstar))
@@ -660,7 +674,7 @@ predict_rec_catch <- function( x, draw,
 
         trip_data<-trip_data %>%
           dplyr::left_join(trip_data_hadd_hstar, by = c("period2","tripid")) %>%
-          dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
+          dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
           dplyr::mutate(tot_keep_hadd_new1=ifelse(release_to_keep==1 & floor_subl_hadd_harv_indicator>0,
                                                   tot_keep_hadd_new+floor_subl_hadd_harv_indicator, tot_keep_hadd_new),
                         tot_rel_hadd_new1= ifelse(release_to_keep==1 & floor_subl_hadd_harv_indicator>0,
@@ -703,7 +717,7 @@ predict_rec_catch <- function( x, draw,
           trip_data_hadd_hstar<-trip_data_hadd_hstar %>%
             dplyr::mutate(uniform=runif(n_row_hadd_hstar)) %>%
             dplyr::arrange(uniform) %>%
-            dplyr::mutate(tripid2=c(1:n_row_hadd_hstar))
+            dplyr::mutate(tripid2=1:n_row_hadd_hstar)
 
           n_occasions_release_all_hadd=round(h_star_hadd_keep_to_release_variable*nrow(trip_data_hadd_hstar))
 
@@ -714,7 +728,7 @@ predict_rec_catch <- function( x, draw,
 
           trip_data<-trip_data %>%
             dplyr::left_join(trip_data_hadd_hstar, by = c("period2","tripid")) %>%
-            dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
+            dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
             dplyr::mutate(tot_rel_hadd_new1=ifelse(keep_to_release==1,tot_keep_hadd_new+tot_rel_hadd_new, tot_rel_hadd_new),
                           tot_keep_hadd_new1= ifelse(keep_to_release==1, 0, tot_keep_hadd_new )) %>%
             dplyr::mutate(tot_keep_hadd_new= tot_keep_hadd_new1,
@@ -728,7 +742,7 @@ predict_rec_catch <- function( x, draw,
 
     }
 
-    print("code_check_7")
+
     #=====================================#
     #Length data. Combine length data from trips with and without catch (need to retain the zeroes).
     #Pipe around this code if there is no cod catch, no haddock catch, or no catch of both species.
@@ -758,6 +772,7 @@ predict_rec_catch <- function( x, draw,
       ##Now need to merge these length data to the h_star data, and reallocate keeps as releases or vice versa
       ##code for reallocating cod release to keep
       if (cod_release_2_keep==1){
+
 
         length_data<- length_data %>%
           dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
@@ -832,6 +847,7 @@ predict_rec_catch <- function( x, draw,
 
       ##code for reallocating cod keep to release
       if (cod_keep_2_release==1){
+
         if (all_cod_keep_2_release==1){
 
           length_data <- length_data %>%
@@ -855,73 +871,73 @@ predict_rec_catch <- function( x, draw,
 
         if (all_cod_keep_2_release==0){
 
-        length_data<- length_data %>%
-          dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
-        length_data[is.na(length_data)] <- 0
+          length_data<- length_data %>%
+            dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
+          length_data[is.na(length_data)] <- 0
 
-        check<-length_data %>%
-          dplyr::filter(keep_to_release==1) %>%
-          dplyr::relocate(keep_to_release)
+          check<-length_data %>%
+            dplyr::filter(keep_to_release==1) %>%
+            dplyr::relocate(keep_to_release)
 
-        vars<-c()
-        vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
+          vars<-c()
+          vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
 
-        check_long_keep <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="keep") %>%
-          dplyr::rename(count_keep=count) %>%
-          dplyr::select(-disp)
+          check_long_keep <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="keep") %>%
+            dplyr::rename(count_keep=count) %>%
+            dplyr::select(-disp)
 
-        check_long_rel <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="release") %>%
-          dplyr::rename(count_rel=count) %>%
-          dplyr::select(-disp)
+          check_long_rel <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="release") %>%
+            dplyr::rename(count_rel=count) %>%
+            dplyr::select(-disp)
 
-        check_long<- check_long_keep %>%
-          dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
+          check_long<- check_long_keep %>%
+            dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
 
-        check_long<-check_long %>%
-          dplyr::mutate(keep = ifelse(species=="cod", 0, count_keep),
-                        release = ifelse(species=="cod", count_keep+count_rel, count_rel)) %>%
-          dplyr::select(-count_keep, -count_rel)
+          check_long<-check_long %>%
+            dplyr::mutate(keep = ifelse(species=="cod", 0, count_keep),
+                          release = ifelse(species=="cod", count_keep+count_rel, count_rel)) %>%
+            dplyr::select(-count_keep, -count_rel)
 
-        check_long[is.na(check_long)] <- 0
+          check_long[is.na(check_long)] <- 0
 
-        check_wide_keep <- check_long %>%
-          dplyr::select(-release) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "keep_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = keep,
-                             values_fill = 0)
+          check_wide_keep <- check_long %>%
+            dplyr::select(-release) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "keep_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = keep,
+                               values_fill = 0)
 
-        check_wide_rel <- check_long %>%
-          dplyr::select(-keep,) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "release_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = release,
-                             values_fill = 0)
+          check_wide_rel <- check_long %>%
+            dplyr::select(-keep,) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "release_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = release,
+                               values_fill = 0)
 
-        check_wide<-check_wide_keep %>%
-          dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
+          check_wide<-check_wide_keep %>%
+            dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
 
-        length_data<-length_data %>%
-          dplyr::filter(keep_to_release==0)
+          length_data<-length_data %>%
+            dplyr::filter(keep_to_release==0)
 
 
-        length_data2 <- length_data %>%
-          plyr::rbind.fill(check_wide)
+          length_data2 <- length_data %>%
+            plyr::rbind.fill(check_wide)
 
-        length_data<-length_data2 %>%
-          dplyr::select(-keep_to_release)
+          length_data<-length_data2 %>%
+            dplyr::select(-keep_to_release)
 
         }
       }
@@ -1028,79 +1044,77 @@ predict_rec_catch <- function( x, draw,
 
         if (all_hadd_keep_2_release==0){
 
+          length_data<- length_data %>%
+            dplyr::left_join(trip_data_hadd_hstar, by=c("period2","tripid"))
+          length_data[is.na(length_data)] <- 0
 
-        length_data<- length_data %>%
-          dplyr::left_join(trip_data_hadd_hstar, by=c("period2","tripid"))
-        length_data[is.na(length_data)] <- 0
+          check<-length_data %>%
+            dplyr::filter(keep_to_release==1) %>%
+            dplyr::relocate(keep_to_release)
 
-        check<-length_data %>%
-          dplyr::filter(keep_to_release==1) %>%
-          dplyr::relocate(keep_to_release)
+          vars<-c()
+          vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
 
-        vars<-c()
-        vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
+          check_long_keep <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="keep") %>%
+            dplyr::rename(count_keep=count) %>%
+            dplyr::select(-disp)
 
-        check_long_keep <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="keep") %>%
-          dplyr::rename(count_keep=count) %>%
-          dplyr::select(-disp)
+          check_long_rel <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="release") %>%
+            dplyr::rename(count_rel=count) %>%
+            dplyr::select(-disp)
 
-        check_long_rel <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="release") %>%
-          dplyr::rename(count_rel=count) %>%
-          dplyr::select(-disp)
+          check_long<- check_long_keep %>%
+            dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
 
-        check_long<- check_long_keep %>%
-          dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
+          check_long<-check_long %>%
+            dplyr::mutate(keep = ifelse(species=="had", 0, count_keep),
+                          release = ifelse(species=="had", count_keep+count_rel, count_rel)) %>%
+            dplyr::select(-count_keep, -count_rel)
 
-        check_long<-check_long %>%
-          dplyr::mutate(keep = ifelse(species=="had", 0, count_keep),
-                        release = ifelse(species=="had", count_keep+count_rel, count_rel)) %>%
-          dplyr::select(-count_keep, -count_rel)
+          check_long[is.na(check_long)] <- 0
 
-        check_long[is.na(check_long)] <- 0
+          check_wide_keep <- check_long %>%
+            dplyr::select(-release) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "keep_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = keep,
+                               values_fill = 0)
 
-        check_wide_keep <- check_long %>%
-          dplyr::select(-release) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "keep_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = keep,
-                             values_fill = 0)
+          check_wide_rel <- check_long %>%
+            dplyr::select(-keep,) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "release_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = release,
+                               values_fill = 0)
 
-        check_wide_rel <- check_long %>%
-          dplyr::select(-keep,) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "release_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = release,
-                             values_fill = 0)
+          check_wide<-check_wide_keep %>%
+            dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
 
-        check_wide<-check_wide_keep %>%
-          dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
-
-        length_data<-length_data %>%
-          dplyr::filter(keep_to_release==0)
+          length_data<-length_data %>%
+            dplyr::filter(keep_to_release==0)
 
 
-        length_data2 <- length_data %>%
-          plyr::rbind.fill(check_wide)
+          length_data2 <- length_data %>%
+            plyr::rbind.fill(check_wide)
 
-        length_data<-length_data2 %>%
-          dplyr::select(-keep_to_release)
+          length_data<-length_data2 %>%
+            dplyr::select(-keep_to_release)
+
 
         }
-
       }
-
     }
 
 
@@ -1231,80 +1245,81 @@ predict_rec_catch <- function( x, draw,
 
         if (all_cod_keep_2_release==0){
 
-        length_data<- length_data %>%
-          dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
-        length_data[is.na(length_data)] <- 0
+          length_data<- length_data %>%
+            dplyr::left_join(trip_data_cod_hstar, by=c("period2","tripid"))
+          length_data[is.na(length_data)] <- 0
 
-        check<-length_data %>%
-          dplyr::filter(keep_to_release==1) %>%
-          dplyr::relocate(keep_to_release)
+          check<-length_data %>%
+            dplyr::filter(keep_to_release==1) %>%
+            dplyr::relocate(keep_to_release)
 
-        vars<-c()
-        vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
+          vars<-c()
+          vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
 
-        check_long_keep <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="keep") %>%
-          dplyr::rename(count_keep=count) %>%
-          dplyr::select(-disp)
+          check_long_keep <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="keep") %>%
+            dplyr::rename(count_keep=count) %>%
+            dplyr::select(-disp)
 
-        check_long_rel <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="release") %>%
-          dplyr::rename(count_rel=count) %>%
-          dplyr::select(-disp)
+          check_long_rel <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="release") %>%
+            dplyr::rename(count_rel=count) %>%
+            dplyr::select(-disp)
 
-        check_long<- check_long_keep %>%
-          dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
+          check_long<- check_long_keep %>%
+            dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
 
-        check_long<-check_long %>%
-          dplyr::mutate(keep = ifelse(species=="cod", 0, count_keep),
-                        release = ifelse(species=="cod", count_keep+count_rel, count_rel)) %>%
-          dplyr::select(-count_keep, -count_rel)
+          check_long<-check_long %>%
+            dplyr::mutate(keep = ifelse(species=="cod", 0, count_keep),
+                          release = ifelse(species=="cod", count_keep+count_rel, count_rel)) %>%
+            dplyr::select(-count_keep, -count_rel)
 
-        check_long[is.na(check_long)] <- 0
+          check_long[is.na(check_long)] <- 0
 
-        check_wide_keep <- check_long %>%
-          dplyr::select(-release) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "keep_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = keep,
-                             values_fill = 0)
+          check_wide_keep <- check_long %>%
+            dplyr::select(-release) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "keep_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = keep,
+                               values_fill = 0)
 
-        check_wide_rel <- check_long %>%
-          dplyr::select(-keep,) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "release_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = release,
-                             values_fill = 0)
+          check_wide_rel <- check_long %>%
+            dplyr::select(-keep,) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "release_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = release,
+                               values_fill = 0)
 
-        check_wide<-check_wide_keep %>%
-          dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
+          check_wide<-check_wide_keep %>%
+            dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
 
-        length_data<-length_data %>%
-          dplyr::filter(keep_to_release==0)
+          length_data<-length_data %>%
+            dplyr::filter(keep_to_release==0)
 
 
-        length_data2 <- length_data %>%
-          plyr::rbind.fill(check_wide)
+          length_data2 <- length_data %>%
+            plyr::rbind.fill(check_wide)
 
-        length_data<-length_data2 %>%
-          dplyr::select(-keep_to_release)
-
+          length_data<-length_data2 %>%
+            dplyr::select(-keep_to_release)
+        }
 
       }
-      }
+
+
 
     }
-    print("code_check_8")
+
 
     #If there is catch of only haddock
     if(cod_catch_check ==0 & had_catch_check==1){
@@ -1427,76 +1442,75 @@ predict_rec_catch <- function( x, draw,
 
         if (all_hadd_keep_2_release==0){
 
-        length_data<- length_data %>%
-          dplyr::left_join(trip_data_hadd_hstar, by=c("period2","tripid"))
-        length_data[is.na(length_data)] <- 0
+          length_data<- length_data %>%
+            dplyr::left_join(trip_data_hadd_hstar, by=c("period2","tripid"))
+          length_data[is.na(length_data)] <- 0
 
-        check<-length_data %>%
-          dplyr::filter(keep_to_release==1) %>%
-          dplyr::relocate(keep_to_release)
+          check<-length_data %>%
+            dplyr::filter(keep_to_release==1) %>%
+            dplyr::relocate(keep_to_release)
 
-        vars<-c()
-        vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
+          vars<-c()
+          vars <- names(check)[!names(check) %in% c("keep_to_release", "catch_draw", "period2","tripid")]
 
-        check_long_keep <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="keep") %>%
-          dplyr::rename(count_keep=count) %>%
-          dplyr::select(-disp)
+          check_long_keep <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="keep") %>%
+            dplyr::rename(count_keep=count) %>%
+            dplyr::select(-disp)
 
-        check_long_rel <- check %>%
-          tidyr::pivot_longer(cols = c(vars),
-                              names_to = c("disp", "species", "length"),
-                              names_pattern = "(.*)_(.*)_(.*)",
-                              values_to="count") %>%
-          dplyr::filter(disp=="release") %>%
-          dplyr::rename(count_rel=count) %>%
-          dplyr::select(-disp)
+          check_long_rel <- check %>%
+            tidyr::pivot_longer(cols = c(vars),
+                                names_to = c("disp", "species", "length"),
+                                names_pattern = "(.*)_(.*)_(.*)",
+                                values_to="count") %>%
+            dplyr::filter(disp=="release") %>%
+            dplyr::rename(count_rel=count) %>%
+            dplyr::select(-disp)
 
-        check_long<- check_long_keep %>%
-          dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
+          check_long<- check_long_keep %>%
+            dplyr::left_join(check_long_rel, by=c("species", "keep_to_release", "period2", "catch_draw", "tripid", "length"))
 
-        check_long<-check_long %>%
-          dplyr::mutate(keep = ifelse(species=="had", 0, count_keep),
-                        release = ifelse(species=="had", count_keep+count_rel, count_rel)) %>%
-          dplyr::select(-count_keep, -count_rel)
+          check_long<-check_long %>%
+            dplyr::mutate(keep = ifelse(species=="had", 0, count_keep),
+                          release = ifelse(species=="had", count_keep+count_rel, count_rel)) %>%
+            dplyr::select(-count_keep, -count_rel)
 
-        check_long[is.na(check_long)] <- 0
+          check_long[is.na(check_long)] <- 0
 
-        check_wide_keep <- check_long %>%
-          dplyr::select(-release) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "keep_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = keep,
-                             values_fill = 0)
+          check_wide_keep <- check_long %>%
+            dplyr::select(-release) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "keep_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = keep,
+                               values_fill = 0)
 
-        check_wide_rel <- check_long %>%
-          dplyr::select(-keep,) %>%
-          tidyr::pivot_wider(names_from = c(species, length),
-                             names_glue = "release_{species}_{length}",
-                             names_sort = TRUE,
-                             values_from = release,
-                             values_fill = 0)
+          check_wide_rel <- check_long %>%
+            dplyr::select(-keep,) %>%
+            tidyr::pivot_wider(names_from = c(species, length),
+                               names_glue = "release_{species}_{length}",
+                               names_sort = TRUE,
+                               values_from = release,
+                               values_fill = 0)
 
-        check_wide<-check_wide_keep %>%
-          dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
+          check_wide<-check_wide_keep %>%
+            dplyr::left_join(check_wide_rel, by=c("keep_to_release", "period2", "catch_draw", "tripid"))
 
-        length_data<-length_data %>%
-          dplyr::filter(keep_to_release==0)
+          length_data<-length_data %>%
+            dplyr::filter(keep_to_release==0)
 
 
-        length_data2 <- length_data %>%
-          plyr::rbind.fill(check_wide)
+          length_data2 <- length_data %>%
+            plyr::rbind.fill(check_wide)
 
-        length_data<-length_data2 %>%
-          dplyr::select(-keep_to_release)
+          length_data<-length_data2 %>%
+            dplyr::select(-keep_to_release)
 
         }
-
       }
     }
 

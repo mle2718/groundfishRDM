@@ -1,5 +1,6 @@
 print("start model")
 library(magrittr)
+library(tidyverse)
 #devtools::install_github("NEFSC/READ.SSB.groundfishRecDST")
 
 
@@ -164,11 +165,11 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adjustments.csv"), show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:400]
+mrip_index  <- mrip_index[1:4]
 #mrip_index  <- mrip_index[1:4]
 
-# pred<- NULL
-# for (x in mrip_index){
+ #pred<- NULL
+ #for (x in mrip_index){
 #future::plan(future::multisession, workers = 6)
 future::plan(future::multisession)
 get_predictions_out<- function(x){
@@ -220,12 +221,12 @@ get_predictions_out<- function(x){
                            size_data_read = size_data_read,
                            discard_mortality_dat = Disc_mort)
 
-  print("test")
-  print(test)
+  #print("test")
+  #print(test)
   #pred <- pred %>% rbind(test)
 
 
-  #write.csv(test, file = here::here(paste0("output/test_", x, ".csv")))
+
 }
 #})
 # use furrr package to parallelize the get_predictions_out function 100 times
@@ -234,8 +235,10 @@ get_predictions_out<- function(x){
 
 #write.csv(pred, file = here::here("SQ_predictions_cm.csv"))
 predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.))
-
-
+# pred11_80 = pred
+#
+# pred = rbind(pred1_4, pred5_10, pred11_80)
+# write.csv(pred, file = here::here(paste0("output/pred_test_KB_works.csv")))
 # predictions_out <- pred %>%
 #   dplyr::group_by(Category, mode, catch_disposition, param,  number_weight, draw_out) %>%
 #   dplyr::reframe(Value = sum(Value)) %>%
