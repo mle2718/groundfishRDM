@@ -57,6 +57,7 @@ predict_rec_catch <- function( x, draw,
                                catch_data_all,
                                calendar_adjust,
                                discard_mortality_dat,
+                               baseline_comparison,
                                n_drawz = 50,
                                n_catch_draws = 30){
 
@@ -462,7 +463,7 @@ predict_rec_catch <- function( x, draw,
       catch_size_data_had<- catch_size_data_had %>%
         dplyr::select(fishid, fitted_length, tripid, keep, release, period2, catch_draw, mode)  %>%
         dplyr::rename(mode1=mode) %>%
-        dplyr::mutate(floor_subl_hadd_harv_indicator=case_when(release==1 & fitted_length>=floor_subl_hadd_harv~1,TRUE~0))
+        dplyr::mutate(floor_subl_hadd_harv_indicator=dplyr::case_when(release==1 & fitted_length>=floor_subl_hadd_harv~1,TRUE~0))
 
       new_size_data <- catch_size_data_had %>%
         dplyr::group_by(period2, catch_draw, tripid, fitted_length) %>%
@@ -572,7 +573,7 @@ predict_rec_catch <- function( x, draw,
 
         trip_data<-trip_data %>%
           dplyr::left_join(trip_data_cod_hstar, by = c("period2","tripid")) %>%
-          dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
+          dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
           dplyr::mutate(tot_keep_cod_new1=ifelse(release_to_keep==1 & floor_subl_cod_harv_indicator>0,
                                                  tot_keep_cod_new+floor_subl_cod_harv_indicator, tot_keep_cod_new),
                         tot_rel_cod_new1= ifelse(release_to_keep==1 & floor_subl_cod_harv_indicator>0,
@@ -628,7 +629,7 @@ predict_rec_catch <- function( x, draw,
 
           trip_data<-trip_data %>%
             dplyr::left_join(trip_data_cod_hstar, by = c("period2","tripid")) %>%
-            dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
+            dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
             dplyr::mutate(tot_rel_cod_new1=ifelse(keep_to_release==1,tot_keep_cod_new+tot_rel_cod_new, tot_rel_cod_new),
                           tot_keep_cod_new1= ifelse(keep_to_release==1, 0, tot_keep_cod_new )) %>%
             dplyr::mutate(tot_keep_cod_new= tot_keep_cod_new1,
@@ -674,7 +675,7 @@ predict_rec_catch <- function( x, draw,
 
         trip_data<-trip_data %>%
           dplyr::left_join(trip_data_hadd_hstar, by = c("period2","tripid")) %>%
-          dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
+          dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
           dplyr::mutate(tot_keep_hadd_new1=ifelse(release_to_keep==1 & floor_subl_hadd_harv_indicator>0,
                                                   tot_keep_hadd_new+floor_subl_hadd_harv_indicator, tot_keep_hadd_new),
                         tot_rel_hadd_new1= ifelse(release_to_keep==1 & floor_subl_hadd_harv_indicator>0,
@@ -728,7 +729,7 @@ predict_rec_catch <- function( x, draw,
 
           trip_data<-trip_data %>%
             dplyr::left_join(trip_data_hadd_hstar, by = c("period2","tripid")) %>%
-            dplyr::mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
+            dplyr::mutate(across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%
             dplyr::mutate(tot_rel_hadd_new1=ifelse(keep_to_release==1,tot_keep_hadd_new+tot_rel_hadd_new, tot_rel_hadd_new),
                           tot_keep_hadd_new1= ifelse(keep_to_release==1, 0, tot_keep_hadd_new )) %>%
             dplyr::mutate(tot_keep_hadd_new= tot_keep_hadd_new1,

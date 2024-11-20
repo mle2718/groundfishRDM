@@ -2,6 +2,7 @@
 library(shiny)
 library(shinyjs)
 library(dplyr)
+library(tidyverse)
 
 #### Start UI ####
 ui <- fluidPage(
@@ -486,7 +487,7 @@ server <- function(input, output, session){
                       season = c("NA"), draw_out = c("NA"), mrip_index = c("NA"),option= c("NA"))
 
     dat_out<- dat %>% rbind(Regs)
-    readr::write_csv(dat, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S_"),  ".csv")))
+    readr::write_csv(dat_out, file = here::here(paste0("output/output_", format(Sys.time(), "%Y%m%d_%H%M%S"),  ".csv")))
 
     })
 

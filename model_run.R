@@ -219,7 +219,8 @@ get_predictions_out<- function(x){
                            calendar_adjust = calendar_adjust,
                            costs_new_all = costs,
                            size_data_read = size_data_read,
-                           discard_mortality_dat = Disc_mort)
+                           discard_mortality_dat = Disc_mort,
+                           baseline_comparison = baseline_comparison)
 
   #print("test")
   #print(test)
