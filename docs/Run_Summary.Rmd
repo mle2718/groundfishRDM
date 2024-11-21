@@ -13,31 +13,61 @@ df <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T) %>
 
 test<- read.csv(here::here("output/output_20241120_145146.csv"))
 
-df2<- df %>% dplyr::mutate(run_number = as.numeric(rep(1:(length(df$mode)/90), each = 90)))
+df2<- df %>% dplyr::mutate(run_number = as.character(rep(1:(length(df$mode)/90), each = 90)))
 
 ```
 
 ## Management Measures
 
 ```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
-
+SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>% 
+  dplyr::rename(Category = Var, 
+                SQ = Val)
 df3<- df2 %>% dplyr::filter(!Category %in% c("CV", "ntrips", "nchoiceoccasions","cod" , "had")) %>% 
-  dplyr::select(Category, Value, run_number) #%>% 
-  #tidyr::pivot_wider(names_from = Category, values_from = Value)
+  dplyr::select(Category, Value, run_number) %>% 
+  dplyr::left_join(SQ_regulations, by = c("Category")) 
+
+seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>% 
+  tidyr::separate(Value, into = c("Value1", "Value2"), sep = " - ") %>% 
+  tidyr::separate(SQ, into = c("SQ1", "SQ2"), sep = " - ") %>% 
+  dplyr::mutate(Value = as.integer(lubridate::ymd(Value2)-lubridate::ymd(Value1)), 
+                SQ = as.integer(lubridate::ymd(SQ2)-lubridate::ymd(SQ1))) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter_Season", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer_Season", TRUE ~ Diff_from_SQ), 
+                Value = paste0(Value1, " - ", Value2)) %>% 
+  dplyr::select(Category, Diff_from_SQ, run_number)
+                  
+bag<- df3 %>% dplyr::filter(stringr::str_detect(Category, "bag")) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_bag", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_bag", TRUE ~ Diff_from_SQ)) %>% 
+  dplyr::select(Category, Diff_from_SQ, run_number)
+
+size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_min_length", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>% 
+  dplyr::select(Category, Diff_from_SQ, run_number)
+
+df4<- rbind(seas, bag, size) %>% 
+  tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>% 
+  dplyr::select(!Var)
+
 
 Regs_out <- df3 %>%
-      #SQ_regulations %>%
-      tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
-      tidyr::pivot_wider(names_from = Var, values_from = Value) %>%
-      dplyr::filter(!bag == 0) %>%
+  dplyr::select(!SQ) %>% 
+  dplyr::select(!Opt) %>% 
+  tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
+  tidyr::pivot_wider(names_from = Var, values_from = Value) %>%
+      
       #tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
+  dplyr::left_join(df4, by = c("Species", "mode", "run_number")) %>% 
+  dplyr::filter(!bag == 0) %>%
       dplyr::rename(Mode = mode,
                     `Bag Limit` = bag,
                     `Min Size (in)` = size) %>%
       tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
       dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
                     Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>% 
-   dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season)
+   dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ)
  DT::datatable(Regs_out)
 ```
 
