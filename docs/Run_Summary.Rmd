@@ -1,0 +1,141 @@
+---
+title: "Run Summary"
+output: html_document
+---
+
+```{r setup, echo  = FALSE, warning = FALSE, message = FALSE}
+
+library(tidyverse)
+library(grid)
+library(plotly)
+df <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T) %>% 
+  map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
+
+test<- read.csv(here::here("output/output_20241120_145146.csv"))
+
+df2<- df %>% dplyr::mutate(run_number = as.numeric(rep(1:(length(df$mode)/90), each = 90)))
+
+```
+
+## Management Measures
+
+```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
+
+df3<- df2 %>% dplyr::filter(!Category %in% c("CV", "ntrips", "nchoiceoccasions","cod" , "had")) %>% 
+  dplyr::select(Category, Value, run_number) #%>% 
+  #tidyr::pivot_wider(names_from = Category, values_from = Value)
+
+Regs_out <- df3 %>%
+      #SQ_regulations %>%
+      tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
+      tidyr::pivot_wider(names_from = Var, values_from = Value) %>%
+      dplyr::filter(!bag == 0) %>%
+      #tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
+      dplyr::rename(Mode = mode,
+                    `Bag Limit` = bag,
+                    `Min Size (in)` = size) %>%
+      tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
+      dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
+                    Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>% 
+   dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season)
+ DT::datatable(Regs_out)
+```
+
+
+
+
+
+## Plot all catch totals on one figure
+
+```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
+  
+catch_all<- df2 %>% 
+  dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                number_weight == "Weight") %>%
+  dplyr::group_by(run_number, option, Category) %>%
+  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+  dplyr::group_by(run_number, option, Category) %>%
+  dplyr::summarise(Value = median(Value)) %>% 
+  tidyr::pivot_wider(names_from = Category, values_from = Value) 
+
+ p<- catch_all %>% ggplot2::ggplot(aes(x = cod, y = had))+
+   geom_point() +
+   geom_vline( xintercept =350000)+
+   geom_hline( yintercept =1405000)+
+   scale_fill_brewer(palette="Dark2")+
+   ggtitle("Cod and Haddock Mortality")+
+   ylab("Total Haddock Mortality")+
+   xlab("Total Cod Mortality")+
+   theme(legend.position = "none")
+
+
+ 
+fig<- ggplotly(p)
+
+fig
+#gridExtra::grid.arrange(fig1, fig2, ncol = 2)
+
+```
+### CV and Mortality
+
+```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
+
+welfare <-  df2 %>%
+  dplyr::filter(Category %in% c("CV")) %>%
+  dplyr::group_by(run_number, option, Category, draw_out) %>%
+  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+  dplyr::group_by(run_number,option, Category) %>%
+  dplyr::summarise(CV = median(Value)) 
+  
+  
+catch<- df2 %>% 
+  dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                number_weight == "Weight") %>%
+  dplyr::group_by(run_number, option, Category, draw_out) %>%
+  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+  dplyr::group_by(run_number, option, Category) %>%
+  dplyr::summarise(Value = median(Value)) %>% 
+  tidyr::pivot_wider(names_from = Category, values_from = Value) %>% 
+  dplyr::left_join(welfare) %>% 
+  dplyr::select(!Category)
+
+ p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV, color = run_number))+
+   geom_point() +
+   geom_vline( xintercept =350000)+
+   scale_fill_brewer(palette="Dark2")+
+   ggtitle("Cod")+
+   ylab("Consumer Surplus ($)")+
+   xlab("Total Cod Mortality")+
+   theme(legend.position = "none")
+
+ p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV, color = run_number))+
+   geom_point() +
+   geom_vline( xintercept =1405000)+
+   scale_fill_brewer(palette="Dark2")+
+   ggtitle("Hadock")+
+   ylab("Consumer Surplus ($)")+
+   xlab("Total Haddock Mortality")+
+   theme(legend.position = "none")
+
+ 
+fig1<- ggplotly(p1)
+fig2<- ggplotly(p2)
+fig1
+fig2
+#gridExtra::grid.arrange(fig1, fig2, ncol = 2)
+
+```
+
+ # Add green highlight to runs that work
+
+```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
+ DT::datatable(catch)
+```
+
+
+
+
+
+
+
+
