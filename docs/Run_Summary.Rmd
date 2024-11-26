@@ -49,26 +49,25 @@ size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>%
                 Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>% 
   dplyr::select(Category, Diff_from_SQ, run_number)
 
-df4<- rbind(seas, bag, size) %>% 
-  tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>% 
-  dplyr::select(!Var)
+df4<- rbind(seas, bag, size)
 
 
 Regs_out <- df3 %>%
+  dplyr::left_join(df4, by = c("Category", "run_number")) %>% 
   dplyr::select(!SQ) %>% 
   dplyr::select(!Opt) %>% 
   tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
-  tidyr::pivot_wider(names_from = Var, values_from = Value) %>%
-      
-      #tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
-  dplyr::left_join(df4, by = c("Species", "mode", "run_number")) %>% 
-  dplyr::filter(!bag == 0) %>%
-      dplyr::rename(Mode = mode,
-                    `Bag Limit` = bag,
-                    `Min Size (in)` = size) %>%
-      tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
-      dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
-                    Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>% 
+  dplyr::ungroup() %>% 
+  tidyr::pivot_wider(names_from = Var, values_from = c(Value, Diff_from_SQ)) %>%
+  dplyr::filter(!Value_bag == 0) %>%
+  dplyr::rename(Mode = mode,
+                `Bag Limit` = Value_bag,
+                `Min Size (in)` = Value_size, 
+                Season = Value_Season) %>%
+  tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
+  dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
+                Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
+  dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>% 
    dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ)
  DT::datatable(Regs_out)
 ```
@@ -80,15 +79,6 @@ Regs_out <- df3 %>%
 ## Plot all catch totals on one figure
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
-  
-catch_all<- df2 %>% 
-  dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-                number_weight == "Weight") %>%
-  dplyr::group_by(run_number,  Category) %>%
-  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::group_by(run_number, Category) %>%
-  dplyr::summarise(Value = median(Value)) %>% 
-  tidyr::pivot_wider(names_from = Category, values_from = Value)
 
  catch_agg<- df2 %>%
       #predictions_out %>%
@@ -103,15 +93,18 @@ catch_all<- df2 %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>% 
-   tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))
+   tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl)) %>% 
+   dplyr::mutate(run_number = as.numeric(run_number))
 
-p<- catch_agg %>% ggplot2::ggplot(aes(x = Value_cod, y = Value_had, label = run_number, color = under_acl_cod))+
-   geom_point() +
+p<- catch_agg  %>% 
+  ggplot2::ggplot(aes(x = Value_cod, y = Value_had))+
+   geom_point(aes(label = run_number, colour = under_acl_cod)) +
+   #geom_text(aes(label = run_number, y = Value_had + 0.25))+
    geom_text(aes(label=run_number, hjust=1, vjust=1))+
    #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
    geom_vline( xintercept =cod_acl)+
    geom_hline( yintercept =had_acl)+
-   scale_fill_brewer(palette="Dark2")+
+   scale_colour_gradient(low = "white", high = "darkgreen")+
    ggtitle("Cod and Haddock Mortality")+
    ylab("Total Haddock Mortality")+
    xlab("Total Cod Mortality")
@@ -125,7 +118,10 @@ fig
 #gridExtra::grid.arrange(fig1, fig2, ncol = 2)
 
 ```
-### CV and Mortality
+
+### Plots {.tabset}
+
+####  Mortality and CV
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -142,25 +138,27 @@ catch<- df2 %>%
                 number_weight == "Weight") %>%
   dplyr::group_by(run_number, option, Category, draw_out) %>%
   dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+  dplyr::mutate(Value = Value * 0.000454) %>%
   dplyr::group_by(run_number, option, Category) %>%
   dplyr::summarise(Value = median(Value)) %>% 
   tidyr::pivot_wider(names_from = Category, values_from = Value) %>% 
   dplyr::left_join(welfare) %>% 
-  dplyr::select(!Category)
+  dplyr::select(!Category) %>% 
+  dplyr::mutate(run_number = as.numeric(run_number))
 
- p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV, color = run_number))+
+ p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
    geom_point() +
-   geom_vline( xintercept =350000)+
-   scale_fill_brewer(palette="Dark2")+
+   geom_vline( xintercept =cod_acl)+
+     geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Cod")+
    ylab("Consumer Surplus ($)")+
    xlab("Total Cod Mortality")+
    theme(legend.position = "none")
 
- p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV, color = run_number))+
+ p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
    geom_point() +
-   geom_vline( xintercept =1405000)+
-   scale_fill_brewer(palette="Dark2")+
+   geom_vline( xintercept =had_acl)+
+     geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Hadock")+
    ylab("Consumer Surplus ($)")+
    xlab("Total Haddock Mortality")+
@@ -175,14 +173,65 @@ fig2
 
 ```
 
- # Add green highlight to runs that work
 
-```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
- DT::datatable(catch)
+####  Mortality and Releases
+
+```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
+
+release <-  df2 %>%
+  dplyr::filter(catch_disposition %in% c("release")) %>%
+  dplyr::group_by(run_number, option, Category, draw_out) %>%
+  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+  dplyr::group_by(run_number,option, Category) %>%
+  dplyr::summarise(release = median(Value)) 
+  
+  
+catch<- df2 %>% 
+  dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                number_weight == "Weight") %>%
+  dplyr::group_by(run_number, option, Category, draw_out) %>%
+  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+  dplyr::mutate(Value = Value * 0.000454) %>%
+  dplyr::group_by(run_number, option, Category) %>%
+  dplyr::summarise(Value = median(Value)) %>% 
+  dplyr::left_join(release) %>%
+  tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
+
+ p1<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
+   geom_point() +
+   geom_vline( xintercept = cod_acl)+
+   geom_text(aes(label=run_number, hjust=0, nudge_x=5))+
+   ggtitle("Cod")+
+   ylab("Consumer Surplus ($)")+
+   xlab("Total Cod Mortality")+
+   theme(legend.position = "none")
+
+ p2<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
+   geom_point() +
+   geom_vline( xintercept =had_acl)+
+   geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
+   ggtitle("Hadock")+
+   ylab("Consumer Surplus ($)")+
+   xlab("Total Haddock Mortality")+
+   theme(legend.position = "none")
+
+ 
+fig1<- ggplotly(p1)
+fig2<- ggplotly(p2)
+fig1
+fig2
+#gridExtra::grid.arrange(fig1, fig2, ncol = 2)
+
 ```
 
 
 
+```{r}
+mtcars %>%
+  ggplot2::ggplot(aes(x = mpg, y = disp))+
+  geom_point(aes(colour = wt))
+
+```
 
 
 
