@@ -17,6 +17,7 @@ df2<- df %>% dplyr::mutate(run_number = as.character(rep(1:(length(df$mode)/90),
 
 cod_acl <- 99
 had_acl <- 1075
+lb_to_mt <-  0.000454
 ```
 
 ## Management Measures
@@ -87,7 +88,7 @@ Regs_out <- df3 %>%
    
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-   dplyr::mutate(Value = Value * 0.000454) %>%
+   dplyr::mutate(Value = Value * lb_to_mt) %>%
       dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl ~ 1, TRUE ~ 0),
                     under_acl = dplyr::case_when(Category == "had" & Value <= had_acl ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
@@ -106,8 +107,8 @@ p<- catch_agg  %>%
    geom_hline( yintercept =had_acl)+
    scale_colour_gradient(low = "white", high = "darkgreen")+
    ggtitle("Cod and Haddock Mortality")+
-   ylab("Total Haddock Mortality")+
-   xlab("Total Cod Mortality")
+   ylab("Total Haddock Mortality (mt)")+
+   xlab("Total Cod Mortality (mt)")
    
 
 
@@ -138,7 +139,7 @@ catch<- df2 %>%
                 number_weight == "Weight") %>%
   dplyr::group_by(run_number, option, Category, draw_out) %>%
   dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::mutate(Value = Value * 0.000454) %>%
+  dplyr::mutate(Value = Value * lb_to_mt) %>%
   dplyr::group_by(run_number, option, Category) %>%
   dplyr::summarise(Value = median(Value)) %>% 
   tidyr::pivot_wider(names_from = Category, values_from = Value) %>% 
@@ -152,7 +153,7 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Cod")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Cod Mortality")+
+   xlab("Total Cod Mortality (mt)")+
    theme(legend.position = "none")
 
  p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
@@ -161,7 +162,7 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Hadock")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Haddock Mortality")+
+   xlab("Total Haddock Mortality (mt)")+
    theme(legend.position = "none")
 
  
@@ -191,7 +192,7 @@ catch<- df2 %>%
                 number_weight == "Weight") %>%
   dplyr::group_by(run_number, option, Category, draw_out) %>%
   dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::mutate(Value = Value * 0.000454) %>%
+  dplyr::mutate(Value = Value * lb_to_mt) %>%
   dplyr::group_by(run_number, option, Category) %>%
   dplyr::summarise(Value = median(Value)) %>% 
   dplyr::left_join(release) %>%
