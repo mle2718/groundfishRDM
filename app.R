@@ -235,14 +235,17 @@ server <- function(input, output, session){
   output$DTout <- renderDT({
 
 
-    print(df2)
+
     SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>%
       dplyr::rename(Category = Var,
                     SQ = Val)
 
+
+
     df3<- df2() %>% dplyr::filter(!Category %in% c("CV", "ntrips", "nchoiceoccasions","cod" , "had")) %>%
       dplyr::select(Category, Value, run_number) %>%
       dplyr::left_join(SQ_regulations, by = c("Category"))
+
 
 
     seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>%
@@ -265,7 +268,8 @@ server <- function(input, output, session){
                     Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>%
       dplyr::select(Category, Diff_from_SQ, run_number)
 
-    df4<- rbind(seas, bag, size)
+    df4<- rbind(seas, bag, size) %>%
+      dplyr::ungroup()
 
     Regs_out <- df3 %>%
       dplyr::left_join(df4, by = c("Category", "run_number")) %>%
@@ -274,22 +278,71 @@ server <- function(input, output, session){
       tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
       dplyr::ungroup() %>%
       tidyr::pivot_wider(names_from = Var, values_from = c(Value, Diff_from_SQ)) %>%
-      dplyr::filter(!Value_bag == 0) %>%
-      dplyr::rename(Mode = mode,
-                    `Bag Limit` = Value_bag,
-                    `Min Size (in)` = Value_size,
-                    Season = Value_Season) %>%
-      tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
-      dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
-                    Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
+      dplyr::mutate(Value_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_Season),
+                    Value_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_size),
+                    Diff_from_SQ_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_bag),
+                    Diff_from_SQ_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_size),
+                    Diff_from_SQ_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_Season),
+                    Value_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_bag)) %>%
+      dplyr::ungroup() %>%
       dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
-      tidyr::separate(Season, into = c("Season1", "Season2"), sep = " - ") %>%
-      dplyr::mutate(Season1 = stringr::str_remove(Season1, "2024-"),
-                    Season1 = stringr::str_remove(Season1, "2025-"),
-                    Season2 = stringr::str_remove(Season2, "2024-"),
-                    Season2 = stringr::str_remove(Season2, "2025-"),
-                    Season = paste0(Season1, " - ", Season2)) %>%
-      dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ)
+      dplyr::select(!c(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
+
+      #dplyr::filter(!Value_bag == 0) %>%
+      #dplyr::group_by(mode, run_number) %>%
+      tidyr::pivot_wider(names_from = Species, values_from = c(Diff_from_SQ, Value_bag, Value_size, Value_Season)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cod_bag = paste0(Value_bag_Cod1, " , ", Value_bag_Cod2),
+                    cod_size = paste0(Value_size_Cod1, " , ", Value_size_Cod2),
+                    cod_season = paste0(Value_Season_Cod1, " , ", Value_Season_Cod2),
+                    had_bag = paste0(Value_bag_Had1, " , ", Value_bag_Had2, " , ", Value_bag_Had3),
+                    had_size = paste0(Value_size_Had1, " , ", Value_size_Had2, " , ", Value_size_Had3),
+                    had_season = paste0(Value_Season_Had1, " , ", Value_Season_Had2, " , ", Value_Season_Had3),
+                    cod_bag = stringr::str_remove(cod_bag, " , NA"),
+                    cod_size = stringr::str_remove(cod_size, " , NA"),
+                    cod_season = stringr::str_remove(cod_season, " , NA"),
+                    had_bag = stringr::str_remove(had_bag, " , NA"),
+                    had_size = stringr::str_remove(had_size, " , NA"),
+                    had_season = stringr::str_remove(had_season, " , NA"),
+                    Diff_from_SQ_cod = paste0(Diff_from_SQ_Cod1, " , ", Diff_from_SQ_Cod2),
+                    Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3),
+                    Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
+                    Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
+                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"),
+                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"),
+                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>%
+      dplyr::select(mode, run_number, Diff_from_SQ_cod, Diff_from_SQ_had, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
+
+
+      # dplyr::rename(Mode = mode,
+      #               `Bag Limit` = Value_bag,
+      #               `Min Size (in)` = Value_size,
+      #               Season = Value_Season) %>%
+      # tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
+      # dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
+      #               Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
+      #
+      # tidyr::separate(Season, into = c("Season1", "Season2"), sep = " - ") %>%
+    dplyr::mutate(cod_season = stringr::str_remove(cod_season, "2024-"),
+                  cod_season = stringr::str_remove(cod_season, "2025-"),
+                  had_season = stringr::str_remove(had_season, "2024-"),
+                  had_season = stringr::str_remove(had_season, "2025-"),
+                  cod_season = stringr::str_remove(cod_season, "2024-"),
+                  cod_season = stringr::str_remove(cod_season, "2025-"),
+                  had_season = stringr::str_remove(had_season, "2024-"),
+                  had_season = stringr::str_remove(had_season, "2025-"),
+                  cod_season = stringr::str_remove(cod_season, "2024-"),
+                  cod_season = stringr::str_remove(cod_season, "2025-"),
+                  had_season = stringr::str_remove(had_season, "2024-"),
+                  had_season = stringr::str_remove(had_season, "2025-"),
+                  cod_season = stringr::str_remove(cod_season, "2024-"),
+                  cod_season = stringr::str_remove(cod_season, "2025-"),
+                  had_season = stringr::str_remove(had_season, "2024-"),
+                  had_season = stringr::str_remove(had_season, "2025-")) #%>%
+    #  dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ) %>%
+    # dplyr::group_by(run_number, Mode) %>%
+    # tidyr::pivot_wider(names_from = Species, values_from = c(`Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ), )
+
 
     DT::datatable(Regs_out)
   })
