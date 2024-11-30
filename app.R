@@ -283,6 +283,12 @@ server <- function(input, output, session){
       dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
                     Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
       dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
+      tidyr::separate(Season, into = c("Season1", "Season2"), sep = " - ") %>%
+      dplyr::mutate(Season1 = stringr::str_remove(Season1, "2024-"),
+                    Season1 = stringr::str_remove(Season1, "2025-"),
+                    Season2 = stringr::str_remove(Season2, "2024-"),
+                    Season2 = stringr::str_remove(Season2, "2025-"),
+                    Season = paste0(Season1, " - ", Season2)) %>%
       dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ)
 
     DT::datatable(Regs_out)
