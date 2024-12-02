@@ -4,30 +4,46 @@ output: html_document
 ---
 
 ```{r setup, echo  = FALSE, warning = FALSE, message = FALSE}
-
 library(tidyverse)
 library(grid)
 library(plotly)
-df <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T) %>% 
+
+fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
+
+fnames2<- as.data.frame(fnames) %>% 
+  tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>% 
+  dplyr::mutate(c = ifelse(stringr::str_detect(c, "20241"),  "NA", c), 
+                d = c(1:nrow(.)), 
+                run_name = dplyr::case_when(c != "NA" ~ c, TRUE ~ as.character(d))) %>% 
+  dplyr::select(run_name)
+
+df <- fnames %>% 
   map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
-test<- read.csv(here::here("output/output_20241120_145146.csv"))
 
-df2<- df %>% dplyr::mutate(run_number = as.character(rep(1:(length(df$mode)/90), each = 90)))
+df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 90)))
 
 cod_acl <- 99
 had_acl <- 1075
+
 ```
 
 ## Management Measures
 
 ```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
+
+
 SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>% 
   dplyr::rename(Category = Var, 
                 SQ = Val)
+
+
+
 df3<- df2 %>% dplyr::filter(!Category %in% c("CV", "ntrips", "nchoiceoccasions","cod" , "had")) %>% 
   dplyr::select(Category, Value, run_number) %>% 
   dplyr::left_join(SQ_regulations, by = c("Category")) 
+
+
 
 seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>% 
   tidyr::separate(Value, into = c("Value1", "Value2"), sep = " - ") %>% 
@@ -37,7 +53,7 @@ seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>%
   dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter_Season", TRUE ~ ""),
                 Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer_Season", TRUE ~ Diff_from_SQ), 
                 Value = paste0(Value1, " - ", Value2)) %>% 
-  dplyr::select(Category, Diff_from_SQ, run_number)
+  dplyr::select(Category, Diff_from_SQ, run_number) 
                   
 bag<- df3 %>% dplyr::filter(stringr::str_detect(Category, "bag")) %>% 
   dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_bag", TRUE ~ ""),
@@ -49,27 +65,84 @@ size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>%
                 Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>% 
   dplyr::select(Category, Diff_from_SQ, run_number)
 
-df4<- rbind(seas, bag, size)
-
+df4<- rbind(seas, bag, size) %>% 
+  dplyr::ungroup()
 
 Regs_out <- df3 %>%
   dplyr::left_join(df4, by = c("Category", "run_number")) %>% 
   dplyr::select(!SQ) %>% 
   dplyr::select(!Opt) %>% 
-  tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
+  tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>% 
   dplyr::ungroup() %>% 
   tidyr::pivot_wider(names_from = Var, values_from = c(Value, Diff_from_SQ)) %>%
-  dplyr::filter(!Value_bag == 0) %>%
-  dplyr::rename(Mode = mode,
-                `Bag Limit` = Value_bag,
-                `Min Size (in)` = Value_size, 
-                Season = Value_Season) %>%
-  tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
-  dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
-                Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
+  dplyr::mutate(Value_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_Season), 
+                Value_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_size), 
+                Diff_from_SQ_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_bag), 
+                Diff_from_SQ_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_size),
+                Diff_from_SQ_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_Season),
+                Value_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_bag)) %>% 
+  dplyr::ungroup() %>% 
   dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>% 
-   dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ)
- DT::datatable(Regs_out)
+  dplyr::select(!c(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>% 
+  
+  #dplyr::filter(!Value_bag == 0) %>%
+  #dplyr::group_by(mode, run_number) %>% 
+  tidyr::pivot_wider(names_from = Species, values_from = c(Diff_from_SQ, Value_bag, Value_size, Value_Season)) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(cod_bag = paste0(Value_bag_Cod1, " , ", Value_bag_Cod2), 
+                cod_size = paste0(Value_size_Cod1, " , ", Value_size_Cod2),
+                cod_season = paste0(Value_Season_Cod1, " , ", Value_Season_Cod2),
+                had_bag = paste0(Value_bag_Had1, " , ", Value_bag_Had2, " , ", Value_bag_Had3),
+                had_size = paste0(Value_size_Had1, " , ", Value_size_Had2, " , ", Value_size_Had3),
+                had_season = paste0(Value_Season_Had1, " , ", Value_Season_Had2, " , ", Value_Season_Had3),
+                cod_bag = stringr::str_remove(cod_bag, " , NA"), 
+                cod_size = stringr::str_remove(cod_size, " , NA"),
+                cod_season = stringr::str_remove(cod_season, " , NA"),
+                had_bag = stringr::str_remove(had_bag, " , NA"),
+                had_size = stringr::str_remove(had_size, " , NA"),
+                had_season = stringr::str_remove(had_season, " , NA"), 
+                Diff_from_SQ_cod = paste0(Diff_from_SQ_Cod1, " , ", Diff_from_SQ_Cod2), 
+                Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3), 
+                Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
+                Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"), 
+                Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"), 
+                Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"), 
+                Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>% 
+  dplyr::select(mode, run_number, Diff_from_SQ_cod, Diff_from_SQ_had, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>% 
+
+  
+  # dplyr::rename(Mode = mode,
+  #               `Bag Limit` = Value_bag,
+  #               `Min Size (in)` = Value_size, 
+  #               Season = Value_Season) %>%
+  # tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
+  # dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
+  #               Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
+  # 
+  # tidyr::separate(Season, into = c("Season1", "Season2"), sep = " - ") %>% 
+  dplyr::mutate(cod_season = stringr::str_remove(cod_season, "2024-"), 
+                cod_season = stringr::str_remove(cod_season, "2025-"), 
+                had_season = stringr::str_remove(had_season, "2024-"), 
+                had_season = stringr::str_remove(had_season, "2025-"), 
+                cod_season = stringr::str_remove(cod_season, "2024-"), 
+                cod_season = stringr::str_remove(cod_season, "2025-"), 
+                had_season = stringr::str_remove(had_season, "2024-"), 
+                had_season = stringr::str_remove(had_season, "2025-"), 
+                cod_season = stringr::str_remove(cod_season, "2024-"), 
+                cod_season = stringr::str_remove(cod_season, "2025-"), 
+                had_season = stringr::str_remove(had_season, "2024-"), 
+                had_season = stringr::str_remove(had_season, "2025-"), 
+                cod_season = stringr::str_remove(cod_season, "2024-"), 
+                cod_season = stringr::str_remove(cod_season, "2025-"), 
+                had_season = stringr::str_remove(had_season, "2024-"), 
+                had_season = stringr::str_remove(had_season, "2025-")) #%>% 
+  #  dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ) %>% 
+  # dplyr::group_by(run_number, Mode) %>% 
+  # tidyr::pivot_wider(names_from = Species, values_from = c(`Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ), )
+  
+
+DT::datatable(Regs_out)
+
 ```
 
 
@@ -93,26 +166,23 @@ Regs_out <- df3 %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>% 
-   tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl)) %>% 
-   dplyr::mutate(run_number = as.numeric(run_number))
+   tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl)) 
 
-p<- catch_agg  %>% 
+p<- catch_agg %>% 
+  dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>% 
   ggplot2::ggplot(aes(x = Value_cod, y = Value_had))+
-   geom_point(aes(label = run_number, colour = under_acl_cod)) +
+   geom_point(aes(label = run_number, color = under_acl_cod)) +
    #geom_text(aes(label = run_number, y = Value_had + 0.25))+
    geom_text(aes(label=run_number, hjust=1, vjust=1))+
    #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
    geom_vline( xintercept =cod_acl)+
    geom_hline( yintercept =had_acl)+
-   scale_colour_gradient(low = "white", high = "darkgreen")+
+   scale_colour_gradient2(low = "white", high = "darkgreen")+
    ggtitle("Cod and Haddock Mortality")+
    ylab("Total Haddock Mortality")+
    xlab("Total Cod Mortality")
-   
-
-
  
-fig<- ggplotly(p)
+fig<- plotly::ggplotly(p)
 
 fig
 #gridExtra::grid.arrange(fig1, fig2, ncol = 2)
@@ -143,8 +213,7 @@ catch<- df2 %>%
   dplyr::summarise(Value = median(Value)) %>% 
   tidyr::pivot_wider(names_from = Category, values_from = Value) %>% 
   dplyr::left_join(welfare) %>% 
-  dplyr::select(!Category) %>% 
-  dplyr::mutate(run_number = as.numeric(run_number))
+  dplyr::select(!Category) 
 
  p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
    geom_point() +
@@ -232,8 +301,6 @@ mtcars %>%
   geom_point(aes(colour = wt))
 
 ```
-
-
 
 
 
