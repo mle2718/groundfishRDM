@@ -47,13 +47,13 @@ seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>%
   dplyr::select(Category, Diff_from_SQ, run_number)
                   
 bag<- df3 %>% dplyr::filter(stringr::str_detect(Category, "bag")) %>% 
-  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_bag", TRUE ~ ""),
-                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_bag", TRUE ~ Diff_from_SQ)) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Bag", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Bag", TRUE ~ Diff_from_SQ)) %>% 
   dplyr::select(Category, Diff_from_SQ, run_number)
 
 size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>% 
-  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_min_length", TRUE ~ ""),
-                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Min Length", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Min Length", TRUE ~ Diff_from_SQ)) %>% 
   dplyr::select(Category, Diff_from_SQ, run_number)
 
 df4<- rbind(seas, bag, size)
@@ -74,8 +74,8 @@ Regs_out <- df3 %>%
   tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
   dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
                 Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
-  dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>% 
-   dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ)
+  dplyr::mutate('Diff From SQ' = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>% 
+   dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, 'Diff From SQ')
  DT::datatable(Regs_out)
 ```
 
