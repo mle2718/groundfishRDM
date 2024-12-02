@@ -8,6 +8,8 @@ library(tidyverse)
 library(grid)
 library(plotly)
 
+options(scipen=999) 
+
 fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
 
 fnames2<- as.data.frame(fnames) %>% 
@@ -25,6 +27,8 @@ df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each 
 
 cod_acl <- 99
 had_acl <- 1075
+
+lb_to_mt <-  0.000454 
 
 ```
 
@@ -101,10 +105,19 @@ Regs_out <- df3 %>%
                 had_bag = stringr::str_remove(had_bag, " , NA"),
                 had_size = stringr::str_remove(had_size, " , NA"),
                 had_season = stringr::str_remove(had_season, " , NA"), 
+                cod_bag = stringr::str_remove(cod_bag, "NA ,"), 
+                cod_size = stringr::str_remove(cod_size, "NA ,"),
+                cod_season = stringr::str_remove(cod_season, "NA ,"),
+                had_bag = stringr::str_remove(had_bag, "NA ,"),
+                had_size = stringr::str_remove(had_size, "NA ,"),
+                had_season = stringr::str_remove(had_season, "NA ,"),
                 Diff_from_SQ_cod = paste0(Diff_from_SQ_Cod1, " , ", Diff_from_SQ_Cod2), 
                 Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3), 
                 Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
-                Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"), 
+                Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
+                
+                Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NA ,"),
+                Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NA ,"),
                 Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"), 
                 Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"), 
                 Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>% 
@@ -160,7 +173,7 @@ DT::datatable(Regs_out)
    
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-   dplyr::mutate(Value = Value * 0.000454) %>%
+   dplyr::mutate(Value = Value * lb_to_mt) %>%
       dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl ~ 1, TRUE ~ 0),
                     under_acl = dplyr::case_when(Category == "had" & Value <= had_acl ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
@@ -168,22 +181,25 @@ DT::datatable(Regs_out)
                        Value = median(Value)) %>% 
    tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl)) 
 
+test<- 1:5
 p<- catch_agg %>% 
   dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>% 
   ggplot2::ggplot(aes(x = Value_cod, y = Value_had))+
-   geom_point(aes(label = run_number, color = under_acl_cod)) +
+  geom_point(aes(label = run_number, colour = test)) +
+  scale_colour_gradient2(low = "white", high = "darkgreen") +
    #geom_text(aes(label = run_number, y = Value_had + 0.25))+
-   geom_text(aes(label=run_number, hjust=1, vjust=1))+
+   geom_text(aes(label=run_number))+
    #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
    geom_vline( xintercept =cod_acl)+
    geom_hline( yintercept =had_acl)+
-   scale_colour_gradient2(low = "white", high = "darkgreen")+
+   #scale_colour_manual(values = c("white", "springgreen1", "springgreen4"))+
    ggtitle("Cod and Haddock Mortality")+
-   ylab("Total Haddock Mortality")+
-   xlab("Total Cod Mortality")
- 
-fig<- plotly::ggplotly(p)
+   ylab("Total Haddock Mortality (mt)")+
+   xlab("Total Cod Mortality (mt)")
 
+fig<- plotly::ggplotly(p, 
+                       tooltip = c("x", "y", "colour")) %>% 
+  plotly::style(textposition = "top") 
 fig
 #gridExtra::grid.arrange(fig1, fig2, ncol = 2)
 
@@ -208,7 +224,7 @@ catch<- df2 %>%
                 number_weight == "Weight") %>%
   dplyr::group_by(run_number, option, Category, draw_out) %>%
   dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::mutate(Value = Value * 0.000454) %>%
+  dplyr::mutate(Value = Value * lb_to_mt) %>%
   dplyr::group_by(run_number, option, Category) %>%
   dplyr::summarise(Value = median(Value)) %>% 
   tidyr::pivot_wider(names_from = Category, values_from = Value) %>% 
@@ -221,21 +237,23 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Cod")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Cod Mortality")+
+   xlab("Total Cod Mortality (mt)")+
    theme(legend.position = "none")
 
  p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
    geom_point() +
    geom_vline( xintercept =had_acl)+
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
-   ggtitle("Hadock")+
+   ggtitle("Haddock")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Haddock Mortality")+
+   xlab("Total Haddock Mortality (mt)")+
    theme(legend.position = "none")
 
  
-fig1<- ggplotly(p1)
-fig2<- ggplotly(p2)
+fig1<- ggplotly(p1)%>% 
+  plotly::style(textposition = "top") 
+fig2<- ggplotly(p2)%>% 
+  plotly::style(textposition = "top") 
 fig1
 fig2
 #gridExtra::grid.arrange(fig1, fig2, ncol = 2)
@@ -260,47 +278,41 @@ catch<- df2 %>%
                 number_weight == "Weight") %>%
   dplyr::group_by(run_number, option, Category, draw_out) %>%
   dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::mutate(Value = Value * 0.000454) %>%
+  dplyr::mutate(Value = Value * lb_to_mt) %>%
   dplyr::group_by(run_number, option, Category) %>%
   dplyr::summarise(Value = median(Value)) %>% 
   dplyr::left_join(release) %>%
   tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
 
- p1<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
+ p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
    geom_point() +
    geom_vline( xintercept = cod_acl)+
-   geom_text(aes(label=run_number, hjust=0, nudge_x=5))+
+   geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
    ggtitle("Cod")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Cod Mortality")+
+   xlab("Total Cod Mortality (mt)")+
    theme(legend.position = "none")
 
- p2<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
+ p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
    geom_point() +
    geom_vline( xintercept =had_acl)+
    geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
-   ggtitle("Hadock")+
+   ggtitle("Haddock")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Haddock Mortality")+
+   xlab("Total Haddock Mortality (mt)")+
    theme(legend.position = "none")
 
  
-fig1<- ggplotly(p1)
-fig2<- ggplotly(p2)
-fig1
-fig2
+fig3<- ggplotly(p3)%>% 
+  plotly::style(textposition = "top") 
+fig4<- ggplotly(p4)%>% 
+  plotly::style(textposition = "top") 
+fig3
+fig4
 #gridExtra::grid.arrange(fig1, fig2, ncol = 2)
 
 ```
 
-
-
-```{r}
-mtcars %>%
-  ggplot2::ggplot(aes(x = mpg, y = disp))+
-  geom_point(aes(colour = wt))
-
-```
 
 
 
