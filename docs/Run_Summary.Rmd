@@ -3,9 +3,12 @@ title: "Run Summary"
 output: html_document
 ---
 
-This page summarizes models results for sets of policies that have been run to date.  These are intended as a jumping off point for your own model runs.  The results of your own model runs are stored. At the end of the day, they are added to this page.  
+This page summarizes models results for sets of policies that have been run to date.  These are intended as a jumping off point for your own model runs.  
 
-Hover over each point to view the detailed statistics for each model run.  The first section a table of recreational management measures. They are a little bit difficult to summarize in a nice table.  The second section contains graphs of mortality.   The third section has graphs of other performance measures. 
+
+The results of your own model runs are stored. Please give it a name (no _ please).  At the end of the day, they are added to this page.  
+
+Hover over each point to view the detailed statistics for each model run.  The first section contains a table of recreational management measures. The second section contains graphs of mortality.   The third section has graphs of other performance measures, including Economic Surplus, Trips, and Discards 
 
 ```{r setup, echo  = FALSE, warning = FALSE, message = FALSE}
 
