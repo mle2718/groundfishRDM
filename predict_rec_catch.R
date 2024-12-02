@@ -130,7 +130,7 @@ predict_rec_catch <- function( x, draw,
       tibble::tibble() %>%
       dplyr::filter(draw == draw,
                     mode == select_mode) %>%
-      dplyr::mutate(open = dplyr::case_when(cod_bag > 0 ~ 1, TRUE ~ 0))
+      dplyr::mutate(open = dplyr::case_when(cod_bag_y2 > 0 ~ 1, TRUE ~ 0))
 
 
     #Create as an object the minimum size at which fish are illegally harvested.
@@ -540,6 +540,9 @@ predict_rec_catch <- function( x, draw,
 
     }
 
+    sum_cod_keep<-sum(trip_data$tot_keep_cod_new)
+    sum_hadd_keep<-sum(trip_data$tot_keep_hadd_new)
+
     print("code_check_5")
     trip_data<- trip_data %>% as.data.frame()
 
@@ -588,7 +591,7 @@ predict_rec_catch <- function( x, draw,
 
 
       #If we need to re-allocate cod harvest as releases, cod_keep_2_release will equal 1
-      if (cod_keep_2_release==1){
+      if (cod_keep_2_release==1 & sum_cod_keep > 0){
 
         #If we need to re-allocate ALL cod harvest as releases, all_cod_keep_2_release will equal 1
         if (all_cod_keep_2_release==1){
@@ -688,7 +691,7 @@ predict_rec_catch <- function( x, draw,
 
 
       #If we need to re-allocate hadd harvest as releases, hadd_keep_2_release will equal 1
-      if (hadd_keep_2_release==1){
+      if (hadd_keep_2_release==1 & sum_hadd_keep >0){
 
         #If we need to re-allocate ALL hadd harvest as releases, all_hadd_keep_2_release will equal 1
         if (all_hadd_keep_2_release==1){
@@ -847,7 +850,7 @@ predict_rec_catch <- function( x, draw,
       }
 
       ##code for reallocating cod keep to release
-      if (cod_keep_2_release==1){
+      if (cod_keep_2_release==1 & sum_cod_keep > 0 ){
 
         if (all_cod_keep_2_release==1){
 
@@ -1020,7 +1023,7 @@ predict_rec_catch <- function( x, draw,
 
 
       ##code for reallocating haddock keep as release
-      if (hadd_keep_2_release==1){
+      if (hadd_keep_2_release==1 & sum_hadd_keep > 0 ){
 
         if (all_hadd_keep_2_release==1){
 

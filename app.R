@@ -12,13 +12,21 @@ ui <- fluidPage(
   titlePanel("Gulf of Maine Cod and Haddock Recreational Fisheries Decision Support Tool"),
   #### Regulation Selection ####
   tabsetPanel(
-    tabPanel("Run Summary",
-             #rmarkdown:::rmarkdown_shiny_ui("docs/Run_Summary.rmd")),
-             #uiOutput('markdown')),
-             #includeHTML("docs/Run_Summary.html")
-             plotlyOutput(outputId = "totCatch"),
+    tabPanel("Cod and Haddock Model Summary",
+             p("This page summarizes models results for sets of policies that have been run to date. These are
+               intended as a jumping off point for your own model runs."),
+             p("The results of your own model runs are stored. Please give it a name (please no underscores “_” ).
+               At the end of the day, they are added to this page."),
+             p("Hover over each point to view the detailed statistics for each model run. The first section contains
+               a table of recreational management measures. The second section contains graphs of mortality. The third
+               section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
 
              DTOutput(outputId = "DTout"),
+
+             p("This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures."),
+             plotlyOutput(outputId = "totCatch"),
+
+
 
              sidebarPanel(
                shinyWidgets::awesomeCheckboxGroup( # Select which state(s) to run

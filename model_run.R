@@ -11,8 +11,8 @@ Disc_mort<- readr::read_csv(here::here("data-raw/Discard_Mortality.csv"), show_c
 directed_trips<-readr::read_csv(here::here("data-raw/directed_trips/directed_trips_doy_cm.csv"))
 
 
-### CORRECT DOY
-###### Cod #########
+## CORRECT DOY
+##### Cod #########
 CodFH_seas1_1 <- if(lubridate::yday(input$CodFH_seas1[1]) < 121){
   lubridate::yday(input$CodFH_seas1[1]) + 365
 }else {
@@ -165,7 +165,7 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adjustments.csv"), show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:4]
+mrip_index  <- mrip_index[1:8]
 #mrip_index  <- mrip_index[1:4]
 
  #pred<- NULL
