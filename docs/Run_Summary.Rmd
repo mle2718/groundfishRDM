@@ -1,7 +1,14 @@
 ---
-title: "Run Summary"
+title: "Cod and Haddock Model Summary <br> `r format(Sys.time(), '%B %d, %Y')`"
 output: html_document
 ---
+
+This page summarizes models results for sets of policies that have been run to date.  These are intended as a jumping off point for your own model runs.  
+
+
+The results of your own model runs are stored. Please give it a name (please no underscores "_" ).  At the end of the day, they are added to this page.  
+
+Hover over each point to view the detailed statistics for each model run.  The first section contains a table of recreational management measures. The second section contains graphs of mortality.   The third section has graphs of other performance measures, including Economic Surplus, Trips, and Discards. 
 
 ```{r setup, echo  = FALSE, warning = FALSE, message = FALSE}
 library(tidyverse)
@@ -32,7 +39,7 @@ lb_to_mt <-  0.000454
 
 ```
 
-## Management Measures
+# Management Measures
 
 ```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -60,13 +67,13 @@ seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>%
   dplyr::select(Category, Diff_from_SQ, run_number) 
                   
 bag<- df3 %>% dplyr::filter(stringr::str_detect(Category, "bag")) %>% 
-  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_bag", TRUE ~ ""),
-                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_bag", TRUE ~ Diff_from_SQ)) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Bag", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Bag", TRUE ~ Diff_from_SQ)) %>% 
   dplyr::select(Category, Diff_from_SQ, run_number)
 
 size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>% 
-  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_min_length", TRUE ~ ""),
-                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>% 
+  dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Min Length", TRUE ~ ""),
+                Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Min Length", TRUE ~ Diff_from_SQ)) %>% 
   dplyr::select(Category, Diff_from_SQ, run_number)
 
 df4<- rbind(seas, bag, size) %>% 
@@ -155,14 +162,27 @@ Regs_out <- df3 %>%
   
 
 DT::datatable(Regs_out)
-
 ```
 
 
 
 
 
-## Plot all catch totals on one figure
+# Recreational Cod and and Haddock Mortality
+
+This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures.  
+
+Cod: 
+
+* The Cod ACL is the dashed line.  
+* Cod mortality is plotted on the **horizontal** axis.
+* Regulations with average mortality under the cod ACL are to the **left** of the dashed vertical line. 
+
+Haddock:
+
+* The Haddock ACL is the solid line.  
+* Haddock mortality is plotted on the **vertical** axis.
+* Regulations with average mortality under the Haddock ACL are **below** the solid line. 
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -190,9 +210,9 @@ p<- catch_agg %>%
    #geom_text(aes(label = run_number, y = Value_had + 0.25))+
    geom_text(aes(label=run_number))+
    #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
-   geom_vline( xintercept =cod_acl)+
-   geom_hline( yintercept =had_acl)+
-   #scale_colour_manual(values = c("white", "springgreen1", "springgreen4"))+
+   geom_vline( xintercept =cod_acl, linetype="dashed")+
+   geom_hline( yintercept =had_acl, color="grey45")+
+   scale_colour_gradient(low = "white", high = "darkgreen")+
    ggtitle("Cod and Haddock Mortality")+
    ylab("Total Haddock Mortality (mt)")+
    xlab("Total Cod Mortality (mt)")
@@ -205,9 +225,9 @@ fig
 
 ```
 
-### Plots {.tabset}
+## Plots {.tabset}
 
-####  Mortality and CV
+###  Mortality and CV
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -237,7 +257,7 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Cod")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Cod Mortality (mt)")+
+   xlab("Recreational Cod Mortality (mt)")+
    theme(legend.position = "none")
 
  p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
@@ -246,7 +266,7 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Haddock")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Haddock Mortality (mt)")+
+   xlab("Recreational Haddock Mortality (mt)")+
    theme(legend.position = "none")
 
  
@@ -261,7 +281,7 @@ fig2
 ```
 
 
-####  Mortality and Releases
+###  Mortality and Releases
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
