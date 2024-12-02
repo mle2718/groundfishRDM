@@ -1,14 +1,14 @@
 ---
-title: "Run Summary"
+title: "Cod and Haddock Model Summary <br> `r format(Sys.time(), '%B %d, %Y')`"
 output: html_document
 ---
 
 This page summarizes models results for sets of policies that have been run to date.  These are intended as a jumping off point for your own model runs.  
 
 
-The results of your own model runs are stored. Please give it a name (no _ please).  At the end of the day, they are added to this page.  
+The results of your own model runs are stored. Please give it a name (please no underscores "_" ).  At the end of the day, they are added to this page.  
 
-Hover over each point to view the detailed statistics for each model run.  The first section contains a table of recreational management measures. The second section contains graphs of mortality.   The third section has graphs of other performance measures, including Economic Surplus, Trips, and Discards 
+Hover over each point to view the detailed statistics for each model run.  The first section contains a table of recreational management measures. The second section contains graphs of mortality.   The third section has graphs of other performance measures, including Economic Surplus, Trips, and Discards. 
 
 ```{r setup, echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -26,7 +26,7 @@ cod_acl <- 99
 had_acl <- 1075
 ```
 
-## Management Measures
+# Management Measures
 
 ```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
 SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>% 
@@ -83,7 +83,7 @@ Regs_out <- df3 %>%
 
 
 
-## Recreational Cod and and Haddock Mortality
+# Recreational Cod and and Haddock Mortality
 
 This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures.  
 
@@ -140,9 +140,9 @@ fig
 
 ```
 
-### Plots {.tabset}
+## Plots {.tabset}
 
-####  Mortality and CV
+###  Mortality and CV
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -195,7 +195,7 @@ fig2
 ```
 
 
-####  Mortality and Releases
+###  Mortality and Releases
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
