@@ -3,6 +3,10 @@ title: "Run Summary"
 output: html_document
 ---
 
+This page summarizes models results for sets of policies that have been run to date.  These are intended as a jumping off point for your own model runs.  The results of your own model runs are stored. At the end of the day, they are added to this page.  
+
+Hover over each point to view the detailed statistics for each model run.  The first section a table of recreational management measures. They are a little bit difficult to summarize in a nice table.  The second section contains graphs of mortality.   The third section has graphs of other performance measures. 
+
 ```{r setup, echo  = FALSE, warning = FALSE, message = FALSE}
 
 library(tidyverse)
@@ -76,7 +80,21 @@ Regs_out <- df3 %>%
 
 
 
-## Plot all catch totals on one figure
+## Recreational Cod and and Haddock Mortality
+
+This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures.  
+
+Cod: 
+
+* The Cod ACL is the dashed line.  
+* Cod mortality is plotted on the **horizontal** axis.
+* Regulations with average mortality under the cod ACL are to the **left** of the dashed vertical line. 
+
+Haddock:
+
+* The Haddock ACL is the solid line.  
+* Haddock mortality is plotted on the **vertical** axis.
+* Regulations with average mortality under the Haddock ACL are **below** the solid line. 
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
@@ -102,12 +120,12 @@ p<- catch_agg  %>%
    #geom_text(aes(label = run_number, y = Value_had + 0.25))+
    geom_text(aes(label=run_number, hjust=1, vjust=1))+
    #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
-   geom_vline( xintercept =cod_acl)+
-   geom_hline( yintercept =had_acl)+
+   geom_vline( xintercept =cod_acl, linetype="dashed")+
+   geom_hline( yintercept =had_acl, color="grey45")+
    scale_colour_gradient(low = "white", high = "darkgreen")+
    ggtitle("Cod and Haddock Mortality")+
-   ylab("Total Haddock Mortality")+
-   xlab("Total Cod Mortality")
+   ylab("Recreational Haddock Mortality (mt)")+
+   xlab("Recreational Cod Mortality (mt)")
    
 
 
@@ -152,7 +170,7 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Cod")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Cod Mortality")+
+   xlab("Recreational Cod Mortality (mt)")+
    theme(legend.position = "none")
 
  p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
@@ -161,7 +179,7 @@ catch<- df2 %>%
      geom_text(aes(label=run_number, hjust=1, vjust=1))+
    ggtitle("Hadock")+
    ylab("Consumer Surplus ($)")+
-   xlab("Total Haddock Mortality")+
+   xlab("Recreational Haddock Mortality (mt)")+
    theme(legend.position = "none")
 
  
