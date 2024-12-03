@@ -219,7 +219,8 @@ p<- catch_agg %>%
 
 fig<- plotly::ggplotly(p, 
                        tooltip = c("x", "y", "colour")) %>% 
-  plotly::style(textposition = "top") 
+  plotly::style(textposition = "top")
+
 fig
 #gridExtra::grid.arrange(fig1, fig2, ncol = 2)
 
@@ -231,12 +232,120 @@ fig
 
 ```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
 
-welfare <-  df2 %>%
-  dplyr::filter(Category %in% c("CV")) %>%
+  welfare <-  df2 %>%
+          dplyr::filter(Category %in% c("CV")) %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::group_by(run_number,option, Category) %>%
+          dplyr::summarise(CV = median(Value))
+
+
+        catch<- df2 %>%
+          dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                        number_weight == "Weight") %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::group_by(run_number, option, Category) %>%
+          dplyr::summarise(Value = median(Value)) %>%
+          tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
+          dplyr::left_join(welfare) %>%
+          dplyr::select(!Category)
+        
+        p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
+          geom_point() +
+          geom_vline( xintercept =cod_acl)+
+          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          ggtitle("Cod - Consumer Surplus")+
+          ylab("Consumer Surplus ($)")+
+          xlab("Total Cod Mortality")+
+          theme(legend.position = "none")
+
+        fig1<- ggplotly(p1) %>% 
+          plotly::style(textposition = "top")
+
+        fig1
+
+        p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
+          geom_point() +
+          geom_vline( xintercept =had_acl)+
+          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          ggtitle("Haddock - Consumer Surplus")+
+          ylab("Consumer Surplus ($)")+
+          xlab("Total Haddock Mortality")+
+          theme(legend.position = "none")
+
+        fig2<- ggplotly(p2) %>% 
+          plotly::style(textposition = "top")
+
+        fig2
+
+```
+
+
+###  Mortality and Releases
+
+```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
+
+ release <-  df2 %>%
+          dplyr::filter(catch_disposition %in% c("release")) %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::group_by(run_number,option, Category) %>%
+          dplyr::summarise(release = median(Value))
+
+
+        catch<- df2 %>%
+          dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                        number_weight == "Weight") %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::mutate(Value = Value * lb_to_mt) %>%
+          dplyr::group_by(run_number, option, Category) %>%
+          dplyr::summarise(Value = median(Value)) %>%
+          dplyr::left_join(release) %>%
+          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
+        
+        
+         p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
+          geom_point() +
+          geom_vline( xintercept = cod_acl)+
+          geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+          ggtitle("Cod Releases")+
+          ylab("Released Cod")+
+          xlab("Total Cod Mortality (mt)")+
+          theme(legend.position = "none")
+
+        fig3<- ggplotly(p3)%>%
+          plotly::style(textposition = "top")
+        fig3
+        
+
+        p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
+          geom_point() +
+          geom_vline( xintercept = had_acl)+
+          geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+          ggtitle("Haddock Releases")+
+          ylab("Released Haddock")+
+          xlab("Total Haddock Mortality (mt)")+
+          theme(legend.position = "none")
+
+        fig4<- ggplotly(p4)%>%
+          plotly::style(textposition = "top")
+        fig4
+
+```
+
+### Trips
+
+```{r,  echo  = FALSE, warning = FALSE, message = FALSE}
+
+     trips <-  df2 %>%
+  dplyr::filter(Category %in% c("ntrips")) %>%
   dplyr::group_by(run_number, option, Category, draw_out) %>%
   dplyr::summarise(Value = sum(as.numeric(Value))) %>%
   dplyr::group_by(run_number,option, Category) %>%
-  dplyr::summarise(CV = median(Value)) 
+  dplyr::summarise(trips = median(Value)) 
   
   
 catch<- df2 %>% 
@@ -248,91 +357,36 @@ catch<- df2 %>%
   dplyr::group_by(run_number, option, Category) %>%
   dplyr::summarise(Value = median(Value)) %>% 
   tidyr::pivot_wider(names_from = Category, values_from = Value) %>% 
-  dplyr::left_join(welfare) %>% 
+  dplyr::left_join(trips) %>% 
   dplyr::select(!Category) 
 
- p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
+ p5<- catch %>% ggplot2::ggplot(aes(x = cod, y = trips))+
    geom_point() +
-   geom_vline( xintercept =cod_acl)+
-     geom_text(aes(label=run_number, hjust=1, vjust=1))+
-   ggtitle("Cod")+
-   ylab("Consumer Surplus ($)")+
+   #geom_vline( xintercept =cod_acl)+
+  geom_text(aes(label=run_number, hjust=1, vjust=1))+
+   ylab("Total Number of Trips")+
    xlab("Recreational Cod Mortality (mt)")+
    theme(legend.position = "none")
+ 
+fig5<- ggplotly(p5)%>% 
+  plotly::style(textposition = "top")
 
- p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
+fig5
+
+
+ p6<- catch %>% ggplot2::ggplot(aes(x = had, y = trips))+
    geom_point() +
-   geom_vline( xintercept =had_acl)+
-     geom_text(aes(label=run_number, hjust=1, vjust=1))+
-   ggtitle("Haddock")+
-   ylab("Consumer Surplus ($)")+
+   #geom_vline( xintercept =cod_acl)+
+  geom_text(aes(label=run_number, hjust=1, vjust=1))+
+   ylab("Total Number of Trips")+
    xlab("Recreational Haddock Mortality (mt)")+
    theme(legend.position = "none")
-
  
-fig1<- ggplotly(p1)%>% 
-  plotly::style(textposition = "top") 
-fig2<- ggplotly(p2)%>% 
-  plotly::style(textposition = "top") 
-fig1
-fig2
-#gridExtra::grid.arrange(fig1, fig2, ncol = 2)
+fig6<- ggplotly(p6)%>% 
+  plotly::style(textposition = "top")
+
+fig6
+
 
 ```
-
-
-###  Mortality and Releases
-
-```{r ,  echo  = FALSE, warning = FALSE, message = FALSE}
-
-release <-  df2 %>%
-  dplyr::filter(catch_disposition %in% c("release")) %>%
-  dplyr::group_by(run_number, option, Category, draw_out) %>%
-  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::group_by(run_number,option, Category) %>%
-  dplyr::summarise(release = median(Value)) 
-  
-  
-catch<- df2 %>% 
-  dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-                number_weight == "Weight") %>%
-  dplyr::group_by(run_number, option, Category, draw_out) %>%
-  dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  dplyr::mutate(Value = Value * lb_to_mt) %>%
-  dplyr::group_by(run_number, option, Category) %>%
-  dplyr::summarise(Value = median(Value)) %>% 
-  dplyr::left_join(release) %>%
-  tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
-
- p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
-   geom_point() +
-   geom_vline( xintercept = cod_acl)+
-   geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
-   ggtitle("Cod")+
-   ylab("Consumer Surplus ($)")+
-   xlab("Total Cod Mortality (mt)")+
-   theme(legend.position = "none")
-
- p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
-   geom_point() +
-   geom_vline( xintercept =had_acl)+
-   geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
-   ggtitle("Haddock")+
-   ylab("Consumer Surplus ($)")+
-   xlab("Total Haddock Mortality (mt)")+
-   theme(legend.position = "none")
-
- 
-fig3<- ggplotly(p3)%>% 
-  plotly::style(textposition = "top") 
-fig4<- ggplotly(p4)%>% 
-  plotly::style(textposition = "top") 
-fig3
-fig4
-#gridExtra::grid.arrange(fig1, fig2, ncol = 2)
-
-```
-
-
-
 
