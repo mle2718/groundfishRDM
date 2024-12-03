@@ -26,17 +26,18 @@ ui <- fluidPage(
              p("This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures."),
              plotlyOutput(outputId = "totCatch"),
 
-
-
-             sidebarPanel(
-               shinyWidgets::awesomeCheckboxGroup( # Select which state(s) to run
-                 inputId = "fig",
-                 label = "Supplimenatal Figures",
-                 choices = c("Releases", "Consumer Surplus", "a", "b", "c"),
-                 inline = TRUE,
-                 status = "danger")),
-             uiOutput("addCV"),
-             uiOutput("addRelease")),
+             shinyWidgets::awesomeCheckboxGroup(
+               inputId = "fig",
+               label = "Supplimenatal Figures",
+               choices = c( "Consumer Surplus","Releases", "Trips"),
+               inline = TRUE,
+               status = "danger"),
+             uiOutput("addCVCod"),
+             uiOutput("addCVHad"),
+             uiOutput("addReleaseCod"),
+             uiOutput("addReleaseHad"),
+             uiOutput("addTripsCod"),
+             uiOutput("addTripsHad")),
 
 
 
@@ -242,19 +243,13 @@ server <- function(input, output, session){
 
   output$DTout <- renderDT({
 
-
-
     SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>%
       dplyr::rename(Category = Var,
                     SQ = Val)
 
-
-
     df3<- df2() %>% dplyr::filter(!Category %in% c("CV", "ntrips", "nchoiceoccasions","cod" , "had")) %>%
       dplyr::select(Category, Value, run_number) %>%
       dplyr::left_join(SQ_regulations, by = c("Category"))
-
-
 
     seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>%
       tidyr::separate(Value, into = c("Value1", "Value2"), sep = " - ") %>%
@@ -267,13 +262,13 @@ server <- function(input, output, session){
       dplyr::select(Category, Diff_from_SQ, run_number)
 
     bag<- df3 %>% dplyr::filter(stringr::str_detect(Category, "bag")) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_bag", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_bag", TRUE ~ Diff_from_SQ)) %>%
+      dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Bag", TRUE ~ ""),
+                    Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Bag", TRUE ~ Diff_from_SQ)) %>%
       dplyr::select(Category, Diff_from_SQ, run_number)
 
     size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller_min_length", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger_min_length", TRUE ~ Diff_from_SQ)) %>%
+      dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Min Length", TRUE ~ ""),
+                    Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Min Length", TRUE ~ Diff_from_SQ)) %>%
       dplyr::select(Category, Diff_from_SQ, run_number)
 
     df4<- rbind(seas, bag, size) %>%
@@ -295,9 +290,6 @@ server <- function(input, output, session){
       dplyr::ungroup() %>%
       dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
       dplyr::select(!c(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
-
-      #dplyr::filter(!Value_bag == 0) %>%
-      #dplyr::group_by(mode, run_number) %>%
       tidyr::pivot_wider(names_from = Species, values_from = c(Diff_from_SQ, Value_bag, Value_size, Value_Season)) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(cod_bag = paste0(Value_bag_Cod1, " , ", Value_bag_Cod2),
@@ -312,25 +304,23 @@ server <- function(input, output, session){
                     had_bag = stringr::str_remove(had_bag, " , NA"),
                     had_size = stringr::str_remove(had_size, " , NA"),
                     had_season = stringr::str_remove(had_season, " , NA"),
+                    cod_bag = stringr::str_remove(cod_bag, "NA ,"),
+                    cod_size = stringr::str_remove(cod_size, "NA ,"),
+                    cod_season = stringr::str_remove(cod_season, "NA ,"),
+                    had_bag = stringr::str_remove(had_bag, "NA ,"),
+                    had_size = stringr::str_remove(had_size, "NA ,"),
+                    had_season = stringr::str_remove(had_season, "NA ,"),
                     Diff_from_SQ_cod = paste0(Diff_from_SQ_Cod1, " , ", Diff_from_SQ_Cod2),
                     Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3),
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
+
+                    Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NA ,"),
+                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NA ,"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>%
       dplyr::select(mode, run_number, Diff_from_SQ_cod, Diff_from_SQ_had, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
-
-
-      # dplyr::rename(Mode = mode,
-      #               `Bag Limit` = Value_bag,
-      #               `Min Size (in)` = Value_size,
-      #               Season = Value_Season) %>%
-      # tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
-      # dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
-      #               Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private")) %>%
-      #
-      # tidyr::separate(Season, into = c("Season1", "Season2"), sep = " - ") %>%
     dplyr::mutate(cod_season = stringr::str_remove(cod_season, "2024-"),
                   cod_season = stringr::str_remove(cod_season, "2025-"),
                   had_season = stringr::str_remove(had_season, "2024-"),
@@ -346,10 +336,7 @@ server <- function(input, output, session){
                   cod_season = stringr::str_remove(cod_season, "2024-"),
                   cod_season = stringr::str_remove(cod_season, "2025-"),
                   had_season = stringr::str_remove(had_season, "2024-"),
-                  had_season = stringr::str_remove(had_season, "2025-")) #%>%
-    #  dplyr::select(run_number, Species, Mode, `Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ) %>%
-    # dplyr::group_by(run_number, Mode) %>%
-    # tidyr::pivot_wider(names_from = Species, values_from = c(`Bag Limit`, `Min Size (in)`, Season, Diff_from_SQ), )
+                  had_season = stringr::str_remove(had_season, "2025-"))
 
 
     DT::datatable(Regs_out)
@@ -358,42 +345,41 @@ server <- function(input, output, session){
   output$totCatch <- renderPlotly({
 
     catch_agg<- df2() %>%
-      #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
-
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * 0.000454) %>%
+      dplyr::mutate(Value = Value * lb_to_mt) %>%
       dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl ~ 1, TRUE ~ 0),
                     under_acl = dplyr::case_when(Category == "had" & Value <= had_acl ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl)) %>%
-      dplyr::mutate(run_number = as.numeric(run_number))
+      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))
 
-
+    test<- 1:5
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>%
       ggplot2::ggplot(aes(x = Value_cod, y = Value_had))+
-      geom_point(aes(label = run_number, color = under_acl_cod)) +
+      geom_point(aes(label = run_number, colour = test)) +
+      scale_colour_gradient2(low = "white", high = "darkgreen") +
       #geom_text(aes(label = run_number, y = Value_had + 0.25))+
-      geom_text(aes(label=run_number, hjust=1, vjust=1))+
+      geom_text(aes(label=run_number))+
       #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
-      geom_vline( xintercept =cod_acl)+
-      geom_hline( yintercept =had_acl)+
+      geom_vline( xintercept =cod_acl, linetype="dashed")+
+      geom_hline( yintercept =had_acl, color="grey45")+
       scale_colour_gradient(low = "white", high = "darkgreen")+
       ggtitle("Cod and Haddock Mortality")+
-      ylab("Total Haddock Mortality")+
-      xlab("Total Cod Mortality")
+      ylab("Total Haddock Mortality (mt)")+
+      xlab("Total Cod Mortality (mt)")
 
-    fig<- plotly::ggplotly(p)
-
+    fig<- plotly::ggplotly(p,
+                           tooltip = c("x", "y", "colour")) %>%
+      plotly::style(textposition = "top")
     fig
   })
 
-  output$addCV <- renderUI({
+  output$addCVCod <- renderUI({
 
     if(any("Consumer Surplus" == input$fig)){
 
@@ -422,31 +408,63 @@ server <- function(input, output, session){
           geom_point() +
           geom_vline( xintercept =cod_acl)+
           geom_text(aes(label=run_number, hjust=1, vjust=1))+
-          ggtitle("Cod")+
+          ggtitle("Cod - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
           xlab("Total Cod Mortality")+
           theme(legend.position = "none")
 
-        p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
-          geom_point() +
-          geom_vline( xintercept =had_acl)+
-          geom_text(aes(label=run_number, hjust=1, vjust=1))+
-          ggtitle("Hadock")+
-          ylab("Consumer Surplus ($)")+
-          xlab("Total Haddock Mortality")+
-          theme(legend.position = "none")
+        fig1<- ggplotly(p1) %>%
+          plotly::style(textposition = "top")
 
-
-        fig1<- ggplotly(p1)
-        fig2<- ggplotly(p2)
-        subplot(fig1, fig2, nrows=1)
+        fig1
       })
 
     }
   })
 
 
-  output$addRelease <- renderUI({
+  output$addCVHad <- renderUI({
+
+    if(any("Consumer Surplus" == input$fig)){
+
+      renderPlotly({
+        welfare <-  df2() %>%
+          dplyr::filter(Category %in% c("CV")) %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::group_by(run_number,option, Category) %>%
+          dplyr::summarise(CV = median(Value))
+
+        catch<- df2() %>%
+          dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                        number_weight == "Weight") %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::group_by(run_number, option, Category) %>%
+          dplyr::summarise(Value = median(Value)) %>%
+          tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
+          dplyr::left_join(welfare) %>%
+          dplyr::select(!Category)
+
+        p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
+          geom_point() +
+          geom_vline( xintercept =had_acl)+
+          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          ggtitle("Haddock - Consumer Surplus")+
+          ylab("Consumer Surplus ($)")+
+          xlab("Total Haddock Mortality")+
+          theme(legend.position = "none")
+
+        fig2<- ggplotly(p2) %>%
+          plotly::style(textposition = "top")
+        fig2
+      })
+
+    }
+  })
+
+  output$addReleaseCod <- renderUI({
 
     if(any("Releases" == input$fig)){
 
@@ -464,7 +482,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::mutate(Value = Value * lb_to_mt) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           dplyr::left_join(release) %>%
@@ -472,31 +490,143 @@ server <- function(input, output, session){
 
         p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
           geom_point() +
-          geom_vline( xintercept = cod_acl)+
-          geom_text(aes(label=run_number, hjust=0, nudge_x=5))+
-          ggtitle("Cod")+
-          ylab("Consumer Surplus ($)")+
-          xlab("Total Cod Mortality")+
-          theme(legend.position = "none")
-
-        p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
-          geom_point() +
-          geom_vline( xintercept =had_acl)+
+          geom_vline( xintercept =cod_acl)+
           geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
-          ggtitle("Hadock")+
-          ylab("Consumer Surplus ($)")+
-          xlab("Total Haddock Mortality")+
+          ggtitle("Cod Releases")+
+          ylab("Released Cod")+
+          xlab("Total Cod Mortality (mt)")+
           theme(legend.position = "none")
 
-
-        fig3<- ggplotly(p3)
-        fig4<- ggplotly(p4)
-        subplot(fig3, fig4, nrows=1)
+        fig3<- ggplotly(p3)%>%
+          plotly::style(textposition = "top")
+        fig3
       })
-
     }
   })
 
+      output$addReleaseHad <- renderUI({
+        if(any("Releases" == input$fig)){
+
+
+      renderPlotly({
+        release <-  df2() %>%
+          dplyr::filter(catch_disposition %in% c("release")) %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::group_by(run_number,option, Category) %>%
+          dplyr::summarise(release = median(Value))
+
+
+        catch<- df2() %>%
+          dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                        number_weight == "Weight") %>%
+          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::mutate(Value = Value * lb_to_mt) %>%
+          dplyr::group_by(run_number, option, Category) %>%
+          dplyr::summarise(Value = median(Value)) %>%
+          dplyr::left_join(release) %>%
+          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
+
+        p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
+          geom_point() +
+          geom_vline( xintercept = had_acl)+
+          geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+          ggtitle("Haddock Releases")+
+          ylab("Released Haddock")+
+          xlab("Total Haddock Mortality (mt)")+
+          theme(legend.position = "none")
+
+        fig4<- ggplotly(p4)%>%
+          plotly::style(textposition = "top")
+        fig4
+    })
+    }
+  })
+
+
+      output$addTripsCod <- renderUI({
+        if(any("Trips" == input$fig)){
+
+          renderPlotly({
+            trips <-  df2() %>%
+              dplyr::filter(Category %in% c("ntrips")) %>%
+              dplyr::group_by(run_number, option, Category, draw_out) %>%
+              dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+              dplyr::group_by(run_number,option, Category) %>%
+              dplyr::summarise(trips = median(Value))
+
+
+            catch<- df2() %>%
+              dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                            number_weight == "Weight") %>%
+              dplyr::group_by(run_number, option, Category, draw_out) %>%
+              dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+              dplyr::mutate(Value = Value * lb_to_mt) %>%
+              dplyr::group_by(run_number, option, Category) %>%
+              dplyr::summarise(Value = median(Value)) %>%
+              tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
+              dplyr::left_join(trips) %>%
+              dplyr::select(!Category)
+
+
+            p5<- catch %>% ggplot2::ggplot(aes(x = cod, y = trips))+
+              geom_point() +
+              #geom_vline( xintercept = had_acl)+
+              geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+              ggtitle("Cod - Total Number of Trips")+
+              ylab("Number of Trips")+
+              xlab("Total Cod Mortality (mt)")+
+              theme(legend.position = "none")
+
+            fig5<- ggplotly(p5)%>%
+              plotly::style(textposition = "top")
+            fig5
+
+          })
+        }
+      })
+
+
+      output$addTripsHad <- renderUI({
+        if(any("Trips" == input$fig)){
+
+          renderPlotly({
+            trips <-  df2() %>%
+              dplyr::filter(Category %in% c("ntrips")) %>%
+              dplyr::group_by(run_number, option, Category, draw_out) %>%
+              dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+              dplyr::group_by(run_number,option, Category) %>%
+              dplyr::summarise(trips = median(Value))
+
+
+            catch<- df2() %>%
+              dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                            number_weight == "Weight") %>%
+              dplyr::group_by(run_number, option, Category, draw_out) %>%
+              dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+              dplyr::mutate(Value = Value * lb_to_mt) %>%
+              dplyr::group_by(run_number, option, Category) %>%
+              dplyr::summarise(Value = median(Value)) %>%
+              tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
+              dplyr::left_join(trips) %>%
+              dplyr::select(!Category)
+
+            p6<- catch %>% ggplot2::ggplot(aes(x = had, y = trips))+
+              geom_point() +
+              #geom_vline( xintercept = had_acl)+
+              geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+              ggtitle("Haddock - Total Number of Trips")+
+              ylab("Number of Trips")+
+              xlab("Total Haddock Mortality (mt)")+
+              theme(legend.position = "none")
+
+            fig6<- ggplotly(p6)%>%
+              plotly::style(textposition = "top")
+            fig6
+          })
+        }
+      })
 
   #### Toggle extra seasons on UI ####
   # Allows for extra seasons to show and hide based on click
