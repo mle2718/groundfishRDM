@@ -30,7 +30,7 @@ ui <- fluidPage(
 
              shinyWidgets::awesomeCheckboxGroup(
                inputId = "fig",
-               label = "Supplimenatal Figures",
+               label = "Supplimental Figures",
                choices = c( "Consumer Surplus","Releases", "Trips"),
                inline = TRUE,
                status = "danger"),
@@ -395,7 +395,7 @@ server <- function(input, output, session){
       geom_point(aes(label = run_number, colour = test)) +
       scale_colour_gradient2(low = "white", high = "darkgreen") +
       #geom_text(aes(label = run_number, y = Value_had + 0.25))+
-      geom_text(aes(label=run_number))+
+      geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
       #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
       geom_vline( xintercept =cod_acl(), linetype="dashed")+
       geom_hline( yintercept =had_acl(), color="grey45")+
@@ -438,7 +438,7 @@ server <- function(input, output, session){
         p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Cod - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
           xlab("Total Cod Mortality")+
@@ -486,7 +486,7 @@ server <- function(input, output, session){
         p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
           geom_point() +
           geom_vline( xintercept =had_acl())+
-          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Haddock - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
           xlab("Total Haddock Mortality")+
@@ -531,7 +531,7 @@ server <- function(input, output, session){
         p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Cod Releases")+
           ylab("Released Cod")+
           xlab("Total Cod Mortality (mt)")+
@@ -571,7 +571,7 @@ server <- function(input, output, session){
         p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
           geom_point() +
           geom_vline( xintercept = had_acl())+
-          geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Haddock Releases")+
           ylab("Released Haddock")+
           xlab("Total Haddock Mortality (mt)")+
@@ -612,8 +612,8 @@ server <- function(input, output, session){
 
             p5<- catch %>% ggplot2::ggplot(aes(x = cod, y = trips))+
               geom_point() +
-              #geom_vline( xintercept = had_acl)+
-              geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+              geom_vline( xintercept = cod_acl())+
+              geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
               ggtitle("Cod - Total Number of Trips")+
               ylab("Number of Trips")+
               xlab("Total Cod Mortality (mt)")+
@@ -654,8 +654,8 @@ server <- function(input, output, session){
 
             p6<- catch %>% ggplot2::ggplot(aes(x = had, y = trips))+
               geom_point() +
-              #geom_vline( xintercept = had_acl)+
-              geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+              geom_vline( xintercept = had_acl())+
+              geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
               ggtitle("Haddock - Total Number of Trips")+
               ylab("Number of Trips")+
               xlab("Total Haddock Mortality (mt)")+
