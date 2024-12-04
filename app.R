@@ -21,10 +21,12 @@ ui <- fluidPage(
                a table of recreational management measures. The second section contains graphs of mortality. The third
                section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
 
-             DTOutput(outputId = "DTout"),
-
              p("This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures."),
              plotlyOutput(outputId = "totCatch"),
+
+             DTOutput(outputId = "DTout"),
+
+
 
              shinyWidgets::awesomeCheckboxGroup(
                inputId = "fig",
@@ -238,6 +240,22 @@ server <- function(input, output, session){
     df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 90)))
     return(df2)
 
+
+  }
+
+  cod_acl <- function(){
+    cod_acl = 99
+    return(cod_acl)
+  }
+
+  had_acl <- function(){
+    had_acl = 1075
+    return(had_acl)
+  }
+
+  lb_to_mt <- function(){
+    lb_to_mt = 0.000454
+    return(lb_to_mt)
   }
 
 
@@ -349,9 +367,9 @@ server <- function(input, output, session){
                     number_weight == "Weight") %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * lb_to_mt) %>%
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::mutate(Value = Value * lb_to_mt()) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
@@ -366,8 +384,8 @@ server <- function(input, output, session){
       #geom_text(aes(label = run_number, y = Value_had + 0.25))+
       geom_text(aes(label=run_number))+
       #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
-      geom_vline( xintercept =cod_acl, linetype="dashed")+
-      geom_hline( yintercept =had_acl, color="grey45")+
+      geom_vline( xintercept =cod_acl(), linetype="dashed")+
+      geom_hline( yintercept =had_acl(), color="grey45")+
       scale_colour_gradient(low = "white", high = "darkgreen")+
       ggtitle("Cod and Haddock Mortality")+
       ylab("Total Haddock Mortality (mt)")+
@@ -406,7 +424,7 @@ server <- function(input, output, session){
 
         p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
           geom_point() +
-          geom_vline( xintercept =cod_acl)+
+          geom_vline( xintercept =cod_acl())+
           geom_text(aes(label=run_number, hjust=1, vjust=1))+
           ggtitle("Cod - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
@@ -449,7 +467,7 @@ server <- function(input, output, session){
 
         p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
           geom_point() +
-          geom_vline( xintercept =had_acl)+
+          geom_vline( xintercept =had_acl())+
           geom_text(aes(label=run_number, hjust=1, vjust=1))+
           ggtitle("Haddock - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
@@ -482,7 +500,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * lb_to_mt) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           dplyr::left_join(release) %>%
@@ -490,7 +508,7 @@ server <- function(input, output, session){
 
         p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
           geom_point() +
-          geom_vline( xintercept =cod_acl)+
+          geom_vline( xintercept =cod_acl())+
           geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
           ggtitle("Cod Releases")+
           ylab("Released Cod")+
@@ -522,7 +540,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * lb_to_mt) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           dplyr::left_join(release) %>%
@@ -530,7 +548,7 @@ server <- function(input, output, session){
 
         p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
           geom_point() +
-          geom_vline( xintercept = had_acl)+
+          geom_vline( xintercept = had_acl())+
           geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
           ggtitle("Haddock Releases")+
           ylab("Released Haddock")+
@@ -562,7 +580,7 @@ server <- function(input, output, session){
                             number_weight == "Weight") %>%
               dplyr::group_by(run_number, option, Category, draw_out) %>%
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-              dplyr::mutate(Value = Value * lb_to_mt) %>%
+              dplyr::mutate(Value = Value * lb_to_mt()) %>%
               dplyr::group_by(run_number, option, Category) %>%
               dplyr::summarise(Value = median(Value)) %>%
               tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
@@ -605,7 +623,7 @@ server <- function(input, output, session){
                             number_weight == "Weight") %>%
               dplyr::group_by(run_number, option, Category, draw_out) %>%
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-              dplyr::mutate(Value = Value * lb_to_mt) %>%
+              dplyr::mutate(Value = Value * lb_to_mt()) %>%
               dplyr::group_by(run_number, option, Category) %>%
               dplyr::summarise(Value = median(Value)) %>%
               tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
