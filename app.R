@@ -274,8 +274,8 @@ server <- function(input, output, session){
       tidyr::separate(SQ, into = c("SQ1", "SQ2"), sep = " - ") %>%
       dplyr::mutate(Value = as.integer(lubridate::ymd(Value2)-lubridate::ymd(Value1)),
                     SQ = as.integer(lubridate::ymd(SQ2)-lubridate::ymd(SQ1))) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter_Season", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer_Season", TRUE ~ Diff_from_SQ),
+      dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter Season", TRUE ~ ""),
+                    Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer Season", TRUE ~ Diff_from_SQ),
                     Value = paste0(Value1, " - ", Value2)) %>%
       dplyr::select(Category, Diff_from_SQ, run_number)
 
@@ -332,7 +332,6 @@ server <- function(input, output, session){
                     Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3),
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
-
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NA ,"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NA ,"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"),
@@ -354,7 +353,21 @@ server <- function(input, output, session){
                   cod_season = stringr::str_remove(cod_season, "2024-"),
                   cod_season = stringr::str_remove(cod_season, "2025-"),
                   had_season = stringr::str_remove(had_season, "2024-"),
-                  had_season = stringr::str_remove(had_season, "2025-"))
+                  had_season = stringr::str_remove(had_season, "2025-")) %>%
+      dplyr::mutate(mode = dplyr::recode(mode, "FH" = "For Hire",
+                    "PR" = "Private")) %>%
+      dplyr::select(run_number, mode, cod_bag, cod_size, cod_season, Diff_from_SQ_cod,
+                    had_bag, had_size, had_season, Diff_from_SQ_had) %>%
+      dplyr::rename(Mode = mode,
+                    `Run Identifier` = run_number,
+                    `Cod Bag Limit` = cod_bag,
+                    `Cod Minimum Size (in)` = cod_size,
+                    `Cod Season(s)` = cod_season,
+                    `Haddock Bag Limit` = had_bag,
+                    `Haddock Minimum Size (in)` = had_size,
+                    `Haddock Season(s)` = had_season,
+                    `Difference from Cod SQ` = Diff_from_SQ_cod,
+                    `Difference from haddock SQ` = Diff_from_SQ_had)
 
 
     DT::datatable(Regs_out)
@@ -429,9 +442,14 @@ server <- function(input, output, session){
           ggtitle("Cod - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
           xlab("Total Cod Mortality")+
-          theme(legend.position = "none")
+          theme(legend.position = "none",
+                plot.subtitle = element_text("testing"))
 
         fig1<- ggplotly(p1) %>%
+          layout(title = list(text = paste0('Cod Mortality compared to Angler Satisfaction',
+                                            '<br>',
+                                            '<sup>',
+                                            'More descirptuon of CV','</sup>'))) %>%
           plotly::style(textposition = "top")
 
         fig1
@@ -475,6 +493,10 @@ server <- function(input, output, session){
           theme(legend.position = "none")
 
         fig2<- ggplotly(p2) %>%
+          layout(title = list(text = paste0('Haddock Mortality compared to Angler Satisfaction',
+                                            '<br>',
+                                            '<sup>',
+                                            'More descirptuon of CV','</sup>'))) %>%
           plotly::style(textposition = "top")
         fig2
       })
