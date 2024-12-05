@@ -343,22 +343,8 @@ server <- function(input, output, session){
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>%
       dplyr::select(mode, run_number, Diff_from_SQ_cod, Diff_from_SQ_had, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
-    dplyr::mutate(cod_season = stringr::str_remove(cod_season, "2024-"),
-                  cod_season = stringr::str_remove(cod_season, "2025-"),
-                  had_season = stringr::str_remove(had_season, "2024-"),
-                  had_season = stringr::str_remove(had_season, "2025-"),
-                  cod_season = stringr::str_remove(cod_season, "2024-"),
-                  cod_season = stringr::str_remove(cod_season, "2025-"),
-                  had_season = stringr::str_remove(had_season, "2024-"),
-                  had_season = stringr::str_remove(had_season, "2025-"),
-                  cod_season = stringr::str_remove(cod_season, "2024-"),
-                  cod_season = stringr::str_remove(cod_season, "2025-"),
-                  had_season = stringr::str_remove(had_season, "2024-"),
-                  had_season = stringr::str_remove(had_season, "2025-"),
-                  cod_season = stringr::str_remove(cod_season, "2024-"),
-                  cod_season = stringr::str_remove(cod_season, "2025-"),
-                  had_season = stringr::str_remove(had_season, "2024-"),
-                  had_season = stringr::str_remove(had_season, "2025-")) %>%
+      dplyr::mutate(cod_season = stringr::str_remove_all(cod_season, "202.-"),
+                    had_season = stringr::str_remove_all(had_season, "202.-")) %>%
       dplyr::mutate(mode = dplyr::recode(mode, "FH" = "For Hire",
                     "PR" = "Private")) %>%
       dplyr::select(run_number, mode, cod_bag, cod_size, cod_season, Diff_from_SQ_cod,
