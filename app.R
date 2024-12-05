@@ -413,7 +413,7 @@ server <- function(input, output, session){
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(CV = median(Value))
+          dplyr::summarise(CV = round(median(Value),0))
 
 
         catch<- df2() %>%
@@ -423,7 +423,7 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
-          dplyr::summarise(Value = median(Value)) %>%
+          dplyr::summarise(Value =round(median(Value),0)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
           dplyr::left_join(welfare) %>%
           dplyr::select(!Category)
@@ -461,7 +461,7 @@ server <- function(input, output, session){
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(CV = median(Value))
+          dplyr::summarise(CV = round(median(Value),0))
 
         catch<- df2() %>%
           dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -470,7 +470,7 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
-          dplyr::summarise(Value = median(Value)) %>%
+          dplyr::summarise(Value = round(median(Value),0)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
           dplyr::left_join(welfare) %>%
           dplyr::select(!Category)
@@ -507,7 +507,7 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(release = median(Value))
+          dplyr::summarise(release = round(median(Value),0))
 
 
         catch<- df2() %>%
@@ -517,11 +517,15 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
-          dplyr::summarise(Value = median(Value)) %>%
+          dplyr::summarise(Value =round(median(Value),0)) %>%
           dplyr::left_join(release) %>%
-          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
+          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))%>%
+          dplyr::rename(`Cod Mortality`=Value_cod) %>%
+          dplyr::rename(`Haddock Mortality`=Value_had)%>%
+          dplyr::rename(`Cod Release`=release_cod) %>%
+          dplyr::rename(`Haddock Release`=release_had)
 
-        p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
+        p3<- catch %>% ggplot2::ggplot(aes(x = `Cod Mortality`, y = `Cod Release`))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
@@ -549,7 +553,7 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(release = median(Value))
+          dplyr::summarise(release = round(median(Value),0))
 
 
         catch<- df2() %>%
@@ -559,11 +563,16 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
-          dplyr::summarise(Value = median(Value)) %>%
+          dplyr::summarise(Value = round(median(Value),0)) %>%
           dplyr::left_join(release) %>%
-          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))
+          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))%>%
+          dplyr::rename(`Cod Mortality`=Value_cod) %>%
+          dplyr::rename(`Haddock Mortality`=Value_had)%>%
+          dplyr::rename(`Cod Release`=release_cod) %>%
+          dplyr::rename(`Haddock Release`=release_had)
 
-        p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
+
+        p4<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = `Haddock Release`))+
           geom_point() +
           geom_vline( xintercept = had_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
@@ -589,7 +598,7 @@ server <- function(input, output, session){
               dplyr::group_by(run_number, option, Category, draw_out) %>%
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
               dplyr::group_by(run_number,option, Category) %>%
-              dplyr::summarise(trips = median(Value))
+              dplyr::summarise(Trips = round(median(Value),0))
 
 
             catch<- df2() %>%
@@ -599,13 +608,15 @@ server <- function(input, output, session){
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
               dplyr::mutate(Value = Value * lb_to_mt()) %>%
               dplyr::group_by(run_number, option, Category) %>%
-              dplyr::summarise(Value = median(Value)) %>%
+              dplyr::summarise(Value = round(median(Value),0)) %>%
               tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
               dplyr::left_join(trips) %>%
-              dplyr::select(!Category)
+              dplyr::select(!Category)%>%
+              dplyr::rename(`Cod Mortality`=cod) %>%
+              dplyr::rename(`Haddock Mortality`=had)
 
 
-            p5<- catch %>% ggplot2::ggplot(aes(x = cod, y = trips))+
+            p5<- catch %>% ggplot2::ggplot(aes(x = `Cod Mortality`, y = Trips))+
               geom_point() +
               geom_vline( xintercept = cod_acl())+
               geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
@@ -632,7 +643,7 @@ server <- function(input, output, session){
               dplyr::group_by(run_number, option, Category, draw_out) %>%
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
               dplyr::group_by(run_number,option, Category) %>%
-              dplyr::summarise(trips = median(Value))
+              dplyr::summarise(Trips = round(median(Value),0))
 
 
             catch<- df2() %>%
@@ -642,12 +653,15 @@ server <- function(input, output, session){
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
               dplyr::mutate(Value = Value * lb_to_mt()) %>%
               dplyr::group_by(run_number, option, Category) %>%
-              dplyr::summarise(Value = median(Value)) %>%
+              dplyr::summarise(Value = round(median(Value),0)) %>%
               tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
               dplyr::left_join(trips) %>%
-              dplyr::select(!Category)
+              dplyr::select(!Category)%>%
+              dplyr::rename(`Cod Mortality`=cod) %>%
+              dplyr::rename(`Haddock Mortality`=had)
 
-            p6<- catch %>% ggplot2::ggplot(aes(x = had, y = trips))+
+
+            p6<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = Trips))+
               geom_point() +
               geom_vline( xintercept = had_acl())+
               geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
