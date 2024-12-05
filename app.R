@@ -30,7 +30,7 @@ ui <- fluidPage(
 
              shinyWidgets::awesomeCheckboxGroup(
                inputId = "fig",
-               label = "Supplimenatal Figures",
+               label = "Supplimental Figures",
                choices = c( "Consumer Surplus","Releases", "Trips"),
                inline = TRUE,
                status = "danger"),
@@ -274,8 +274,8 @@ server <- function(input, output, session){
       tidyr::separate(SQ, into = c("SQ1", "SQ2"), sep = " - ") %>%
       dplyr::mutate(Value = as.integer(lubridate::ymd(Value2)-lubridate::ymd(Value1)),
                     SQ = as.integer(lubridate::ymd(SQ2)-lubridate::ymd(SQ1))) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter_Season", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer_Season", TRUE ~ Diff_from_SQ),
+      dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter Season", TRUE ~ ""),
+                    Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer Season", TRUE ~ Diff_from_SQ),
                     Value = paste0(Value1, " - ", Value2)) %>%
       dplyr::select(Category, Diff_from_SQ, run_number)
 
@@ -332,7 +332,6 @@ server <- function(input, output, session){
                     Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3),
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
-
                     Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NA ,"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NA ,"),
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"),
@@ -340,8 +339,21 @@ server <- function(input, output, session){
                     Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>%
       dplyr::select(mode, run_number, Diff_from_SQ_cod, Diff_from_SQ_had, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
       dplyr::mutate(cod_season = stringr::str_remove_all(cod_season, "202.-"),
-                    had_season = stringr::str_remove_all(had_season, "202.-"))
-
+                    had_season = stringr::str_remove_all(had_season, "202.-")) %>%
+      dplyr::mutate(mode = dplyr::recode(mode, "FH" = "For Hire",
+                    "PR" = "Private")) %>%
+      dplyr::select(run_number, mode, cod_bag, cod_size, cod_season, Diff_from_SQ_cod,
+                    had_bag, had_size, had_season, Diff_from_SQ_had) %>%
+      dplyr::rename(Mode = mode,
+                    `Run Identifier` = run_number,
+                    `Cod Bag Limit` = cod_bag,
+                    `Cod Minimum Size (in)` = cod_size,
+                    `Cod Season(s)` = cod_season,
+                    `Haddock Bag Limit` = had_bag,
+                    `Haddock Minimum Size (in)` = had_size,
+                    `Haddock Season(s)` = had_season,
+                    `Difference from Cod SQ` = Diff_from_SQ_cod,
+                    `Difference from haddock SQ` = Diff_from_SQ_had)
 
 
     DT::datatable(Regs_out)
@@ -369,7 +381,7 @@ server <- function(input, output, session){
       geom_point(aes(label = run_number, colour = test)) +
       scale_colour_gradient2(low = "white", high = "darkgreen") +
       #geom_text(aes(label = run_number, y = Value_had + 0.25))+
-      geom_text(aes(label=run_number))+
+      geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
       #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
       geom_vline( xintercept =cod_acl(), linetype="dashed")+
       geom_hline( yintercept =had_acl(), color="grey45")+
@@ -412,13 +424,18 @@ server <- function(input, output, session){
         p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Cod - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
           xlab("Total Cod Mortality")+
-          theme(legend.position = "none")
+          theme(legend.position = "none",
+                plot.subtitle = element_text("testing"))
 
         fig1<- ggplotly(p1) %>%
+          layout(title = list(text = paste0('Cod Mortality compared to Angler Satisfaction',
+                                            '<br>',
+                                            '<sup>',
+                                            'More descirptuon of CV','</sup>'))) %>%
           plotly::style(textposition = "top")
 
         fig1
@@ -455,13 +472,17 @@ server <- function(input, output, session){
         p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
           geom_point() +
           geom_vline( xintercept =had_acl())+
-          geom_text(aes(label=run_number, hjust=1, vjust=1))+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Haddock - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
           xlab("Total Haddock Mortality")+
           theme(legend.position = "none")
 
         fig2<- ggplotly(p2) %>%
+          layout(title = list(text = paste0('Haddock Mortality compared to Angler Satisfaction',
+                                            '<br>',
+                                            '<sup>',
+                                            'More descirptuon of CV','</sup>'))) %>%
           plotly::style(textposition = "top")
         fig2
       })
@@ -496,7 +517,7 @@ server <- function(input, output, session){
         p3<- catch %>% ggplot2::ggplot(aes(x = Value_cod, y = release_cod))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number, hjust=0, nudge_x=50))+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Cod Releases")+
           ylab("Released Cod")+
           xlab("Total Cod Mortality (mt)")+
@@ -536,7 +557,7 @@ server <- function(input, output, session){
         p4<- catch %>% ggplot2::ggplot(aes(x = Value_had, y = release_had))+
           geom_point() +
           geom_vline( xintercept = had_acl())+
-          geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ggtitle("Haddock Releases")+
           ylab("Released Haddock")+
           xlab("Total Haddock Mortality (mt)")+
@@ -577,8 +598,8 @@ server <- function(input, output, session){
 
             p5<- catch %>% ggplot2::ggplot(aes(x = cod, y = trips))+
               geom_point() +
-              #geom_vline( xintercept = had_acl)+
-              geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+              geom_vline( xintercept = cod_acl())+
+              geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
               ggtitle("Cod - Total Number of Trips")+
               ylab("Number of Trips")+
               xlab("Total Cod Mortality (mt)")+
@@ -619,8 +640,8 @@ server <- function(input, output, session){
 
             p6<- catch %>% ggplot2::ggplot(aes(x = had, y = trips))+
               geom_point() +
-              #geom_vline( xintercept = had_acl)+
-              geom_text(aes(label=run_number), nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)+
+              geom_vline( xintercept = had_acl())+
+              geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
               ggtitle("Haddock - Total Number of Trips")+
               ylab("Number of Trips")+
               xlab("Total Haddock Mortality (mt)")+
