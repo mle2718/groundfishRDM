@@ -369,7 +369,7 @@ server <- function(input, output, session){
     catch_agg<- df2() %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
-      dplyr::group_by(run_number, Category) %>%
+      dplyr::group_by(run_number, Category,draw_out) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::mutate(Value = Value * lb_to_mt()) %>%
       dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
