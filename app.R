@@ -433,7 +433,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
@@ -481,7 +481,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
