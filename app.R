@@ -21,7 +21,12 @@ ui <- fluidPage(
                a table of recreational management measures. The second section contains graphs of mortality. The third
                section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
 
-             p("This figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures."),
+
+             p("The first figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures."),
+
+             p("Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with average mortality under the cod ACL are to the left of the dashed vertical line."),
+
+             p("Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with average mortality under the Haddock ACL are below the solid horizontal line."),
              plotlyOutput(outputId = "totCatch"),
 
              DTOutput(outputId = "DTout"),
@@ -30,7 +35,7 @@ ui <- fluidPage(
 
              shinyWidgets::awesomeCheckboxGroup(
                inputId = "fig",
-               label = "Supplimental Figures",
+               label = "Supplemental Figures",
                choices = c( "Consumer Surplus","Releases", "Trips"),
                inline = TRUE,
                status = "danger"),
@@ -428,7 +433,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
@@ -476,7 +481,7 @@ server <- function(input, output, session){
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * 0.000454) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value = median(Value)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
