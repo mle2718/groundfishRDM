@@ -501,9 +501,11 @@ server <- function(input, output, session){
 
       renderPlotly({
         release <-  df2() %>%
-          dplyr::filter(catch_disposition %in% c("release")) %>%
+          dplyr::filter(catch_disposition %in% c("release"),
+                        number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number,option, Category) %>%
           dplyr::summarise(release = median(Value))
 
@@ -541,9 +543,11 @@ server <- function(input, output, session){
 
       renderPlotly({
         release <-  df2() %>%
-          dplyr::filter(catch_disposition %in% c("release")) %>%
+          dplyr::filter(catch_disposition %in% c("release"),
+                        number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+          dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number,option, Category) %>%
           dplyr::summarise(release = median(Value))
 
