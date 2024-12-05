@@ -22,11 +22,11 @@ ui <- fluidPage(
                section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
 
 
-             p("The first figure plots the predicted Cod and Haddock recreational mortality for previously simulated management measures."),
+             p("The first figure plots the predicted median Cod and Haddock recreational mortality for previously simulated management measures."),
 
-             p("Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with average mortality under the cod ACL are to the left of the dashed vertical line."),
+             p("Median Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with median mortality under the cod ACL are to the left of the dashed vertical line."),
 
-             p("Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with average mortality under the Haddock ACL are below the solid horizontal line."),
+             p("Median Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with median mortality under the Haddock ACL are below the solid horizontal line."),
              plotlyOutput(outputId = "totCatch"),
 
              DTOutput(outputId = "DTout"),
@@ -394,8 +394,8 @@ server <- function(input, output, session){
       geom_hline( yintercept =had_acl(), color="grey45")+
       scale_colour_gradient(low = "white", high = "darkgreen")+
       ggtitle("Cod and Haddock Mortality")+
-      ylab("Total Haddock Mortality (mt)")+
-      xlab("Total Cod Mortality (mt)")
+      ylab("Median Recreational Haddock Mortality (mt)")+
+      xlab("Median Recreational Cod Mortality (mt)")
 
     fig<- plotly::ggplotly(p,
                            tooltip = c("x", "y", "colour")) %>%
@@ -480,7 +480,7 @@ server <- function(input, output, session){
           geom_vline( xintercept =had_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ylab("Consumer Surplus ($)")+
-          xlab("Total Haddock Mortality (mt)")+
+          xlab("Recreational Haddock Mortality (mt)")+
           theme(legend.position = "none")
 
         fig2<- ggplotly(p2) %>%
@@ -526,7 +526,7 @@ server <- function(input, output, session){
           geom_vline( xintercept =cod_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
           ylab("Cod Releases (mt)")+
-          xlab("Total Cod Mortality (mt)")+
+          xlab("Recreational Cod Mortality (mt)")+
           theme(legend.position = "none")
 
         fig3<- ggplotly(p3)%>%
