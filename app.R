@@ -376,18 +376,20 @@ server <- function(input, output, session){
                     under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
-                       Value = median(Value)) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))
+                       Value = round(median(Value),0)) %>%
+      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
+      dplyr::rename(`Cod Mortality`=Value_cod) %>%
+      dplyr::rename(`Haddock Mortality`=Value_had)
 
     test<- 1:5
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>%
-      ggplot2::ggplot(aes(x = Value_cod, y = Value_had))+
+      ggplot2::ggplot(aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       geom_point(aes(label = run_number, colour = test)) +
       scale_colour_gradient2(low = "white", high = "darkgreen") +
-      #geom_text(aes(label = run_number, y = Value_had + 0.25))+
+      #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
       geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-      #geom_text(aes(label=ifelse(Value_cod>cod_acl & Value_had > had_acl, as.character(run_number), ' '), hjust=1, vjust=1))+
+      #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & ``Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
       geom_vline( xintercept =cod_acl(), linetype="dashed")+
       geom_hline( yintercept =had_acl(), color="grey45")+
       scale_colour_gradient(low = "white", high = "darkgreen")+
