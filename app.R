@@ -97,7 +97,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "CodFH_2_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 10, step = .5))),
+                                                                 min = 15, max = 25, value = 15, step = .5))),
                                             sliderInput(inputId = "CodPR_seas2", label ="Private Open Season 2",
                                                         min = as.Date("2024-05-01","%Y-%m-%d"),
                                                         max = as.Date("2025-04-30","%Y-%m-%d"),
@@ -109,7 +109,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "CodPR_2_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 10, step = .5)))))),
+                                                                 min = 15, max = 25, value = 15, step = .5)))))),
                 column(6,
                        titlePanel("Haddock"),
                        sliderInput(inputId = "HadFH_seas1", label ="For Hire Open Season 1",
@@ -175,7 +175,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadFH_3_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 10, step = .5))),
+                                                                 min = 15, max = 25, value = 15, step = .5))),
                                             sliderInput(inputId = "HadPR_seas3", label ="Private Open Season 3",
                                                         min = as.Date("2024-05-01","%Y-%m-%d"),
                                                         max = as.Date("2025-04-30","%Y-%m-%d"),
@@ -187,7 +187,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadPR_3_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 10, step = .5)))))))),
+                                                                 min = 15, max = 25, value = 15, step = .5)))))))),
 
 
     #### Results ####
@@ -718,7 +718,7 @@ server <- function(input, output, session){
     Regs1<- Regs %>% rbind(SQ_regulations)
 
 
-    Regs_out <- Regs1 %>%
+    Regs_out <- SQ_regulations %>%
       #SQ_regulations %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
