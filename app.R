@@ -430,14 +430,13 @@ server <- function(input, output, session){
           geom_point() +
           geom_vline( xintercept =cod_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-          ggtitle("Cod - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
-          xlab("Total Cod Mortality")+
+          xlab("Total Cod Mortality (mt)")+
           theme(legend.position = "none",
                 plot.subtitle = element_text("testing"))
 
         fig1<- ggplotly(p1) %>%
-          layout(title = list(text = paste0('Cod Mortality compared to Angler Satisfaction',
+          layout(title = list(text = paste0('Cod Mortality (mt) compared to Angler Satisfaction',
                                             '<br>',
                                             '<sup>',
                                             'More descirptuon of CV','</sup>'))) %>%
@@ -478,13 +477,12 @@ server <- function(input, output, session){
           geom_point() +
           geom_vline( xintercept =had_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-          ggtitle("Haddock - Consumer Surplus")+
           ylab("Consumer Surplus ($)")+
-          xlab("Total Haddock Mortality")+
+          xlab("Total Haddock Mortality (mt)")+
           theme(legend.position = "none")
 
         fig2<- ggplotly(p2) %>%
-          layout(title = list(text = paste0('Haddock Mortality compared to Angler Satisfaction',
+          layout(title = list(text = paste0('Haddock Mortality (mt) compared to Angler Satisfaction',
                                             '<br>',
                                             '<sup>',
                                             'More descirptuon of CV','</sup>'))) %>%
@@ -525,12 +523,12 @@ server <- function(input, output, session){
           geom_point() +
           geom_vline( xintercept =cod_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-          ggtitle("Cod Releases")+
-          ylab("Released Cod")+
+          ylab("Cod Releases (mt)")+
           xlab("Total Cod Mortality (mt)")+
           theme(legend.position = "none")
 
         fig3<- ggplotly(p3)%>%
+          layout(title = list(text = paste0('Cod Mortality (mt) compared to Cod Releases (mt)'))) %>%
           plotly::style(textposition = "top")
         fig3
       })
@@ -567,12 +565,12 @@ server <- function(input, output, session){
           geom_point() +
           geom_vline( xintercept = had_acl())+
           geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-          ggtitle("Haddock Releases")+
-          ylab("Released Haddock")+
+          ylab("Haddock Releases (mt)")+
           xlab("Total Haddock Mortality (mt)")+
           theme(legend.position = "none")
 
         fig4<- ggplotly(p4)%>%
+          layout(title = list(text = paste0('Haddock Mortality (mt) compared to Haddock Releases (mt)'))) %>%
           plotly::style(textposition = "top")
         fig4
     })
@@ -609,12 +607,12 @@ server <- function(input, output, session){
               geom_point() +
               geom_vline( xintercept = cod_acl())+
               geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-              ggtitle("Cod - Total Number of Trips")+
               ylab("Number of Trips")+
               xlab("Total Cod Mortality (mt)")+
               theme(legend.position = "none")
 
             fig5<- ggplotly(p5)%>%
+              layout(title = list(text = paste0('Cod Mortality (mt) compared to Total Number of Trips'))) %>%
               plotly::style(textposition = "top")
             fig5
 
@@ -651,12 +649,12 @@ server <- function(input, output, session){
               geom_point() +
               geom_vline( xintercept = had_acl())+
               geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-              ggtitle("Haddock - Total Number of Trips")+
               ylab("Number of Trips")+
               xlab("Total Haddock Mortality (mt)")+
               theme(legend.position = "none")
 
             fig6<- ggplotly(p6)%>%
+              layout(title = list(text = paste0('Haddock Mortality (mt) compared to Total Number of Trips'))) %>%
               plotly::style(textposition = "top")
             fig6
           })
