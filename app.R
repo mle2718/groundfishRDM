@@ -389,7 +389,7 @@ server <- function(input, output, session){
       scale_colour_gradient2(low = "white", high = "darkgreen") +
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
       geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
-      #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & ``Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
+      #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
       geom_vline( xintercept =cod_acl(), linetype="dashed")+
       geom_hline( yintercept =had_acl(), color="grey45")+
       scale_colour_gradient(low = "white", high = "darkgreen")+
