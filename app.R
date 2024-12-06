@@ -51,10 +51,10 @@ ui <- fluidPage(
 
 
     tabPanel( "Regulation Selection",
-              strong(div("Future Notes Here", style = "color:blue")), # Warning for users
+              strong(div("Use this page to set up the regulations that you would like to simulate. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
               #Run Button
               actionButton("runmeplease", "Run Me"),
-              textInput("Run_Name", "Name this run"),
+              textInput("Run_Name", "Please give this run a short, unique name (No underscores “_” )"),
 
               fluidRow(
                 column(6,
@@ -132,10 +132,10 @@ ui <- fluidPage(
                        fluidRow(
                          column(4,
                                 numericInput(inputId = "HadPR_1_bag", label = "Bag Limit",
-                                             min = 0, max = 100, value = 10)),
+                                             min = 0, max = 100, value = 15)),
                          column(5,
                                 sliderInput(inputId = "HadPR_1_len", label = "Min Length",
-                                            min = 15, max = 30, value = 17, step = .5))),
+                                            min = 15, max = 30, value = 18, step = .5))),
 
                        sliderInput(inputId = "HadFH_seas2", label ="For Hire Open Season 2",
                                    min = as.Date("2024-05-01","%Y-%m-%d"),
@@ -157,10 +157,10 @@ ui <- fluidPage(
                        fluidRow(
                          column(4,
                                 numericInput(inputId = "HadPR_2_bag", label = "Bag Limit",
-                                             min = 0, max = 100, value = 10)),
+                                             min = 0, max = 100, value = 15)),
                          column(5,
                                 sliderInput(inputId = "HadPR_2_len", label = "Min Length",
-                                            min = 15, max = 30, value = 17, step = .5))),
+                                            min = 15, max = 30, value = 18, step = .5))),
 
                        actionButton("HADaddSeason", "Add Season"),
                        shinyjs::hidden( div(ID = "HadSeason3",
@@ -175,7 +175,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadFH_3_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 15, step = .5))),
+                                                                 min = 15, max = 30, value = 18, step = .5))),
                                             sliderInput(inputId = "HadPR_seas3", label ="Private Open Season 3",
                                                         min = as.Date("2024-05-01","%Y-%m-%d"),
                                                         max = as.Date("2025-04-30","%Y-%m-%d"),
@@ -187,7 +187,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadPR_3_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 15, step = .5)))))))),
+                                                                 min = 15, max = 30, value = 18, step = .5)))))))),
 
 
     #### Results ####
