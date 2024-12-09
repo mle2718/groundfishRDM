@@ -263,6 +263,16 @@ server <- function(input, output, session){
     return(lb_to_mt)
   }
 
+  Run_Name <- function(){
+    if(stringr::str_detect(input$Run_Name, "_")){
+      Run_Name <-  gsub("_", "-", input$Run_Name)
+    }else {
+      Run_Name <- input$Run_Name
+    }
+    print(Run_Name)
+    return(Run_Name)
+  }
+
 
   output$DTout <- renderDT({
 
@@ -692,8 +702,8 @@ server <- function(input, output, session){
   #### Regulations ####
   regs_agg <- reactive({
 
-    Run_Name = if(input$Run_Name != ""){
-      Run_Name = input$Run_Name
+    Run_Name = if(Run_Name() != ""){
+      Run_Name = Run_Name()
     }else {
       Run_Name = "alt"
     }
@@ -1006,7 +1016,7 @@ server <- function(input, output, session){
                       season = c("NA"), draw_out = c("NA"), mrip_index = c("NA"),option= c("NA"))
 
     dat_out<- dat %>% rbind(Regs)
-    Run_Name = input$Run_Name
+    Run_Name = Run_Name()
     readr::write_csv(dat_out, file = here::here(paste0("output/output_", Run_Name, "_", format(Sys.time(), "%Y%m%d_%H%M%S"),  ".csv")))
 
     })
