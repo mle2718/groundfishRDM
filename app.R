@@ -692,10 +692,18 @@ server <- function(input, output, session){
   #### Regulations ####
   regs_agg <- reactive({
 
+    Run_Name = if(input$Run_Name != ""){
+      Run_Name = input$Run_Name
+    }else {
+      Run_Name = "alt"
+    }
+
     print("start regs")
     SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv"))
+    #Regs <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>%
+    #  mutate(Opt = c("alt"))
 
-    Regs<- data.frame(Opt = c("alt"),
+    Regs<- data.frame(Opt = c(Run_Name),
                       Var = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",
                               "Cod1_PR_bag", "Cod1_PR_size", "Cod1_PR_Season",
                               "Had1_FH_bag", "Had1_FH_size", "Had1_FH_Season",
@@ -719,34 +727,46 @@ server <- function(input, output, session){
 
     Regs1<- Regs %>% rbind(SQ_regulations)
 
-
-    Regs_out <- SQ_regulations %>%
+    Regs_out <- Regs1 %>%
       #SQ_regulations %>%
       tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
       tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
-      dplyr::filter(!bag == 0) %>%
-      #tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
-      dplyr::rename(Option = Opt,
-                    Mode = mode,
-                    `Bag Limit` = bag,
-                    `Min Size (in)` = size) %>%
-      tidyr::separate(Species, into = c("Species"), sep = "(?<=[A-Za-z])") %>%
-      dplyr::mutate(Species = dplyr::recode(Species, "C" = "Cod", "H" = "Haddock"),
-                    Mode = dplyr::recode(Mode, "FH" = "For Hire", "PR" = "Private"))
-
-      # dplyr::mutate(had_bag = dplyr::case_when(bag_Had1 == bag_Had2 ~ paste0(bag_Had1), TRUE ~ paste0(bag_Had1, " , ", bag_Had2)),
-      #               had_size = dplyr::case_when(size_Had1 == size_Had2 ~ paste0(size_Had1), TRUE ~ paste0(size_Had1, " , ", size_Had2)),
-      #               had_Season = dplyr::case_when(Season_Had1 == Season_Had2 ~ paste0(Season_Had1), TRUE ~ paste0(Season_Had1, " , ", Season_Had2)))
-
-      # dplyr::mutate(all_regs = paste0( bag, "_", size, "_", Season),
-      #               bag_size = paste0( bag, "_", size),
-      #               bag_season = paste0( bag,"_", Season),
-      #               size_season = paste0( size, "_", Season)) %>%
-      # dplyr::group_by(Species,Opt) %>%
-      # dplyr::distinct(all_regs, .keep_all = TRUE) %>%
-      # dplyr::mutate(mode = dplyr::case_when(length(Species) == 1 ~ "All", TRUE ~ mode)) %>%
-      # dplyr::select(!all_regs) %>%
-      # dplyr::mutate(Species = stringr::str_extract(Species, "[:alpha:]+"))
+      dplyr::mutate(Season = dplyr::case_when(bag == 0 ~"NA", TRUE ~ Season),
+                    size = dplyr::case_when(bag == 0 ~"NA", TRUE ~ size),
+                    bag = dplyr::case_when(bag == 0 ~"NA", TRUE ~ bag)) %>%
+      #dplyr::filter(!bag == 0) %>%
+      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
+      dplyr::mutate(cod_bag = paste0(bag_Cod1, " , ", bag_Cod2),
+                    cod_size = paste0(size_Cod1, " , ", size_Cod2),
+                    cod_season = paste0(Season_Cod1, " , ", Season_Cod2),
+                    had_bag = paste0(bag_Had1, " , ", bag_Had2, " , ", bag_Had3),
+                    had_size = paste0(size_Had1, " , ", size_Had2, " , ", size_Had3),
+                    had_season = paste0(Season_Had1, " , ", Season_Had2, " , ", Season_Had3),
+                    cod_bag = stringr::str_remove(cod_bag, " , NA"),
+                    cod_size = stringr::str_remove(cod_size, " , NA"),
+                    cod_season = stringr::str_remove(cod_season, " , NA"),
+                    had_bag = stringr::str_remove(had_bag, " , NA"),
+                    had_size = stringr::str_remove(had_size, " , NA"),
+                    had_season = stringr::str_remove(had_season, " , NA"),
+                    cod_bag = stringr::str_remove(cod_bag, "NA ,"),
+                    cod_size = stringr::str_remove(cod_size, "NA ,"),
+                    cod_season = stringr::str_remove(cod_season, "NA ,"),
+                    had_bag = stringr::str_remove(had_bag, "NA ,"),
+                    had_size = stringr::str_remove(had_size, "NA ,"),
+                    had_season = stringr::str_remove(had_season, "NA ,")) %>%
+      dplyr::select(Opt, mode, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
+      dplyr::mutate(cod_season = stringr::str_remove_all(cod_season, "202.-"),
+                    had_season = stringr::str_remove_all(had_season, "202.-")) %>%
+      dplyr::mutate(mode = dplyr::recode(mode, "FH" = "For Hire",
+                                         "PR" = "Private")) %>%
+      dplyr::rename(Mode = mode,
+                    `Option` = Opt,
+                    `Cod Bag Limit` = cod_bag,
+                    `Cod Minimum Size (in)` = cod_size,
+                    `Cod Season(s)` = cod_season,
+                    `Haddock Bag Limit` = had_bag,
+                    `Haddock Minimum Size (in)` = had_size,
+                    `Haddock Season(s)` = had_season)
 
     print("regs out")
     return(Regs_out)
@@ -757,7 +777,7 @@ server <- function(input, output, session){
   catch_agg <- reactive({
 
     catch_agg<- predictions() %>%
-      #predictions_out %>%
+      #predictions_out10 %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out) %>%
@@ -768,6 +788,8 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
+      dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
+                                             "had" = "Haddock")) %>%
       dplyr::select(Category, Value_SQ, Value_alt, under_acl_alt) %>%
       dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
                     `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL` = under_acl_alt)
@@ -779,7 +801,7 @@ server <- function(input, output, session){
 
     print("start catch mode")
     catch_by_mode<- predictions() %>%
-      #predictions_out %>%
+      #predictions_out10 %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out, mode) %>%
@@ -790,9 +812,13 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
+      dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
+                                             "had" = "Haddock"),
+                    mode = dplyr::recode(mode, "fh" = "For Hire",
+                                         "pr" = "Private")) %>%
       dplyr::select(Category, Value_SQ, Value_alt,  mode) %>%
       dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
-                    `Alternative Total Mortality (mt)` = Value_alt)
+                    `Alternative Total Mortality (mt)` = Value_alt, `Mode` = mode)
 
     return(catch_by_mode)
   })
@@ -812,6 +838,11 @@ server <- function(input, output, session){
       dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
                     perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
+      dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
+                                             "had" = "Haddock"),
+                    catch_disposition = dplyr::recode(catch_disposition, "keep" = "Keeps",
+                                                      "Discmortality" = "Dead Discards",
+                                                      "release" = "Releases")) %>%
       dplyr::select(Category, catch_disposition, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
       dplyr::rename(Species = Category, Variable = catch_disposition,
                     `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
@@ -834,10 +865,17 @@ server <- function(input, output, session){
       dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
                     perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
+      dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
+                                             "had" = "Haddock"),
+                    catch_disposition = dplyr::recode(catch_disposition, "keep" = "Keeps",
+                                                      "Discmortality" = "Dead Discards",
+                                                      "release" = "Releases"),
+                    mode = dplyr::recode(mode, "fh" = "For Hire",
+                                         "pr" = "Private")) %>%
       dplyr::select(Category, catch_disposition, mode, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
       dplyr::rename(Species = Category, Variable = catch_disposition,
                     `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
-                    `Total Weight (mt)` = alt_Weight, `Percent difference in weight of fish` = perc_diff_wt)
+                    `Total Weight (mt)` = alt_Weight, `Percent difference in weight of fish` = perc_diff_wt, `Mode` = mode)
     return(keep_by_mode)
   })
 #####################
@@ -866,7 +904,7 @@ server <- function(input, output, session){
 
   welfare_by_mode <- reactive({
     welfare_by_mode<- predictions() %>%
-      #predictions_out %>%
+      #predictions_out10 %>%
       dplyr::filter(Category %in% c("CV", "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -875,8 +913,11 @@ server <- function(input, output, session){
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
       dplyr::select(!SQ) %>%
       dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Consumer Surplus ($)",
-                                             ntrips = "Angler Trips (N)")) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = alt)
+                                             ntrips = "Angler Trips (N)"),
+                    mode = dplyr::recode(mode, "fh" = "For Hire",
+                                         "pr" = "Private")) %>%
+      tidyr::pivot_wider(names_from = Category, values_from = alt) %>%
+      dplyr::rename(`Mode` = mode)
     return(welfare_by_mode)
   })
 
