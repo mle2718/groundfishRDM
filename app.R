@@ -15,8 +15,7 @@ ui <- fluidPage(
     tabPanel("Cod and Haddock Model Summary",
              p("This page summarizes models results for sets of policies that have been run to date. These are
                intended as a jumping off point for your own model runs."),
-             p("The results of your own model runs are stored. Please give it a name (please no underscores “_” ).
-               At the end of the day, they are added to this page."),
+             p("The results of your own model runs are stored. Please give it a short, unique name."),
              p("Hover over each point to view the detailed statistics for each model run. The first section contains
                a table of recreational management measures. The second section contains graphs of mortality. The third
                section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
@@ -54,7 +53,7 @@ ui <- fluidPage(
               strong(div("Use this page to set up the regulations that you would like to simulate. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
               #Run Button
               actionButton("runmeplease", "Run Me"),
-              textInput("Run_Name", "Please give this run a short, unique name (No underscores “_” )"),
+              textInput("Run_Name", "Please give this run a short, unique name"),
 
               fluidRow(
                 column(6,
