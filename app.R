@@ -26,6 +26,11 @@ ui <- fluidPage(
              p("Median Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with median mortality under the cod ACL are to the left of the dashed vertical line."),
 
              p("Median Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with median mortality under the Haddock ACL are below the solid horizontal line."),
+
+             shinyjs::useShinyjs(),
+             shinyjs::extendShinyjs(text = "shinyjs.refresh_page = function() { location.reload(); }", functions = "refresh_page"),
+             actionButton("updatedat", "Update"),
+
              plotlyOutput(outputId = "totCatch"),
 
              DTOutput(outputId = "DTout"),
@@ -227,6 +232,11 @@ server <- function(input, output, session){
   library(magrittr)
   library(webshot)
 
+  observeEvent(input$updatedat,{
+    print("updating")
+    shinyjs::js$refresh_page();
+  })
+
   df2 <- function(){
     fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
 
@@ -390,11 +400,12 @@ server <- function(input, output, session){
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had)
 
-    test<- 1:5
+    #test<- 1:5
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>%
       ggplot2::ggplot(aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
-      geom_point(aes(label = run_number, colour = test)) +
+      #geom_point(aes(label = run_number, colour = test)) +
+      geom_point(aes(label = run_number, colour = under_acl_cod)) +
       scale_colour_gradient2(low = "white", high = "darkgreen") +
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
       geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
