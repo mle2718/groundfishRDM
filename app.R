@@ -251,7 +251,7 @@ server <- function(input, output, session){
       map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
 
-    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 90)))
+    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 1800)))
     return(df2)
 
 
