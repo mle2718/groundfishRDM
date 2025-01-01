@@ -407,8 +407,9 @@ server <- function(input, output, session){
       #geom_point(aes(label = run_number, colour = test)) +
       geom_point(aes(label = run_number, colour = under_acl_cod)) +
       scale_colour_gradient2(low = "white", high = "darkgreen") +
+      ggrepel::geom_text_repel(aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
-      geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+      geom_text(aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
       geom_vline( xintercept =cod_acl(), linetype="dashed")+
       geom_hline( yintercept =had_acl(), color="grey45")+
@@ -419,7 +420,9 @@ server <- function(input, output, session){
 
     fig<- plotly::ggplotly(p,
                            tooltip = c("x", "y", "colour")) %>%
-      plotly::style(textposition = "top")
+      plotly::style(textposition = "top center")#,
+                           #jitter = 0.4) #%>%
+      #plotly::style(textposition = "top")
     fig
   })
 
@@ -451,7 +454,7 @@ server <- function(input, output, session){
         p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+          geom_text(aes(label=run_number), check_overlap = TRUE)+
           ylab("Consumer Surplus ($)")+
           xlab("Total Cod Mortality (mt)")+
           theme(legend.position = "none",
@@ -462,7 +465,7 @@ server <- function(input, output, session){
                                             '<br>',
                                             '<sup>',
                                             'More descirptuon of CV','</sup>'))) %>%
-          plotly::style(textposition = "top")
+          plotly::style(textposition = "top center")
 
         fig1
       })
@@ -498,7 +501,7 @@ server <- function(input, output, session){
         p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
           geom_point() +
           geom_vline( xintercept =had_acl())+
-          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+          geom_text(aes(label=run_number), check_overlap = TRUE)+
           ylab("Consumer Surplus ($)")+
           xlab("Recreational Haddock Mortality (mt)")+
           theme(legend.position = "none")
@@ -508,7 +511,7 @@ server <- function(input, output, session){
                                             '<br>',
                                             '<sup>',
                                             'More descirptuon of CV','</sup>'))) %>%
-          plotly::style(textposition = "top")
+          plotly::style(textposition = "top center")
         fig2
       })
 
@@ -548,14 +551,14 @@ server <- function(input, output, session){
         p3<- catch %>% ggplot2::ggplot(aes(x = `Cod Mortality`, y = `Cod Release`))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+          geom_text(aes(label=run_number), check_overlap = TRUE)+
           ylab("Cod Releases (mt)")+
           xlab("Recreational Cod Mortality (mt)")+
           theme(legend.position = "none")
 
         fig3<- ggplotly(p3)%>%
           layout(title = list(text = paste0('Cod Mortality (mt) compared to Cod Releases (mt)'))) %>%
-          plotly::style(textposition = "top")
+          plotly::style(textposition = "top center")
         fig3
       })
     }
@@ -595,14 +598,14 @@ server <- function(input, output, session){
         p4<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = `Haddock Release`))+
           geom_point() +
           geom_vline( xintercept = had_acl())+
-          geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+          geom_text(aes(label=run_number), check_overlap = TRUE)+
           ylab("Haddock Releases (mt)")+
           xlab("Total Haddock Mortality (mt)")+
           theme(legend.position = "none")
 
         fig4<- ggplotly(p4)%>%
           layout(title = list(text = paste0('Haddock Mortality (mt) compared to Haddock Releases (mt)'))) %>%
-          plotly::style(textposition = "top")
+          plotly::style(textposition = "top center")
         fig4
     })
     }
@@ -639,14 +642,14 @@ server <- function(input, output, session){
             p5<- catch %>% ggplot2::ggplot(aes(x = `Cod Mortality`, y = Trips))+
               geom_point() +
               geom_vline( xintercept = cod_acl())+
-              geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+              geom_text(aes(label=run_number), check_overlap = TRUE)+
               ylab("Number of Trips")+
               xlab("Total Cod Mortality (mt)")+
               theme(legend.position = "none")
 
             fig5<- ggplotly(p5)%>%
               layout(title = list(text = paste0('Cod Mortality (mt) compared to Total Number of Trips'))) %>%
-              plotly::style(textposition = "top")
+              plotly::style(textposition = "top center")
             fig5
 
           })
@@ -684,14 +687,14 @@ server <- function(input, output, session){
             p6<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = Trips))+
               geom_point() +
               geom_vline( xintercept = had_acl())+
-              geom_text(aes(label=run_number), position=position_jitter(width=1,height=1))+
+              geom_text(aes(label=run_number), check_overlap = TRUE)+
               ylab("Number of Trips")+
               xlab("Total Haddock Mortality (mt)")+
               theme(legend.position = "none")
 
             fig6<- ggplotly(p6)%>%
               layout(title = list(text = paste0('Haddock Mortality (mt) compared to Total Number of Trips'))) %>%
-              plotly::style(textposition = "top")
+              plotly::style(textposition = "top center")
             fig6
           })
         }
