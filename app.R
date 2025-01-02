@@ -18,8 +18,8 @@
 # install.packages("feather")
 # install.packages("markdown")
 # #install.packages("webshot")
-# install.packages("DT")
-# install.packages("plotly")
+ # install.packages("DT")
+ # install.packages("plotly")
 # install.packages("future")
 # install.packages("furrr")
 # install.packages("rlist")
@@ -52,9 +52,9 @@ ui <- fluidPage(
              shinyjs::extendShinyjs(text = "shinyjs.refresh_page = function() { location.reload(); }", functions = "refresh_page"),
              actionButton("updatedat", "Update"),
 
-             plotlyOutput(outputId = "totCatch"),
+             plotly::plotlyOutput(outputId = "totCatch"),
 
-             DTOutput(outputId = "DTout"),
+             DT::DTOutput(outputId = "DTout"),
 
 
 
