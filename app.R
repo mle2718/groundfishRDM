@@ -17,7 +17,7 @@ install.packages("openxlsx")
 install.packages("plyr")
 install.packages("feather")
 install.packages("markdown")
-install.packages("webshot")
+#install.packages("webshot")
 install.packages("DT")
 install.packages("plotly")
 install.packages("future")
@@ -251,12 +251,12 @@ ui <- fluidPage(
 server <- function(input, output, session){
 
   library(magrittr)
-  library(webshot)
+  #library(webshot)
 
-  observeEvent(input$updatedat,{
-    print("updating")
-    shinyjs::js$refresh_page();
-  })
+  # observeEvent(input$updatedat,{
+  #   print("updating")
+  #   shinyjs::js$refresh_page();
+  # })
 
   # df2 <- function(){
   #   fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
