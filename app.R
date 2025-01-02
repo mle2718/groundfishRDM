@@ -33,47 +33,47 @@ ui <- fluidPage(
   titlePanel("Gulf of Maine Cod and Haddock Recreational Fisheries Decision Support Tool"),
   #### Regulation Selection ####
   tabsetPanel(
-    tabPanel("Cod and Haddock Model Summary",
-             p("This page summarizes models results for sets of policies that have been run to date. These are
-               intended as a jumping off point for your own model runs."),
-             p("The results of your own model runs are stored. Please give it a short, unique name."),
-             p("Hover over each point to view the detailed statistics for each model run. The first section contains
-               a table of recreational management measures. The second section contains graphs of mortality. The third
-               section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
-
-
-             p("The first figure plots the predicted median Cod and Haddock recreational mortality for previously simulated management measures."),
-
-             p("Median Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with median mortality under the cod ACL are to the left of the dashed vertical line."),
-
-             p("Median Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with median mortality under the Haddock ACL are below the solid horizontal line."),
-
-             shinyjs::useShinyjs(),
-             shinyjs::extendShinyjs(text = "shinyjs.refresh_page = function() { location.reload(); }", functions = "refresh_page"),
-             actionButton("updatedat", "Update"),
-
-             plotlyOutput(outputId = "totCatch"),
-
-             DTOutput(outputId = "DTout"),
-
-
-
-             shinyWidgets::awesomeCheckboxGroup(
-               inputId = "fig",
-               label = "Supplemental Figures",
-               choices = c( "Consumer Surplus","Releases", "Trips"),
-               inline = TRUE,
-               status = "danger"),
-             uiOutput("addCVCod"),
-             uiOutput("addCVHad"),
-             uiOutput("addReleaseCod"),
-             uiOutput("addReleaseHad"),
-             uiOutput("addTripsCod"),
-             uiOutput("addTripsHad")),
-
-
-
-
+    # tabPanel("Cod and Haddock Model Summary",
+    #          p("This page summarizes models results for sets of policies that have been run to date. These are
+    #            intended as a jumping off point for your own model runs."),
+    #          p("The results of your own model runs are stored. Please give it a short, unique name."),
+    #          p("Hover over each point to view the detailed statistics for each model run. The first section contains
+    #            a table of recreational management measures. The second section contains graphs of mortality. The third
+    #            section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
+    #
+    #
+    #          p("The first figure plots the predicted median Cod and Haddock recreational mortality for previously simulated management measures."),
+    #
+    #          p("Median Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with median mortality under the cod ACL are to the left of the dashed vertical line."),
+    #
+    #          p("Median Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with median mortality under the Haddock ACL are below the solid horizontal line."),
+    #
+    #          shinyjs::useShinyjs(),
+    #          shinyjs::extendShinyjs(text = "shinyjs.refresh_page = function() { location.reload(); }", functions = "refresh_page"),
+    #          actionButton("updatedat", "Update"),
+    #
+    #          plotlyOutput(outputId = "totCatch"),
+    #
+    #          DTOutput(outputId = "DTout"),
+    #
+    #
+    #
+    #          shinyWidgets::awesomeCheckboxGroup(
+    #            inputId = "fig",
+    #            label = "Supplemental Figures",
+    #            choices = c( "Consumer Surplus","Releases", "Trips"),
+    #            inline = TRUE,
+    #            status = "danger"),
+    #          uiOutput("addCVCod"),
+    #          uiOutput("addCVHad"),
+    #          uiOutput("addReleaseCod"),
+    #          uiOutput("addReleaseHad"),
+    #          uiOutput("addTripsCod"),
+    #          uiOutput("addTripsHad")),
+    #
+    #
+    #
+    #
 
     tabPanel( "Regulation Selection",
               strong(div("Use this page to set up the regulations that you would like to simulate. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
