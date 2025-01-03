@@ -19,6 +19,7 @@ RUN install2.r -e -s \
     tibble \
     feather \
     ggrepel \
+    graphics
     DT \
     plotly \
     data.table \
