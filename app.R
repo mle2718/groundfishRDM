@@ -397,7 +397,7 @@ server <- function(input, output, session){
 
     #test<- 1:5
     p<- catch_agg %>%
-      dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>%
+      dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       #geom_point(aes(label = run_number, colour = test)) +
       ggplot2::geom_point(ggplot2::aes(label = run_number, colour = under_acl_cod)) +
@@ -500,7 +500,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::ylab("Consumer Surplus ($)")+
           ggplot2::xlab("Recreational Haddock Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+          ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -552,7 +552,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::ylab("Cod Releases (mt)")+
           ggplot2::xlab("Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+          ggplot2::labs(title = "Cod Mortality (mt) compared to Cod Releases (mt)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -601,7 +601,7 @@ server <- function(input, output, session){
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::ylab("Haddock Releases (mt)")+
               ggplot2::xlab("Total Haddock Mortality (mt)")+
-              ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+              ggplot2::labs(title = "Haddock Mortality (mt) compared to Haddock Releases (mt)",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
@@ -648,7 +648,7 @@ server <- function(input, output, session){
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::ylab("Number of Trips")+
               ggplot2::xlab("Total Cod Mortality (mt)")+
-              ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+              ggplot2::labs(title = "Cod Mortality (mt) compared to Total Number of Trips",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
@@ -695,7 +695,7 @@ server <- function(input, output, session){
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::ylab("Number of Trips")+
               ggplot2::xlab("Total Haddock Mortality (mt)")+
-              ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+              ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Number of Trips",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
