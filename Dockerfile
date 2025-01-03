@@ -17,11 +17,7 @@ RUN install2.r -e -s \
     stringr \
     lubridate \
     tibble \
-    feather \
-    ggrepel \
-    graphics
-    DT \
-    plotly \
+    arrow \
     data.table \
     knitr \
     openxlsx \
@@ -29,6 +25,7 @@ RUN install2.r -e -s \
     markdown \
     future \
     furrr \
+    DT \
+    plotly \
     rlang \
-    googlesheets4 \
     && chown -R shiny:shiny /srv/app
