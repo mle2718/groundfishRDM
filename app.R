@@ -278,7 +278,7 @@ server <- function(input, output, session){
   }
 
 
-  output$DTout <- renderDT({
+  output$DTout <- DT::renderDT({
 
     SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>%
       dplyr::rename(Category = Var,
@@ -378,7 +378,7 @@ server <- function(input, output, session){
     DT::datatable(Regs_out)
   })
 
-  output$totCatch <- renderPlotly({
+  output$totCatch <- plotly::renderPlotly({
 
     catch_agg<- df2() %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -425,7 +425,7 @@ server <- function(input, output, session){
 
     if(any("Consumer Surplus" == input$fig)){
 
-      renderPlotly({
+      plotly::renderPlotly({
         welfare <-  df2() %>%
           dplyr::filter(Category %in% c("CV")) %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
@@ -473,7 +473,7 @@ server <- function(input, output, session){
 
     if(any("Consumer Surplus" == input$fig)){
 
-      renderPlotly({
+      plotly::renderPlotly({
         welfare <-  df2() %>%
           dplyr::filter(Category %in% c("CV")) %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
@@ -517,7 +517,7 @@ server <- function(input, output, session){
 
     if(any("Releases" == input$fig)){
 
-      renderPlotly({
+      plotly::renderPlotly({
         release <-  df2() %>%
           dplyr::filter(catch_disposition %in% c("release"),
                         number_weight == "Weight") %>%
@@ -563,45 +563,46 @@ server <- function(input, output, session){
         if(any("Releases" == input$fig)){
 
 
-      renderPlotly({
-        release <-  df2() %>%
-          dplyr::filter(catch_disposition %in% c("release"),
-                        number_weight == "Weight") %>%
-          dplyr::group_by(run_number, option, Category, draw_out) %>%
-          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * lb_to_mt()) %>%
-          dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(release = round(median(Value),0))
+          plotly::renderPlotly({
+            release <-  df2() %>%
+              dplyr::filter(catch_disposition %in% c("release"),
+                            number_weight == "Weight") %>%
+              dplyr::group_by(run_number, option, Category, draw_out) %>%
+              dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+              dplyr::mutate(Value = Value * lb_to_mt()) %>%
+              dplyr::group_by(run_number,option, Category) %>%
+              dplyr::summarise(release = round(median(Value),0))
 
 
-        catch<- df2() %>%
-          dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-                        number_weight == "Weight") %>%
-          dplyr::group_by(run_number, option, Category, draw_out) %>%
-          dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::mutate(Value = Value * lb_to_mt()) %>%
-          dplyr::group_by(run_number, option, Category) %>%
-          dplyr::summarise(Value = round(median(Value),0)) %>%
-          dplyr::left_join(release) %>%
-          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))%>%
-          dplyr::rename(`Cod Mortality`=Value_cod) %>%
-          dplyr::rename(`Haddock Mortality`=Value_had)%>%
-          dplyr::rename(`Cod Release`=release_cod) %>%
-          dplyr::rename(`Haddock Release`=release_had)
+            catch<- df2() %>%
+              dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                            number_weight == "Weight") %>%
+              dplyr::group_by(run_number, option, Category, draw_out) %>%
+              dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+              dplyr::mutate(Value = Value * lb_to_mt()) %>%
+              dplyr::group_by(run_number, option, Category) %>%
+              dplyr::summarise(Value = round(median(Value),0)) %>%
+              dplyr::left_join(release) %>%
+              tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))%>%
+              dplyr::rename(`Cod Mortality`=Value_cod) %>%
+              dplyr::rename(`Haddock Mortality`=Value_had)%>%
+              dplyr::rename(`Cod Release`=release_cod) %>%
+              dplyr::rename(`Haddock Release`=release_had)
 
 
-        p4<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = `Haddock Release`))+
-          geom_point() +
-          geom_vline( xintercept = had_acl())+
-          geom_text(aes(label=run_number), check_overlap = TRUE)+
-          ylab("Haddock Releases (mt)")+
-          xlab("Total Haddock Mortality (mt)")+
-          theme(legend.position = "none")
+            p4<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = `Haddock Release`))+
+              geom_point() +
+              geom_vline( xintercept = had_acl())+
+              geom_text(aes(label=run_number), check_overlap = TRUE)+
+              ylab("Haddock Releases (mt)")+
+              xlab("Total Haddock Mortality (mt)")+
+              theme(legend.position = "none")
 
-        fig4<- ggplotly(p4)%>%
-          layout(title = list(text = paste0('Haddock Mortality (mt) compared to Haddock Releases (mt)'))) %>%
-          plotly::style(textposition = "top center")
-        fig4
+            fig4<- ggplotly(p4)%>%
+              layout(title = list(text = paste0('Haddock Mortality (mt) compared to Haddock Releases (mt)'))) %>%
+              plotly::style(textposition = "top center")
+            fig4
+
     })
     }
   })
@@ -610,7 +611,7 @@ server <- function(input, output, session){
       output$addTripsCod <- renderUI({
         if(any("Trips" == input$fig)){
 
-          renderPlotly({
+          plotly::renderPlotly({
             trips <-  df2() %>%
               dplyr::filter(Category %in% c("ntrips")) %>%
               dplyr::group_by(run_number, option, Category, draw_out) %>%
@@ -655,7 +656,7 @@ server <- function(input, output, session){
       output$addTripsHad <- renderUI({
         if(any("Trips" == input$fig)){
 
-          renderPlotly({
+          plotly::renderPlotly({
             trips <-  df2() %>%
               dplyr::filter(Category %in% c("ntrips")) %>%
               dplyr::group_by(run_number, option, Category, draw_out) %>%
