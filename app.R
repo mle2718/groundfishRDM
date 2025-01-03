@@ -402,7 +402,7 @@ server <- function(input, output, session){
       #geom_point(aes(label = run_number, colour = test)) +
       ggplot2::geom_point(ggplot2::aes(label = run_number, colour = under_acl_cod)) +
       ggplot2::scale_colour_gradient2(low = "white", high = "darkgreen") +
-      ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
+      #ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
       ggplot2::geom_text(ggplot2::aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
