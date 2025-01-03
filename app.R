@@ -453,7 +453,7 @@ server <- function(input, output, session){
           ggplot2::ylab("Consumer Surplus ($)")+
           ggplot2::xlab("Total Cod Mortality (mt)")+
           ggplot2::theme(legend.position = "none",
-                plot.subtitle = element_text("testing"))
+                plot.subtitle = ggplot2::element_text("testing"))
 
         fig1<- ggplotly(p1) %>%
           graphics::layout(title = list(text = paste0('Cod Mortality (mt) compared to Angler Satisfaction',
