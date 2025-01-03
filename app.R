@@ -398,13 +398,13 @@ server <- function(input, output, session){
     #test<- 1:5
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>%
-      ggplot2::ggplot(aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
+      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       #geom_point(aes(label = run_number, colour = test)) +
-      geom_point(aes(label = run_number, colour = under_acl_cod)) +
+      geom_point(ggplot2::aes(label = run_number, colour = under_acl_cod)) +
       scale_colour_gradient2(low = "white", high = "darkgreen") +
-      ggrepel::geom_text_repel(aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
+      ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
-      geom_text(aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
+      geom_text(ggplot2::aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
       geom_vline( xintercept =cod_acl(), linetype="dashed")+
       geom_hline( yintercept =had_acl(), color="grey45")+
@@ -446,10 +446,10 @@ server <- function(input, output, session){
           dplyr::left_join(welfare) %>%
           dplyr::select(!Category)
 
-        p1<- catch %>% ggplot2::ggplot(aes(x = cod, y = CV))+
+        p1<- catch %>% ggplot2::ggplot(ggplot2::aes(x = cod, y = CV))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number), check_overlap = TRUE)+
+          geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ylab("Consumer Surplus ($)")+
           xlab("Total Cod Mortality (mt)")+
           theme(legend.position = "none",
@@ -493,10 +493,10 @@ server <- function(input, output, session){
           dplyr::left_join(welfare) %>%
           dplyr::select(!Category)
 
-        p2<- catch %>% ggplot2::ggplot(aes(x = had, y = CV))+
+        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = had, y = CV))+
           geom_point() +
           geom_vline( xintercept =had_acl())+
-          geom_text(aes(label=run_number), check_overlap = TRUE)+
+          geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ylab("Consumer Surplus ($)")+
           xlab("Recreational Haddock Mortality (mt)")+
           theme(legend.position = "none")
@@ -543,10 +543,10 @@ server <- function(input, output, session){
           dplyr::rename(`Cod Release`=release_cod) %>%
           dplyr::rename(`Haddock Release`=release_had)
 
-        p3<- catch %>% ggplot2::ggplot(aes(x = `Cod Mortality`, y = `Cod Release`))+
+        p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Cod Release`))+
           geom_point() +
           geom_vline( xintercept =cod_acl())+
-          geom_text(aes(label=run_number), check_overlap = TRUE)+
+          geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ylab("Cod Releases (mt)")+
           xlab("Recreational Cod Mortality (mt)")+
           theme(legend.position = "none")
@@ -590,10 +590,10 @@ server <- function(input, output, session){
               dplyr::rename(`Haddock Release`=release_had)
 
 
-            p4<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = `Haddock Release`))+
+            p4<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Mortality`, y = `Haddock Release`))+
               geom_point() +
               geom_vline( xintercept = had_acl())+
-              geom_text(aes(label=run_number), check_overlap = TRUE)+
+              geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ylab("Haddock Releases (mt)")+
               xlab("Total Haddock Mortality (mt)")+
               theme(legend.position = "none")
@@ -635,10 +635,10 @@ server <- function(input, output, session){
               dplyr::rename(`Haddock Mortality`=had)
 
 
-            p5<- catch %>% ggplot2::ggplot(aes(x = `Cod Mortality`, y = Trips))+
+            p5<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = Trips))+
               geom_point() +
               geom_vline( xintercept = cod_acl())+
-              geom_text(aes(label=run_number), check_overlap = TRUE)+
+              geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ylab("Number of Trips")+
               xlab("Total Cod Mortality (mt)")+
               theme(legend.position = "none")
@@ -680,10 +680,10 @@ server <- function(input, output, session){
               dplyr::rename(`Haddock Mortality`=had)
 
 
-            p6<- catch %>% ggplot2::ggplot(aes(x = `Haddock Mortality`, y = Trips))+
+            p6<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Mortality`, y = Trips))+
               geom_point() +
               geom_vline( xintercept = had_acl())+
-              geom_text(aes(label=run_number), check_overlap = TRUE)+
+              geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ylab("Number of Trips")+
               xlab("Total Haddock Mortality (mt)")+
               theme(legend.position = "none")
