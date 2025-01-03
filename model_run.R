@@ -190,12 +190,12 @@ get_predictions_out<- function(x){
 
   print(x)
 
-  calibration_data =  arrow::read_feather(here::here(paste0("data-raw/calibration/pds_new_", select_mode,"_", select_season, "_",k, ".feather")))
+  calibration_data =  readr::read_csv(here::here(paste0("data-raw/calibration/pds_new_", select_mode,"_", select_season, "_",k, ".csv")))
 
 
   #cost files
-  costs =  arrow::read_feather(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".feather")))
-
+  #costs =  arrow::read_feather(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".feather")))
+  costs =  readr::read_csv(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".csv")))
 
   # calibration_data_table_base <- split(calibration_output_by_period, calibration_output_by_period$state)
   # cost_files_all_base <- split(costs_new_all, costs_new_all$state)
