@@ -170,7 +170,7 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adjustments.csv"), show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:100]
+mrip_index  <- mrip_index[1:10]
 #mrip_index  <- mrip_index[1:4]
 
  #pred<- NULL
