@@ -452,14 +452,15 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::ylab("Consumer Surplus ($)")+
           ggplot2::xlab("Total Cod Mortality (mt)")+
-          ggplot2::theme(legend.position = "none",
-                plot.subtitle = ggplot2::element_text("testing"))
+          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+                        subtitle = "testing")
+          ggplot2::theme(legend.position = "none")
 
         fig1<- ggplotly(p1) %>%
-          graphics::layout(title = list(text = paste0('Cod Mortality (mt) compared to Angler Satisfaction',
-                                            '<br>',
-                                            '<sup>',
-                                            'More descirptuon of CV','</sup>'))) %>%
+          # graphics::layout(title = list(text = paste0('Cod Mortality (mt) compared to Angler Satisfaction',
+          #                                   '<br>',
+          #                                   '<sup>',
+          #                                   'More descirptuon of CV','</sup>'))) %>%
           plotly::style(textposition = "top center")
 
         fig1
