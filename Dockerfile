@@ -18,6 +18,7 @@ RUN install2.r -e -s \
     lubridate \
     tibble \
     arrow \
+    graphics \
     data.table \
     knitr \
     openxlsx \
