@@ -404,7 +404,7 @@ server <- function(input, output, session){
       ggplot2::scale_colour_gradient2(low = "white", high = "darkgreen") +
       #ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
-      ggplot2::geom_text(ggplot2::aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
+      ggplot2::geom_text(ggplot2::aes(label=run_number), position=ggplot2::position_jitter(width=1,height=1), check_overlap = TRUE)+
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
