@@ -400,18 +400,18 @@ server <- function(input, output, session){
       dplyr::mutate(under_acl_cod = as.integer(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       #geom_point(aes(label = run_number, colour = test)) +
-      geom_point(ggplot2::aes(label = run_number, colour = under_acl_cod)) +
-      scale_colour_gradient2(low = "white", high = "darkgreen") +
+      ggplot2::geom_point(ggplot2::aes(label = run_number, colour = under_acl_cod)) +
+      ggplot2::scale_colour_gradient2(low = "white", high = "darkgreen") +
       ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
-      geom_text(ggplot2::aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
+      ggplot2::geom_text(ggplot2::aes(label=run_number), position=position_jitter(width=1,height=1), check_overlap = TRUE)+
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
-      geom_vline( xintercept =cod_acl(), linetype="dashed")+
-      geom_hline( yintercept =had_acl(), color="grey45")+
-      scale_colour_gradient(low = "white", high = "darkgreen")+
-      ggtitle("Cod and Haddock Mortality")+
-      ylab("Median Recreational Haddock Mortality (mt)")+
-      xlab("Median Recreational Cod Mortality (mt)")
+      ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
+      ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
+      ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
+      ggplot2::ggtitle("Cod and Haddock Mortality")+
+      ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
+      ggplot2::xlab("Median Recreational Cod Mortality (mt)")
 
     fig<- plotly::ggplotly(p,
                            tooltip = c("x", "y", "colour")) %>%
@@ -447,12 +447,12 @@ server <- function(input, output, session){
           dplyr::select(!Category)
 
         p1<- catch %>% ggplot2::ggplot(ggplot2::aes(x = cod, y = CV))+
-          geom_point() +
-          geom_vline( xintercept =cod_acl())+
-          geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ylab("Consumer Surplus ($)")+
-          xlab("Total Cod Mortality (mt)")+
-          theme(legend.position = "none",
+          ggplot2::geom_point() +
+          ggplot2::geom_vline( xintercept =cod_acl())+
+          ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+          ggplot2::ylab("Consumer Surplus ($)")+
+          ggplot2::xlab("Total Cod Mortality (mt)")+
+          ggplot2::theme(legend.position = "none",
                 plot.subtitle = element_text("testing"))
 
         fig1<- ggplotly(p1) %>%
@@ -494,12 +494,12 @@ server <- function(input, output, session){
           dplyr::select(!Category)
 
         p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = had, y = CV))+
-          geom_point() +
-          geom_vline( xintercept =had_acl())+
-          geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ylab("Consumer Surplus ($)")+
-          xlab("Recreational Haddock Mortality (mt)")+
-          theme(legend.position = "none")
+          ggplot2::geom_point() +
+          ggplot2::geom_vline( xintercept =had_acl())+
+          ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+          ggplot2::ylab("Consumer Surplus ($)")+
+          ggplot2::xlab("Recreational Haddock Mortality (mt)")+
+          ggplot2::theme(legend.position = "none")
 
         fig2<- ggplotly(p2) %>%
           layout(title = list(text = paste0('Haddock Mortality (mt) compared to Angler Satisfaction',
@@ -544,12 +544,12 @@ server <- function(input, output, session){
           dplyr::rename(`Haddock Release`=release_had)
 
         p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Cod Release`))+
-          geom_point() +
-          geom_vline( xintercept =cod_acl())+
-          geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ylab("Cod Releases (mt)")+
-          xlab("Recreational Cod Mortality (mt)")+
-          theme(legend.position = "none")
+          ggplot2::geom_point() +
+          ggplot2::geom_vline( xintercept =cod_acl())+
+          ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+          ggplot2::ylab("Cod Releases (mt)")+
+          ggplot2::xlab("Recreational Cod Mortality (mt)")+
+          ggplot2::theme(legend.position = "none")
 
         fig3<- ggplotly(p3)%>%
           layout(title = list(text = paste0('Cod Mortality (mt) compared to Cod Releases (mt)'))) %>%
@@ -591,12 +591,12 @@ server <- function(input, output, session){
 
 
             p4<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Mortality`, y = `Haddock Release`))+
-              geom_point() +
-              geom_vline( xintercept = had_acl())+
-              geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-              ylab("Haddock Releases (mt)")+
-              xlab("Total Haddock Mortality (mt)")+
-              theme(legend.position = "none")
+              ggplot2::geom_point() +
+              ggplot2::geom_vline( xintercept = had_acl())+
+              ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+              ggplot2::ylab("Haddock Releases (mt)")+
+              ggplot2::xlab("Total Haddock Mortality (mt)")+
+              ggplot2::theme(legend.position = "none")
 
             fig4<- ggplotly(p4)%>%
               layout(title = list(text = paste0('Haddock Mortality (mt) compared to Haddock Releases (mt)'))) %>%
@@ -636,12 +636,12 @@ server <- function(input, output, session){
 
 
             p5<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = Trips))+
-              geom_point() +
-              geom_vline( xintercept = cod_acl())+
-              geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-              ylab("Number of Trips")+
-              xlab("Total Cod Mortality (mt)")+
-              theme(legend.position = "none")
+              ggplot2::geom_point() +
+              ggplot2::geom_vline( xintercept = cod_acl())+
+              ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+              ggplot2::ylab("Number of Trips")+
+              ggplot2::xlab("Total Cod Mortality (mt)")+
+              ggplot2::theme(legend.position = "none")
 
             fig5<- ggplotly(p5)%>%
               layout(title = list(text = paste0('Cod Mortality (mt) compared to Total Number of Trips'))) %>%
@@ -681,12 +681,12 @@ server <- function(input, output, session){
 
 
             p6<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Mortality`, y = Trips))+
-              geom_point() +
-              geom_vline( xintercept = had_acl())+
-              geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-              ylab("Number of Trips")+
-              xlab("Total Haddock Mortality (mt)")+
-              theme(legend.position = "none")
+              ggplot2::geom_point() +
+              ggplot2::geom_vline( xintercept = had_acl())+
+              ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+              ggplot2::ylab("Number of Trips")+
+              ggplot2::xlab("Total Haddock Mortality (mt)")+
+              ggplot2::theme(legend.position = "none")
 
             fig6<- ggplotly(p6)%>%
               layout(title = list(text = paste0('Haddock Mortality (mt) compared to Total Number of Trips'))) %>%
