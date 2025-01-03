@@ -456,7 +456,7 @@ server <- function(input, output, session){
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
-        fig1<- ggplotly(p1) %>%
+        fig1<- plotly::ggplotly(p1) %>%
           # graphics::layout(title = list(text = paste0('Cod Mortality (mt) compared to Angler Satisfaction',
           #                                   '<br>',
           #                                   '<sup>',
@@ -504,7 +504,7 @@ server <- function(input, output, session){
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
-        fig2<- ggplotly(p2) %>%
+        fig2<- plotly::ggplotly(p2) %>%
           # graphics::layout(title = list(text = paste0('Haddock Mortality (mt) compared to Angler Satisfaction',
           #                                   '<br>',
           #                                   '<sup>',
@@ -556,7 +556,7 @@ server <- function(input, output, session){
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
-        fig3<- ggplotly(p3)%>%
+        fig3<- plotly::ggplotly(p3)%>%
           # graphics::layout(title = list(text = paste0('Cod Mortality (mt) compared to Cod Releases (mt)'))) %>%
           plotly::style(textposition = "top center")
         fig3
@@ -605,7 +605,7 @@ server <- function(input, output, session){
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
-            fig4<- ggplotly(p4)%>%
+            fig4<- plotly::ggplotly(p4)%>%
               # graphics::layout(title = list(text = paste0('Haddock Mortality (mt) compared to Haddock Releases (mt)'))) %>%
               plotly::style(textposition = "top center")
             fig4
@@ -652,7 +652,7 @@ server <- function(input, output, session){
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
-            fig5<- ggplotly(p5)%>%
+            fig5<- plotly::ggplotly(p5)%>%
               #graphics::layout(title = list(text = paste0('Cod Mortality (mt) compared to Total Number of Trips'))) %>%
               plotly::style(textposition = "top center")
             fig5
@@ -699,7 +699,7 @@ server <- function(input, output, session){
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
-            fig6<- ggplotly(p6)%>%
+            fig6<- plotly::ggplotly(p6)%>%
               #layout(title = list(text = paste0('Haddock Mortality (mt) compared to Total Number of Trips'))) %>%
               plotly::style(textposition = "top center")
             fig6
