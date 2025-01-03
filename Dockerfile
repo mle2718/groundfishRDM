@@ -18,6 +18,9 @@ RUN install2.r -e -s \
     lubridate \
     tibble \
     feather \
+    ggrepel \
+    DT \
+    plotly \
     data.table \
     knitr \
     openxlsx \
