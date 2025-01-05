@@ -234,7 +234,7 @@ server <- function(input, output, session){
     fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
 
     fnames2<- as.data.frame(fnames) %>%
-      tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>%
+      tidyr::separate(fnames, into = c("a", "b"), sep = "_") %>%
       dplyr::mutate(b = ifelse(stringr::str_detect(b, "202501"),  "NA", b),
                     c=c(1:nrow(.)),
                     run_name = dplyr::case_when(b != "NA" ~ b, TRUE ~ as.character(c))) %>%
