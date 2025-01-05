@@ -33,7 +33,7 @@ ui <- fluidPage(
              shinyWidgets::awesomeCheckboxGroup(
                inputId = "fig",
                label = "Supplemental Figures",
-               choices = c( "Consumer Surplus","Releases", "Trips"),
+               choices = c( "Angler Satisfaction","Releases", "Trips"),
                inline = TRUE,
                status = "danger"),
              uiOutput("addCVCod"),
@@ -421,7 +421,7 @@ server <- function(input, output, session){
 
   output$addCVCod <- renderUI({
 
-    if(any("Consumer Surplus" == input$fig)){
+    if(any("Angler Satisfaction" == input$fig)){
 
       plotly::renderPlotly({
         welfare <-  df2() %>%
@@ -448,6 +448,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_vline( xintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+          ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1000000), angle=90) +
           ggplot2::ylab("Consumer Surplus ($)")+
           ggplot2::xlab("Total Cod Mortality (mt)")+
           ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
@@ -470,7 +471,7 @@ server <- function(input, output, session){
 
   output$addCVHad <- renderUI({
 
-    if(any("Consumer Surplus" == input$fig)){
+    if(any("Angler Satisfaction" == input$fig)){
 
       plotly::renderPlotly({
         welfare <-  df2() %>%
@@ -498,6 +499,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::ylab("Consumer Surplus ($)")+
           ggplot2::xlab("Recreational Haddock Mortality (mt)")+
+          ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1000000), angle=90) +
           ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
@@ -548,6 +550,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_vline( xintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+          ggplot2::geom_text(ggplot2::aes(x=cod_acl(), label="Cod ACL", y=240), angle=90) +
           ggplot2::ylab("Cod Releases (mt)")+
           ggplot2::xlab("Recreational Cod Mortality (mt)")+
           ggplot2::labs(title = "Cod Mortality (mt) compared to Cod Releases (mt)",
@@ -597,6 +600,7 @@ server <- function(input, output, session){
               ggplot2::geom_point() +
               ggplot2::geom_vline( xintercept = had_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+              ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=600), angle=90) +
               ggplot2::ylab("Haddock Releases (mt)")+
               ggplot2::xlab("Total Haddock Mortality (mt)")+
               ggplot2::labs(title = "Haddock Mortality (mt) compared to Haddock Releases (mt)",
@@ -644,6 +648,7 @@ server <- function(input, output, session){
               ggplot2::geom_point() +
               ggplot2::geom_vline( xintercept = cod_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+              ggplot2::geom_text(ggplot2::aes(x=cod_acl(), label="Cod ACL", y=167000), angle=90) +
               ggplot2::ylab("Number of Trips")+
               ggplot2::xlab("Total Cod Mortality (mt)")+
               ggplot2::labs(title = "Cod Mortality (mt) compared to Total Number of Trips",
@@ -691,6 +696,7 @@ server <- function(input, output, session){
               ggplot2::geom_point() +
               ggplot2::geom_vline( xintercept = had_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
+              ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=167000)) +
               ggplot2::ylab("Number of Trips")+
               ggplot2::xlab("Total Haddock Mortality (mt)")+
               ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Number of Trips",
