@@ -235,9 +235,9 @@ server <- function(input, output, session){
 
     fnames2<- as.data.frame(fnames) %>%
       tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>%
-      dplyr::mutate(c = ifelse(stringr::str_detect(c, "202501"),  "NA", c),
-                    d = c(1:nrow(.)),
-                    run_name = dplyr::case_when(c != "NA" ~ c, TRUE ~ as.character(d))) %>%
+      dplyr::mutate(b = ifelse(stringr::str_detect(b, "202501"),  "NA", b),
+                    c=c(1:nrow(.)),
+                    run_name = dplyr::case_when(b != "NA" ~ b, TRUE ~ as.character(c))) %>%
       dplyr::select(run_name)
 
     df <- fnames %>%
