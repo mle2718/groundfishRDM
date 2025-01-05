@@ -6,7 +6,7 @@ library(shinyjs)
 #### Start UI ####
 ui <- fluidPage(
   useShinyjs(),
-  titlePanel("Gulf of Maine Cod and Haddock Recreational Fisheries Decision Support Tool"),
+  titlePanel("Western Gulf of Maine Cod and Haddock Recreational Fisheries Decision Support Tool"),
   #### Regulation Selection ####
   tabsetPanel(
     tabPanel("Cod and Haddock Model Summary",
@@ -19,10 +19,6 @@ ui <- fluidPage(
 
 
              p("The first figure plots the predicted median Cod and Haddock recreational mortality for previously simulated management measures."),
-
-             p("Median Cod mortality is plotted on the horizontal axis. The Cod ACL is the dashed line. Regulations with median mortality under the cod ACL are to the left of the dashed vertical line."),
-
-             p("Median Haddock mortality is plotted on the vertical axis. The Haddock ACL is the solid line. Regulations with median mortality under the Haddock ACL are below the solid horizontal line."),
 
              shinyjs::useShinyjs(),
              shinyjs::extendShinyjs(text = "shinyjs.refresh_page = function() { location.reload(); }", functions = "refresh_page"),
