@@ -235,7 +235,7 @@ server <- function(input, output, session){
 
     fnames2<- as.data.frame(fnames) %>%
       tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>%
-      dplyr::mutate(c = ifelse(stringr::str_detect(c, "20241"),  "NA", c),
+      dplyr::mutate(c = ifelse(stringr::str_detect(c, "20251"),  "NA", c),
                     d = c(1:nrow(.)),
                     run_name = dplyr::case_when(c != "NA" ~ c, TRUE ~ as.character(d))) %>%
       dplyr::select(run_name)
@@ -376,28 +376,20 @@ server <- function(input, output, session){
 
   output$totCatch <- plotly::renderPlotly({
 
-    catch_agg<- df2 %>%
+    catch_agg<- df2() %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(run_number, Category,draw_out) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * lb_to_mt) %>%
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::mutate(Value = Value * lb_to_mt()) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had)
-
-    catch_agg <- data.frame(run_number  = c("SQ", "test"),
-                            `Cod Mortality` = c(43, 40),
-                            `Haddock Mortality` = c(810, 1000),
-                            under_acl_cod = c(100, 50),
-                            under_acl_had = c(94, 80)) %>%
-      dplyr::rename(`Haddock Mortality`=Haddock.Mortality,
-                    `Cod Mortality`=Cod.Mortality)
 
 
     #test<- 1:5
@@ -411,8 +403,8 @@ server <- function(input, output, session){
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
       ggplot2::geom_text(ggplot2::aes(label=run_number), position=ggplot2::position_jitter(width=1,height=1), check_overlap = TRUE)+
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
-      ggplot2::geom_vline( xintercept =cod_acl, linetype="dashed")+
-      ggplot2::geom_hline( yintercept =had_acl, color="grey45")+
+      ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
+      ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200), angle=90) +
       ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=1075))+
       #ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
