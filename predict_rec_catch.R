@@ -943,6 +943,8 @@ predict_rec_catch <- function( x, draw,
       .[, group_index := .GRP, by = .(period2, catch_draw, tripid)]
 
 
+    rm(trip_data)
+
     # Now expand the data to create two alternatives, representing the alternatives available in choice survey
     mean_trip_data <- mean_trip_data %>%
       dplyr::mutate(n_alt = rep(2,nrow(.))) %>%
@@ -1048,6 +1050,8 @@ predict_rec_catch <- function( x, draw,
       .[]
 
 
+    rm(length_data2)
+
     all_vars <- setdiff(names(length_data3), c("period2", "tripid", "catch_draw"))
 
     length_data3 <- data.table::as.data.table(length_data3)[
@@ -1114,6 +1118,7 @@ predict_rec_catch <- function( x, draw,
       .[,lapply(.SD, base::sum), by = c("mode", "month"), .SDcols = all_vars]
 
 
+    rm(length_expand)
 
     #This code translates numbers to weights using the l-w equation. The number_weight var is set to "Weight"
     #Later on we drop the keep and release numbers computed here.
