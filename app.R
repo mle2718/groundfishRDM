@@ -398,9 +398,9 @@ server <- function(input, output, session){
     #test<- 1:5
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
+      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, label = run_number))+
       #geom_point(aes(label = run_number, colour = test)) +
-      ggplot2::geom_point(ggplot2::aes(label = run_number, colour = under_acl_cod)) +
+      ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
       ggplot2::scale_colour_gradient2(low = "white", high = "darkgreen") +
       #ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
@@ -408,7 +408,9 @@ server <- function(input, output, session){
       #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
-      ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
+      ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200), angle=90) +
+      ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=1075))+
+      #ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
       ggplot2::xlab("Median Recreational Cod Mortality (mt)")
