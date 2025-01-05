@@ -176,7 +176,7 @@ mrip_index  <- mrip_index[1:400]
  #pred<- NULL
  #for (x in mrip_index){
 #future::plan(future::multisession, workers = 6)
-future::plan(future::multisession, workers = 124)
+future::plan(future::multisession, parallelly::availableCores())
 get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%

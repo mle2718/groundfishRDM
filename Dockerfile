@@ -25,6 +25,7 @@ RUN install2.r -e -s \
     plyr \
     markdown \
     future \
+    parallelly \
     furrr \
     DT \
     plotly \
