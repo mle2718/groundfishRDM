@@ -33,7 +33,7 @@ ui <- fluidPage(
              shinyWidgets::awesomeCheckboxGroup(
                inputId = "fig",
                label = "Supplemental Figures",
-               choices = c( "Angler Satisfaction","Releases", "Trips"),
+               choices = c( "Angler Satisfaction","Discards", "Trips"),
                inline = TRUE,
                status = "danger"),
              uiOutput("addCVCod"),
@@ -425,6 +425,9 @@ server <- function(input, output, session){
     if(any("Angler Satisfaction" == input$fig)){
 
       plotly::renderPlotly({
+
+        SQ
+
         welfare <-  df2() %>%
           dplyr::filter(Category %in% c("CV")) %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
@@ -450,8 +453,8 @@ server <- function(input, output, session){
           ggplot2::geom_vline( xintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1000000), angle=90) +
-          ggplot2::ylab("Consumer Surplus ($)")+
-          ggplot2::xlab("Total Cod Mortality (mt)")+
+          ggplot2::ylab("Relative Change in Angler Satisfaction ($)")+
+          ggplot2::xlab("Total Recreational Cod Mortality (mt)")+
           ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
@@ -494,14 +497,14 @@ server <- function(input, output, session){
           dplyr::left_join(welfare) %>%
           dplyr::select(!Category)
 
-        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = had, y = CV))+
+        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = CV, y = had))+
           ggplot2::geom_point() +
-          ggplot2::geom_vline( xintercept =had_acl())+
+          ggplot2::geom_hline( yintercept =had_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ggplot2::ylab("Consumer Surplus ($)")+
-          ggplot2::xlab("Recreational Haddock Mortality (mt)")+
+          ggplot2::ylab("Relative Change in Angler Satisfaction ($)")+
+          ggplot2::xlab("Total Recreational Haddock Mortality (mt)")+
           ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1000000), angle=90) +
-          ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction",
+          ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -519,7 +522,7 @@ server <- function(input, output, session){
 
   output$addReleaseCod <- renderUI({
 
-    if(any("Releases" == input$fig)){
+    if(any("Discards" == input$fig)){
 
       plotly::renderPlotly({
         release <-  df2() %>%
@@ -553,7 +556,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::geom_text(ggplot2::aes(x=cod_acl(), label="Cod ACL", y=240), angle=90) +
           ggplot2::ylab("Cod Releases (mt)")+
-          ggplot2::xlab("Recreational Cod Mortality (mt)")+
+          ggplot2::xlab("Total Recreational Cod Mortality (mt)")+
           ggplot2::labs(title = "Cod Mortality (mt) compared to Cod Releases (mt)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
@@ -567,7 +570,7 @@ server <- function(input, output, session){
   })
 
       output$addReleaseHad <- renderUI({
-        if(any("Releases" == input$fig)){
+        if(any("Discards" == input$fig)){
 
 
           plotly::renderPlotly({
@@ -603,7 +606,7 @@ server <- function(input, output, session){
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=600), angle=90) +
               ggplot2::ylab("Haddock Releases (mt)")+
-              ggplot2::xlab("Total Haddock Mortality (mt)")+
+              ggplot2::xlab("Total Recreational Haddock Mortality (mt)")+
               ggplot2::labs(title = "Haddock Mortality (mt) compared to Haddock Releases (mt)",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
@@ -651,7 +654,7 @@ server <- function(input, output, session){
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::geom_text(ggplot2::aes(x=cod_acl(), label="Cod ACL", y=167000), angle=90) +
               ggplot2::ylab("Number of Trips")+
-              ggplot2::xlab("Total Cod Mortality (mt)")+
+              ggplot2::xlab("Total Recreational Cod Mortality (mt)")+
               ggplot2::labs(title = "Cod Mortality (mt) compared to Total Number of Trips",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
@@ -699,7 +702,7 @@ server <- function(input, output, session){
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=167000)) +
               ggplot2::ylab("Number of Trips")+
-              ggplot2::xlab("Total Haddock Mortality (mt)")+
+              ggplot2::xlab("Total Recreational Haddock Mortality (mt)")+
               ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Number of Trips",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
@@ -831,8 +834,8 @@ server <- function(input, output, session){
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99 ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= 500 ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(option, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
@@ -841,7 +844,7 @@ server <- function(input, output, session){
                                              "had" = "Haddock")) %>%
       dplyr::select(Category, Value_SQ, Value_alt, under_acl_alt) %>%
       dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
-                    `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL` = under_acl_alt)
+                    `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL (Out of 100 runs)` = under_acl_alt)
 
     return(catch_agg)
   })
@@ -889,9 +892,9 @@ server <- function(input, output, session){
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
-                    catch_disposition = dplyr::recode(catch_disposition, "keep" = "Keeps",
+                    catch_disposition = dplyr::recode(catch_disposition, "keep" = "Harvest",
                                                       "Discmortality" = "Dead Discards",
-                                                      "release" = "Releases")) %>%
+                                                      "release" = "Discards")) %>%
       dplyr::select(Category, catch_disposition, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
       dplyr::rename(Species = Category, Variable = catch_disposition,
                     `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
@@ -916,9 +919,9 @@ server <- function(input, output, session){
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
-                    catch_disposition = dplyr::recode(catch_disposition, "keep" = "Keeps",
+                    catch_disposition = dplyr::recode(catch_disposition, "keep" = "Harvest",
                                                       "Discmortality" = "Dead Discards",
-                                                      "release" = "Releases"),
+                                                      "release" = "Discards"),
                     mode = dplyr::recode(mode, "fh" = "For Hire",
                                          "pr" = "Private")) %>%
       dplyr::select(Category, catch_disposition, mode, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
