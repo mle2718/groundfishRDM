@@ -51,7 +51,7 @@ ui <- fluidPage(
               strong(div("Use this page to set up the regulations that you would like to simulate. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
               #Run Button
               actionButton("runmeplease", "Run Me"),
-              textInput("Run_Name", "Please give this run a short, unique name"),
+              textInput("Run_Name", "Please give this run a short, unique name and only click the button ONCE before clicking over to Results tab."),
 
               fluidRow(
                 column(6,
@@ -190,7 +190,7 @@ ui <- fluidPage(
     #### Results ####
     tabPanel("Results",
              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                              tags$div("Calculating...This will take ~15-20 min per state selected.",id="loadmessage")), #Warning for users
+                              tags$div("Calculating...This will take ~45-50 min per state selected.",id="loadmessage")), #Warning for users
 
              downloadButton(outputId = "downloadData", "Download"),
              actionButton("bymode", "Results by Mode"),
