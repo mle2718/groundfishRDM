@@ -391,14 +391,17 @@ server <- function(input, output, session){
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had)
 
+    under_50 <- ifelse(as.numeric(catch_agg$under_acl_cod) < 50, "solid_color", "gradient")
 
     #test<- 1:5
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, label = run_number))+
       #geom_point(aes(label = run_number, colour = test)) +
+      #ggplot2::geom_point(ggplot2::aes(under_acl_cod <= 50, ggplot2::aes(fill = "red3")))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
-      ggplot2::scale_colour_gradient2("% Under Cod ACL", low = "white", high = "darkgreen", limits=c(0,100)) +
+      ggplot2::scale_colour_gradient2("% Under Cod ACL", low = "white", high = "darkgreen", limits=c(50,100)) +
+      #ggplot2::scale_fill_manual(values = c("solid_color" = "red3", "gradient" = "transparent")) +
       #ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
       #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
       ggplot2::geom_text(ggplot2::aes(label=run_number), position=ggplot2::position_jitter(width=1,height=1), check_overlap = TRUE)+
@@ -407,6 +410,7 @@ server <- function(input, output, session){
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200), angle=90) +
       ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=1075))+
+
       #ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
@@ -426,15 +430,18 @@ server <- function(input, output, session){
 
       plotly::renderPlotly({
 
-        SQ
+        SQ<-read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
+          dplyr::filter(Category == "CV") %>%
+          dplyr::group_by(draw_out, Category) %>%
+          dplyr::summarise(Value_SQ = sum(Value))
 
         welfare <-  df2() %>%
-          dplyr::filter(Category %in% c("CV")) %>%
-          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::filter(Category == c("CV")) %>%
+          dplyr::group_by(run_number,  draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(CV = round(median(Value),0))
-
+          dplyr::left_join(SQ) %>%
+          dplyr::mutate(Value_diff = Value_SQ-Value) %>%
+          dplyr::summarise(median_cv = median(Value_diff))
 
         catch<- df2() %>%
           dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -445,17 +452,16 @@ server <- function(input, output, session){
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value =round(median(Value),0)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
-          dplyr::left_join(welfare) %>%
-          dplyr::select(!Category)
+          dplyr::left_join(welfare)
 
-        p1<- catch %>% ggplot2::ggplot(ggplot2::aes(x = cod, y = CV))+
+        p1<- catch %>% ggplot2::ggplot(ggplot2::aes(x = median_cv, y = cod))+
           ggplot2::geom_point() +
-          ggplot2::geom_vline( xintercept =cod_acl())+
+          ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1000000), angle=90) +
-          ggplot2::ylab("Relative Change in Angler Satisfaction ($)")+
-          ggplot2::xlab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction",
+          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=1000000)) +
+          ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
+          ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
+          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -478,12 +484,18 @@ server <- function(input, output, session){
     if(any("Angler Satisfaction" == input$fig)){
 
       plotly::renderPlotly({
+        SQ<-read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
+          dplyr::filter(Category == "CV") %>%
+          dplyr::group_by(draw_out, Category) %>%
+          dplyr::summarise(Value_SQ = sum(Value))
+
         welfare <-  df2() %>%
-          dplyr::filter(Category %in% c("CV")) %>%
-          dplyr::group_by(run_number, option, Category, draw_out) %>%
+          dplyr::filter(Category == c("CV")) %>%
+          dplyr::group_by(run_number,  draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-          dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(CV = round(median(Value),0))
+          dplyr::left_join(SQ) %>%
+          dplyr::mutate(Value_diff = Value_SQ-Value) %>%
+          dplyr::summarise(median_cv = median(Value_diff))
 
         catch<- df2() %>%
           dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -492,17 +504,16 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number, option, Category) %>%
-          dplyr::summarise(Value = round(median(Value),0)) %>%
+          dplyr::summarise(Value =round(median(Value),0)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
-          dplyr::left_join(welfare) %>%
-          dplyr::select(!Category)
+          dplyr::left_join(welfare)
 
-        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = CV, y = had))+
+        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = median_cv, y = had))+
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =had_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ggplot2::ylab("Relative Change in Angler Satisfaction ($)")+
-          ggplot2::xlab("Total Recreational Haddock Mortality (mt)")+
+          ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
+          ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
           ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1000000), angle=90) +
           ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
@@ -550,14 +561,14 @@ server <- function(input, output, session){
           dplyr::rename(`Cod Release`=release_cod) %>%
           dplyr::rename(`Haddock Release`=release_had)
 
-        p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Cod Release`))+
+        p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Release`, y = `Cod Mortality`))+
           ggplot2::geom_point() +
-          ggplot2::geom_vline( xintercept =cod_acl())+
+          ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(x=cod_acl(), label="Cod ACL", y=240), angle=90) +
-          ggplot2::ylab("Cod Releases (mt)")+
-          ggplot2::xlab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Cod Releases (mt)",
+          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=240)) +
+          ggplot2::xlab("Cod Discards (mt)")+
+          ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
+          ggplot2::labs(title = "Cod Mortality (mt) compared to Total Discarded Cod (mt)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -600,14 +611,14 @@ server <- function(input, output, session){
               dplyr::rename(`Haddock Release`=release_had)
 
 
-            p4<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Mortality`, y = `Haddock Release`))+
+            p4<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Release` , y = `Haddock Mortality`))+
               ggplot2::geom_point() +
-              ggplot2::geom_vline( xintercept = had_acl())+
+              ggplot2::geom_hline( yintercept = had_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-              ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=600), angle=90) +
-              ggplot2::ylab("Haddock Releases (mt)")+
-              ggplot2::xlab("Total Recreational Haddock Mortality (mt)")+
-              ggplot2::labs(title = "Haddock Mortality (mt) compared to Haddock Releases (mt)",
+              ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=600)) +
+              ggplot2::xlab("Haddock Discards (mt)")+
+              ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
+              ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Discarded Haddock (mt)",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
@@ -648,13 +659,13 @@ server <- function(input, output, session){
               dplyr::rename(`Haddock Mortality`=had)
 
 
-            p5<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = Trips))+
+            p5<- catch %>% ggplot2::ggplot(ggplot2::aes(x = Trips, y = `Cod Mortality`))+
               ggplot2::geom_point() +
-              ggplot2::geom_vline( xintercept = cod_acl())+
+              ggplot2::geom_hline( yintercept = cod_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-              ggplot2::geom_text(ggplot2::aes(x=cod_acl(), label="Cod ACL", y=167000), angle=90) +
-              ggplot2::ylab("Number of Trips")+
-              ggplot2::xlab("Total Recreational Cod Mortality (mt)")+
+              ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=167000), angle=90) +
+              ggplot2::xlab("Number of Trips")+
+              ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
               ggplot2::labs(title = "Cod Mortality (mt) compared to Total Number of Trips",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
@@ -696,13 +707,13 @@ server <- function(input, output, session){
               dplyr::rename(`Haddock Mortality`=had)
 
 
-            p6<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Mortality`, y = Trips))+
+            p6<- catch %>% ggplot2::ggplot(ggplot2::aes(x =Trips , y = `Haddock Mortality`))+
               ggplot2::geom_point() +
-              ggplot2::geom_vline( xintercept = had_acl())+
+              ggplot2::geom_hline( yintercept = had_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
-              ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=167000)) +
-              ggplot2::ylab("Number of Trips")+
-              ggplot2::xlab("Total Recreational Haddock Mortality (mt)")+
+              ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=167000)) +
+              ggplot2::xlab("Number of Trips")+
+              ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
               ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Number of Trips",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
@@ -945,7 +956,7 @@ server <- function(input, output, session){
       dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
       dplyr::select(!SQ) %>%
-      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Consumer Surplus ($)",
+      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Angler Satisfaction ($)",
                                              ntrips = "Angler Trips (N)")) %>%
       tidyr::pivot_wider(names_from = Category, values_from = alt)
 
@@ -964,7 +975,7 @@ server <- function(input, output, session){
       dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
       dplyr::select(!SQ) %>%
-      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Consumer Surplus ($)",
+      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Angler Satisfaction ($)",
                                              ntrips = "Angler Trips (N)"),
                     mode = dplyr::recode(mode, "fh" = "For Hire",
                                          "pr" = "Private")) %>%

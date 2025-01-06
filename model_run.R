@@ -172,7 +172,7 @@ calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adju
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
 
 mrip_index  <- mrip_index[1:400]
-#mrip_index  <- mrip_index[392:400]
+#mrip_index  <- mrip_index[1:4]
 
 #x = 188
  #pred<- NULL
