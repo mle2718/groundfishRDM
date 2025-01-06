@@ -15,7 +15,7 @@ ui <- fluidPage(
              p("The results of your own model runs are stored. Please give it a short, unique name."),
              p("Hover over each point to view the detailed statistics for each model run. The first section contains
                a table of recreational management measures. The second section contains graphs of mortality. The third
-               section has graphs of other performance measures, including Economic Surplus, Trips, and Discards."),
+               section has graphs of other performance measures, including relative change in Angler Satisfaction, Trips, and Discards."),
 
 
              p("The first figure plots the predicted median Cod and Haddock recreational mortality for previously simulated management measures."),
@@ -749,11 +749,12 @@ server <- function(input, output, session){
 
   predictions <- reactive({
 
-    predictions_out <- read.csv(here::here("data-raw/sq_predictions_cm.csv")) %>%
+    test<- read.csv(here::here("data-raw/test_predictions_cm.csv"))
+    predictions_out <- read.csv(here::here("data-raw/SQ_predictions_cm.csv")) %>%
       #dplyr::mutate(option = c("SQ")) %>%
       #dplyr::select(!X) %>%
-      #rbind(test) %>%
-      rbind(pred()) %>%
+      rbind(test) %>%
+      #rbind(pred()) %>%
       dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ Value/2205, TRUE ~ Value))
     return(predictions_out)
   })
@@ -923,8 +924,8 @@ server <- function(input, output, session){
 
 
   keep_by_mode <- reactive({
-    keep_by_mode<- predictions() %>%
-      #predictions_out %>%
+    keep_by_mode<- #predictions() %>%
+      predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -953,18 +954,32 @@ server <- function(input, output, session){
   which_welfare_out<- reactiveVal(TRUE)
   welfare_agg <- reactive({
 
-    welfare_agg<- predictions() %>%
-      #predictions_out %>%
-      dplyr::filter(Category %in% c("CV", "ntrips")) %>%
+    welfare_agg <- predictions_out %>%
+      dplyr::filter(Category %in% c("CV")) %>%
+      dplyr::group_by( Category, draw_out, option) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      tidyr::pivot_wider(names_from = option, values_from = Value) %>%
+      dplyr::mutate(Value_diff = SQ - alt) %>%
+      dplyr::ungroup() %>%
+      dplyr::summarise(median_cv = median(Value_diff)) %>%
+      dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv)
+
+
+    trips_agg<- #predictions() %>%
+      predictions_out %>%
+      dplyr::filter(Category %in% c( "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
       dplyr::group_by(option, Category) %>%
       dplyr::summarise(Value = median(Value)) %>%
-      tidyr::pivot_wider(names_from = option, values_from = Value) %>%
-      dplyr::select(!SQ) %>%
-      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Angler Satisfaction ($)",
-                                             ntrips = "Angler Trips (N)")) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = alt)
+      dplyr::select(Value) %>%
+      dplyr::filter(option == "alt") %>%
+      dplyr::ungroup() %>%
+      dplyr::rename(`Total number of Angler Trips` = Value) %>%
+      dplyr::select(`Total number of Angler Trips`)
+
+
+    welfare_agg<- cbind(welfare_agg, trips_agg)
 
     return(welfare_agg)
 
@@ -972,21 +987,35 @@ server <- function(input, output, session){
 
 
   welfare_by_mode <- reactive({
-    welfare_by_mode<- predictions() %>%
-      #predictions_out10 %>%
-      dplyr::filter(Category %in% c("CV", "ntrips")) %>%
+
+    welfare_by_mode <- predictions_out %>%
+      dplyr::filter(Category %in% c("CV")) %>%
+      dplyr::group_by( Category, draw_out, option, mode) %>%
+      dplyr::summarise(Value = sum(Value)) %>%
+      tidyr::pivot_wider(names_from = option, values_from = Value) %>%
+      dplyr::mutate(Value_diff = SQ - alt) %>%
+      dplyr::group_by(mode) %>%
+      dplyr::summarise(median_cv = median(Value_diff)) %>%
+      dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv)
+
+
+    trips_by_mode<- #predictions() %>%
+      predictions_out %>%
+      dplyr::filter(Category %in% c( "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
       dplyr::group_by(option, Category, mode) %>%
       dplyr::summarise(Value = median(Value)) %>%
-      tidyr::pivot_wider(names_from = option, values_from = Value) %>%
-      dplyr::select(!SQ) %>%
-      dplyr::mutate(Category = dplyr::recode(Category, CV = "Change in Angler Satisfaction ($)",
-                                             ntrips = "Angler Trips (N)"),
-                    mode = dplyr::recode(mode, "fh" = "For Hire",
-                                         "pr" = "Private")) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = alt) %>%
-      dplyr::rename(`Mode` = mode)
+      dplyr::select(Value) %>%
+      dplyr::filter(option == "alt") %>%
+      dplyr::ungroup() %>%
+      dplyr::rename(`Total number of Angler Trips` = Value) %>%
+      dplyr::select(`Total number of Angler Trips`)
+
+
+    welfare_by_mode<- cbind(welfare_by_mode, trips_by_mode) %>%
+      dplyr::mutate(mode = dplyr::recode(mode, "fh" = "For Hire",
+                                         "pr" = "Private"))
     return(welfare_by_mode)
   })
 
