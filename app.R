@@ -749,12 +749,12 @@ server <- function(input, output, session){
 
   predictions <- reactive({
 
-    test<- read.csv(here::here("data-raw/test_predictions_cm.csv"))
+    #test<- read.csv(here::here("data-raw/test_predictions_cm.csv"))
     predictions_out <- read.csv(here::here("data-raw/SQ_predictions_cm.csv")) %>%
       #dplyr::mutate(option = c("SQ")) %>%
       #dplyr::select(!X) %>%
-      rbind(test) %>%
-      #rbind(pred()) %>%
+      #rbind(test) %>%
+      rbind(pred()) %>%
       dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ Value/2205, TRUE ~ Value))
     return(predictions_out)
   })
@@ -954,7 +954,8 @@ server <- function(input, output, session){
   which_welfare_out<- reactiveVal(TRUE)
   welfare_agg <- reactive({
 
-    welfare_agg <- predictions_out %>%
+    welfare_agg <- predictions()
+      #predictions_out %>%
       dplyr::filter(Category %in% c("CV")) %>%
       dplyr::group_by( Category, draw_out, option) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -965,8 +966,8 @@ server <- function(input, output, session){
       dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv)
 
 
-    trips_agg<- #predictions() %>%
-      predictions_out %>%
+    trips_agg<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(Category %in% c( "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -988,7 +989,8 @@ server <- function(input, output, session){
 
   welfare_by_mode <- reactive({
 
-    welfare_by_mode <- predictions_out %>%
+    welfare_by_mode <- predictions()
+      #predictions_out %>%
       dplyr::filter(Category %in% c("CV")) %>%
       dplyr::group_by( Category, draw_out, option, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -999,8 +1001,8 @@ server <- function(input, output, session){
       dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv)
 
 
-    trips_by_mode<- #predictions() %>%
-      predictions_out %>%
+    trips_by_mode<- predictions() %>%
+      #predictions_out %>%
       dplyr::filter(Category %in% c( "ntrips")) %>%
       dplyr::group_by(option, Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
