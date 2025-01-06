@@ -48,10 +48,10 @@ ui <- fluidPage(
 
 
     tabPanel( "Regulation Selection",
-              strong(div("Use this page to set up the regulations that you would like to simulate. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
+              strong(div("Use this page to set up the regulations that you would like to simulate.  Only click the button ONCE before clicking over to Results tab. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
               #Run Button
               actionButton("runmeplease", "Run Me"),
-              textInput("Run_Name", "Please give this run a short, unique name and only click the button ONCE before clicking over to Results tab."),
+              textInput("Run_Name", "Please name this using your initials and the number of the run (ex. AB1)."),
 
               fluidRow(
                 column(6,
