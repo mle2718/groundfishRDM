@@ -393,12 +393,18 @@ server <- function(input, output, session){
 
     under_50 <- ifelse(as.numeric(catch_agg$under_acl_cod) < 50, "solid_color", "gradient")
 
-    #test<- 1:5
+    # catch_agg <- data.frame(run_number = c("SQ", "test"),
+    #                         Cod_Mortality = c(43, 130),
+    #                         Haddock_Mortality = c(810, 1099),
+    #                         under_acl_cod = c(100, 40),
+    #                         under_acl_had = c(94, 60)) %>%
+    #   dplyr::rename(`Cod Mortality`=Cod_Mortality, `Haddock Mortality`=Haddock_Mortality)
+
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, label = run_number))+
       #geom_point(aes(label = run_number, colour = test)) +
-      #ggplot2::geom_point(ggplot2::aes(under_acl_cod <= 50, ggplot2::aes(fill = "red3")))+
+      #ggplot2::geom_point(ggplot2::aes(color = "red3"))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
       ggplot2::scale_colour_gradient2("% Under Cod ACL", low = "white", high = "darkgreen", limits=c(50,100)) +
       #ggplot2::scale_fill_manual(values = c("solid_color" = "red3", "gradient" = "transparent")) +
@@ -514,7 +520,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
           ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
-          ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1000000), angle=90) +
+          ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1075)) +
           ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
