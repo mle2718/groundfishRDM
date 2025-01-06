@@ -217,15 +217,6 @@ predict_rec_catch <- function( x, draw,
                     tripid,catch_draw,day, period2)
 
 
-    cod_catch_data <- cod_catch_data %>%
-      dplyr::mutate(day = as.numeric(stringr::str_extract(day, "\\d+"))) %>%
-      dplyr::group_by(period2) %>%
-      dplyr::slice_sample(n = n_drawz*n_catch_draws, replace = TRUE)   %>%
-      dplyr::mutate(catch_draw = rep(1:n_catch_draws, length.out = n_drawz*n_catch_draws),
-                    tripid = rep(1:n_drawz, each=n_catch_draws)) %>%
-      dplyr::ungroup()%>%
-      dplyr::select(!c(month))
-
     print("code check 1")
 
     if(select_season == 1){

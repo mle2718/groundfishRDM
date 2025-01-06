@@ -153,8 +153,8 @@ directed_trips<- directed_trips %>%
     hadd_min_alt=dplyr::case_when(mode == "pr" & doy >= HadPR_seas3_1 & doy <= HadPR_seas3_2 ~ as.numeric((input$HadPR_3_len*2.54)), TRUE ~ hadd_min_alt))
 
 directed_trips <- directed_trips %>%
-  # dplyr::mutate(cod_min_alt = cod_min_y2, cod_bag_alt = cod_bag_y2,
-  #               hadd_min_alt = hadd_min_y2, hadd_bag_alt = hadd_bag_y2) %>%
+   # dplyr::mutate(cod_min_alt = cod_min_y2, cod_bag_alt = cod_bag_y2,
+   #               hadd_min_alt = hadd_min_y2, hadd_bag_alt = hadd_bag_y2) %>%
    dplyr::rename(cod_min_SQ = cod_min_y2,  cod_bag_SQ = cod_bag_y2,
                 hadd_min_SQ = hadd_min_y2, hadd_bag_SQ = hadd_bag_y2)
 
@@ -170,9 +170,11 @@ dplyr::n_distinct(baseline_comparison1$draw)
 calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adjustments.csv"), show_col_types = FALSE)
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
-mrip_index  <- mrip_index[1:400]
-#mrip_index  <- mrip_index[1:8]
 
+mrip_index  <- mrip_index[1:400]
+#mrip_index  <- mrip_index[392:400]
+
+#x = 188
  #pred<- NULL
  #for (x in mrip_index){
 #future::plan(future::multisession, workers = 6)
