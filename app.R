@@ -401,8 +401,9 @@ server <- function(input, output, session){
     #   dplyr::rename(`Cod Mortality`=Cod_Mortality, `Haddock Mortality`=Haddock_Mortality)
 
     p<- catch_agg %>%
-      dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, label = run_number))+
+      dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod),
+                    under_acl_had = as.numeric(under_acl_had)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, label = run_number,text = paste0('under_acl_had: ', under_acl_cod, '%', '</br>under_acl_cod: ', under_acl_had, '%')   )  )+
       #geom_point(aes(label = run_number, colour = test)) +
       #ggplot2::geom_point(ggplot2::aes(color = "red3"))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
@@ -415,7 +416,7 @@ server <- function(input, output, session){
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200), angle=90) +
-      ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=1075))+
+      ggplot2::geom_text(ggplot2::aes(x=80, label="Haddock ACL", y=1075))+
 
       #ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
@@ -423,10 +424,10 @@ server <- function(input, output, session){
       ggplot2::xlab("Median Recreational Cod Mortality (mt)")
 
     fig<- plotly::ggplotly(p,
-                           tooltip = c("x", "y", "colour")) %>%
+                           tooltip = c("x", "y", "text")) %>%
       plotly::style(textposition = "top center")#,
-                           #jitter = 0.4) #%>%
-      #plotly::style(textposition = "top")
+    #jitter = 0.4) #%>%
+    #plotly::style(textposition = "top")
     fig
   })
 
