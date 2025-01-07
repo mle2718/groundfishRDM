@@ -154,7 +154,7 @@ directed_trips<- directed_trips %>%
 
 directed_trips <- directed_trips %>%
    #dplyr::mutate(cod_min_alt = cod_min_y2, cod_bag_alt = cod_bag_y2,
-    #              hadd_min_alt = hadd_min_y2, hadd_bag_alt = hadd_bag_y2) %>%
+    #             hadd_min_alt = hadd_min_y2, hadd_bag_alt = hadd_bag_y2) %>%
    dplyr::rename(cod_min_SQ = cod_min_y2,  cod_bag_SQ = cod_bag_y2,
                 hadd_min_SQ = hadd_min_y2, hadd_bag_SQ = hadd_bag_y2)
 

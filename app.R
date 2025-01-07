@@ -954,7 +954,7 @@ server <- function(input, output, session){
   which_welfare_out<- reactiveVal(TRUE)
   welfare_agg <- reactive({
 
-    welfare_agg <- predictions() %>%
+    welfare2_agg <- predictions() %>%
       #predictions_out %>%
       dplyr::filter(Category =="CV")%>%
       dplyr::group_by( draw_out, option) %>%
