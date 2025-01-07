@@ -753,7 +753,7 @@ server <- function(input, output, session){
     predictions_out <- read.csv(here::here("data-raw/SQ_predictions_cm.csv")) %>%
       #dplyr::mutate(option = c("SQ")) %>%
       #dplyr::select(!X) %>%
-      #rbind(test) %>%
+      #rbind(predictions_out10) %>%
       rbind(pred()) %>%
       dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
     return(predictions_out)
@@ -847,7 +847,7 @@ server <- function(input, output, session){
   catch_agg <- reactive({
 
     catch_agg<- predictions() %>%
-      #predictions_out10 %>%
+      #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out) %>%
