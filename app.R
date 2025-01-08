@@ -244,7 +244,7 @@ server <- function(input, output, session){
       purrr::map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
 
-    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 270)))
+    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 330)))
     return(df2)
   }
 
