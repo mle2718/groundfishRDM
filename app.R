@@ -403,32 +403,27 @@ server <- function(input, output, session){
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had)
 
-    under_50 <- ifelse(as.numeric(catch_agg$under_acl_cod) < 50, "solid_color", "gradient")
-
-    # catch_agg <- data.frame(run_number = c("SQ", "test"),
-    #                         Cod_Mortality = c(43, 130),
-    #                         Haddock_Mortality = c(810, 1099),
-    #                         under_acl_cod = c(100, 40),
-    #                         under_acl_had = c(94, 60)) %>%
+    # catch_agg <- data.frame(run_number = c("SQ","what", "test"),
+    #                         Cod_Mortality = c(43, 60, 130),
+    #                         Haddock_Mortality = c(810, 955, 1099),
+    #                         under_acl_cod = c(100,60,  40),
+    #                         under_acl_had = c(94,70,  60)) %>%
     #   dplyr::rename(`Cod Mortality`=Cod_Mortality, `Haddock Mortality`=Haddock_Mortality)
+
+    my_palette <- c("red3","red3","red3","red3","red3","#C5E8B7",
+                              "#ABE098", "#83D475","green4","darkgreen")
 
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, label = run_number))+
-      #geom_point(aes(label = run_number, colour = test)) +
-      #ggplot2::geom_point(ggplot2::aes(color = "red3"))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
-      ggplot2::scale_colour_gradient2("% Under Cod ACL", low = "white", high = "darkgreen", limits=c(50,100)) +
-      #ggplot2::scale_fill_manual(values = c("solid_color" = "red3", "gradient" = "transparent")) +
-      #ggrepel::geom_text_repel(ggplot2::aes(`Cod Mortality`, `Haddock Mortality`, label = run_number))+
-      #geom_text(aes(label = run_number, y = `Haddock Mortality` + 0.25))+
-      ggplot2::geom_text(ggplot2::aes(label=run_number), position=ggplot2::position_jitter(width=1,height=1), check_overlap = TRUE)+
-      #geom_text(aes(label=ifelse(`Cod Mortality`>cod_acl() & `Haddock Mortality` > had_acl(), as.character(run_number), ' '), hjust=1, vjust=1))+
+      ggplot2::scale_color_stepsn(limits = c(0,100), n.breaks = 10, colors = my_palette, name = "% Under Cod ACL")+
+      #ggplot2::scale_y_continuous(limits = c(0,100), breaks = seq(0, 50, 100), name = "% Under Haddock ACL")+
+      ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
-      ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200), angle=90) +
+      ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200)) +
       ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=1075))+
-
       #ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
@@ -436,9 +431,7 @@ server <- function(input, output, session){
 
     fig<- plotly::ggplotly(p,
                            tooltip = c("x", "y", "colour")) %>%
-      plotly::style(textposition = "top center")#,
-                           #jitter = 0.4) #%>%
-      #plotly::style(textposition = "top")
+      plotly::style(textposition = "top center")
     fig
   })
 
