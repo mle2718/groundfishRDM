@@ -240,11 +240,18 @@ server <- function(input, output, session){
                     run_name = dplyr::case_when(b != "NA" ~ b, TRUE ~ as.character(c))) %>%
       dplyr::select(run_name)
 
+    # fnames2<- as.data.frame(fnames) %>%
+    #   tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>%
+    #   dplyr::mutate(c = ifelse(stringr::str_detect(c, "202501"),  "NA", c),
+    #                 d=c(1:nrow(.)),
+    #                 run_name = dplyr::case_when(c != "NA" ~ c, TRUE ~ as.character(c))) %>%
+    #   dplyr::select(run_name)
+
     df <- fnames %>%
       purrr::map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
 
-    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 330)))
+    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 6030)))
     return(df2)
   }
 
