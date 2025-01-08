@@ -86,7 +86,7 @@ ui <- fluidPage(
                                             sliderInput(inputId = "CodFH_seas2", label ="For Hire Open Season 2",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2026-04-30","%Y-%m-%d"),as.Date("2026-04-30","%Y-%m-%d")),
+                                                        value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -94,11 +94,11 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "CodFH_2_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 15, step = 1))),
+                                                                 min = 15, max = 25, value = 23, step = 1))),
                                             sliderInput(inputId = "CodPR_seas2", label ="Private Open Season 2",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2026-04-30","%Y-%m-%d"),as.Date("2026-04-30","%Y-%m-%d")),
+                                                        value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -106,7 +106,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "CodPR_2_len", label ="Min Length",
-                                                                 min = 15, max = 25, value = 15, step = 1)))))),
+                                                                 min = 15, max = 25, value = 23, step = 1)))))),
                 column(6,
                        titlePanel("Haddock"),
                        sliderInput(inputId = "HadFH_seas1", label ="For Hire Open Season 1",
@@ -164,7 +164,7 @@ ui <- fluidPage(
                                             sliderInput(inputId = "HadFH_seas3", label ="For Hire Open Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2026-04-30","%Y-%m-%d"),as.Date("2026-04-30","%Y-%m-%d")),
+                                                        value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -176,7 +176,7 @@ ui <- fluidPage(
                                             sliderInput(inputId = "HadPR_seas3", label ="Private Open Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
-                                                        value=c(as.Date("2026-04-30","%Y-%m-%d"),as.Date("2026-04-30","%Y-%m-%d")),
+                                                        value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
@@ -376,7 +376,19 @@ server <- function(input, output, session){
 
   output$totCatch <- plotly::renderPlotly({
 
+    # sq<- read.csv("predictions_sq_no_august.csv") %>%
+    #   dplyr::mutate(run_number = "SQ")
+    #
+    # aug<- read.csv("predictions_with_open_august.csv") %>%
+    #   dplyr::mutate(run_number = "aug")
+    #
+    # all<-read.csv("predictions_open_all.csv") %>%
+    #   dplyr::mutate(run_number = "all")
+    #
+    # dat<- sq %>% rbind(aug, all)
+
     catch_agg<- df2() %>%
+      #dat %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(run_number, Category,draw_out) %>%
@@ -877,7 +889,7 @@ server <- function(input, output, session){
       dplyr::group_by(option, Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
       dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= 1405000 ~ 1, TRUE ~ under_acl)) %>%
+                    under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(option, Category, mode) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = median(Value)) %>%
@@ -954,23 +966,29 @@ server <- function(input, output, session){
   which_welfare_out<- reactiveVal(TRUE)
   welfare_agg <- reactive({
 
+#     sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))
+#      out<- read.csv(here::here("predictions2.csv")) %>%
+#        dplyr::select(!X)
+#      dat<- rbind(sq, out)
+# #
     welfare2_agg <- predictions() %>%
-      #predictions_out %>%
+      #dat %>%
       dplyr::filter(Category =="CV")%>%
       dplyr::group_by( draw_out, option) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
       dplyr::mutate(Value_diff = SQ - alt) %>%
+      dplyr::filter(!Value_diff == "NA") %>%
       dplyr::ungroup() %>%
       dplyr::summarise(median_cv = median(Value_diff)) %>%
       dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv)
 
 
     trips_agg<- predictions() %>%
-      #predictions_out %>%
+      #dat %>%
       dplyr::filter(Category =="ntrips" & option == "alt") %>%
       dplyr::group_by( draw_out) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::summarise(Value = median(Value)) %>%
       dplyr::select(Value) %>%
       dplyr::ungroup() %>%
@@ -979,8 +997,6 @@ server <- function(input, output, session){
 
 
     welfare_agg<- cbind(welfare2_agg, trips_agg)
-
-
 
     return(welfare_agg)
 
@@ -993,7 +1009,7 @@ server <- function(input, output, session){
       #predictions_out %>%
       dplyr::filter(Category == "CV") %>%
       dplyr::group_by( draw_out, option, mode) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
       dplyr::mutate(Value_diff = SQ - alt) %>%
       dplyr::group_by(mode) %>%
@@ -1006,7 +1022,7 @@ server <- function(input, output, session){
       #predictions_out %>%
       dplyr::filter(Category =="ntrips" & option == "alt") %>%
       dplyr::group_by(draw_out, mode) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::group_by( mode) %>%
       dplyr::summarise(Value = median(Value)) %>%
       dplyr::select(Value) %>%
