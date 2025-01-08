@@ -859,7 +859,7 @@ server <- function(input, output, session){
   catch_agg <- reactive({
 
     catch_agg<- predictions() %>%
-      #predictions_out %>%
+      #dat %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out) %>%
@@ -872,8 +872,8 @@ server <- function(input, output, session){
       tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock")) %>%
-      dplyr::select(Category, Value_SQ, Value_alt, under_acl_alt) %>%
-      dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
+      dplyr::select(Category, Value_SQ, under_acl_SQ, Value_alt, under_acl_alt) %>%
+      dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ, `SQ % Under ACL (Out of 100 runs)` = under_acl_SQ,
                     `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL (Out of 100 runs)` = under_acl_alt)
 
     return(catch_agg)
@@ -883,7 +883,7 @@ server <- function(input, output, session){
 
     print("start catch mode")
     catch_by_mode<- predictions() %>%
-      #test %>%
+      #dat %>% #test %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
       dplyr::group_by(option, Category, draw_out, mode) %>%
@@ -909,16 +909,22 @@ server <- function(input, output, session){
   which_keep_out<- reactiveVal(TRUE)
   keep_agg <- reactive({
 
+        # sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))
+        #  out<- read.csv(here::here("predictions2.csv")) %>%
+        #    dplyr::select(!X)
+        #  dat<- rbind(sq, out)
     keep_agg<- predictions() %>%
-      #predictions_out %>%
+      #dat %>% #redictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out) %>%
       dplyr::summarise(Value = sum(Value)) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight) %>%
-      dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
       dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
                     perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
+                       alt_Number = median(SQ_Number), alt_Weight = median(SQ_Weight),
+                       perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -927,8 +933,8 @@ server <- function(input, output, session){
                                                       "release" = "Discards")) %>%
       dplyr::select(Category, catch_disposition, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
       dplyr::rename(Species = Category, Variable = catch_disposition,
-                    `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
-                    `Total Weight (mt)` = alt_Weight, `Percent difference in weight of fish` = perc_diff_wt)
+                    `Total number of fish` = alt_Number, `% difference in number of fish` = perc_diff_num,
+                    `Total Weight (mt)` = alt_Weight, `% difference in weight of fish` = perc_diff_wt)
 
     return(keep_agg)
 
@@ -937,7 +943,7 @@ server <- function(input, output, session){
 
   keep_by_mode <- reactive({
     keep_by_mode<- predictions() %>%
-      #predictions_out %>%
+      #dat %>% #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
       dplyr::summarise(Value = sum(Value)) %>%
@@ -946,6 +952,10 @@ server <- function(input, output, session){
       tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
       dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
                     perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::group_by(Category, catch_disposition, mode) %>%
+      dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
+                       alt_Number = median(SQ_Number), alt_Weight = median(SQ_Weight),
+                       perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -956,8 +966,8 @@ server <- function(input, output, session){
                                          "pr" = "Private")) %>%
       dplyr::select(Category, catch_disposition, mode, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
       dplyr::rename(Species = Category, Variable = catch_disposition,
-                    `Total fish (N)` = alt_Number, `Percent difference in number of fish` = perc_diff_num,
-                    `Total Weight (mt)` = alt_Weight, `Percent difference in weight of fish` = perc_diff_wt, `Mode` = mode)
+                    `Total Number of fish` = alt_Number, `% difference in number of fish` = perc_diff_num,
+                    `Total Weight (mt)` = alt_Weight, `% difference in weight of fish` = perc_diff_wt, `Mode` = mode)
     return(keep_by_mode)
   })
 #####################
@@ -1012,6 +1022,7 @@ server <- function(input, output, session){
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       tidyr::pivot_wider(names_from = option, values_from = Value) %>%
       dplyr::mutate(Value_diff = SQ - alt) %>%
+      dplyr::filter(!Value_diff == "NA") %>%
       dplyr::group_by(mode) %>%
       dplyr::summarise(median_cv = median(Value_diff)) %>%
       dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv) %>%
