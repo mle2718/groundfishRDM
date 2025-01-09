@@ -3,7 +3,7 @@ library(magrittr)
 #library(tidyverse)
 #devtools::install_github("NEFSC/READ.SSB.groundfishRecDST")
 
-Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 2)
+Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 10)
 
 predictions_all = list()
 
