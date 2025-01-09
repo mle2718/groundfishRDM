@@ -910,18 +910,19 @@ server <- function(input, output, session){
   keep_agg <- reactive({
 
         # sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))
-        #  out<- read.csv(here::here("predictions2.csv")) %>%
-        #    dplyr::select(!X)
+        #  out<- read.csv(here::here("output/output__20250109_124835.csv"))
         #  dat<- rbind(sq, out)
     keep_agg<- predictions() %>%
       #dat %>% #redictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight) %>%
       tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
       dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
                     perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::filter(!perc_diff_num == "NA",
+                    !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
                        alt_Number = median(SQ_Number), alt_Weight = median(SQ_Weight),
                        perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
@@ -946,13 +947,15 @@ server <- function(input, output, session){
       #dat %>% #predictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
-      dplyr::summarise(Value = sum(Value)) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight, mode) %>%
       dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
       dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
                     perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
       dplyr::group_by(Category, catch_disposition, mode) %>%
+      dplyr::filter(!perc_diff_num == "NA",
+                    !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
                        alt_Number = median(SQ_Number), alt_Weight = median(SQ_Weight),
                        perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
