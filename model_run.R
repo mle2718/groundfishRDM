@@ -200,9 +200,9 @@ calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adju
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
 
-mrip_index  <- mrip_index[320]
+mrip_index  <- mrip_index[321]
 #mrip_index  <- mrip_index[381:400]
-#x = 320
+x = 321
 future::plan(future::multisession, workers = 6)
 #future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
