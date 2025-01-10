@@ -408,7 +408,8 @@ server <- function(input, output, session){
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
-      dplyr::rename(`Haddock Mortality`=Value_had)
+      dplyr::rename(`Haddock Mortality`=Value_had) %>%
+      dplyr::ungroup()
 
     # catch_agg <- data.frame(run_number = c("SQ","what", "test"),
     #                         Cod_Mortality = c(43, 60, 130),
@@ -422,10 +423,10 @@ server <- function(input, output, session){
 
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = catch_agg$`Cod Mortality`, y = catch_agg$`Haddock Mortality`, label = catch_agg$run_number))+
+      ggplot2::ggplot(ggplot2::aes(x = catch_agg$`Cod Mortality`, y = catch_agg$`Haddock Mortality`))+
       ggplot2::geom_point(ggplot2::aes(colour = catch_agg$under_acl_cod)) +
       ggplot2::scale_color_stepsn(limits = c(0,100), n.breaks = 10, colors = my_palette, name = "% Under Cod ACL")+
-      ggplot2::geom_text( check_overlap = TRUE)+
+      ggplot2::geom_text(ggplot2::aes(label = run_number), check_overlap = TRUE)+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=1200) +
@@ -434,8 +435,8 @@ server <- function(input, output, session){
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
       ggplot2::xlab("Median Recreational Cod Mortality (mt)")
 
-    fig<- plotly::ggplotly(p,
-                           tooltip = c("x", "y", "colour")) %>%
+    fig<- plotly::ggplotly(p) %>% #,
+                           #tooltip = c("x", "y", "colour")) %>%
       plotly::style(textposition = "top center")
     fig
   })
