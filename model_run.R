@@ -200,7 +200,7 @@ calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adju
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
 
-mrip_index  <- mrip_index[1:400]
+mrip_index  <- mrip_index[1:200]
 #mrip_index  <- mrip_index[381:400]
 
 #future::plan(future::multisession, workers = 6)
@@ -226,7 +226,7 @@ get_predictions_out<- function(x){
   costs =  readr::read_csv(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".csv")))
 
   costs<- costs %>%
-    dplyr::mutate(tot_cod_catch = as.numeric(tot_keep_cod_base) + as.numeric(tot_rel_cod_base),
+    dplyr::mutate(tot_cod_catch = as.numeric(costs$tot_keep_cod_base) + as.numeric(tot_rel_cod_base),
                   tot_had_catch = tot_keep_had_base + tot_rel_had_base)
 
   # calibration_data_table_base <- split(calibration_output_by_period, calibration_output_by_period$state)
