@@ -170,8 +170,8 @@ directed_trips<- directed_trips %>%
     hadd_min_y2=dplyr::case_when(mode == "pr" & doy >= HadPR_seas3_1 & doy <= HadPR_seas3_2 ~ as.numeric((input$HadPR_3_len*2.54)), TRUE ~ hadd_min_y2))
 
 directed_trips <- directed_trips %>%
-  #  dplyr::mutate(cod_min_alt = cod_min_y2, cod_bag_alt = cod_bag_y2,
-  #                hadd_min_alt = hadd_min_y2, hadd_bag_alt = hadd_bag_y2) %>%
+   # dplyr::mutate(cod_min_alt = cod_min_y2, cod_bag_alt = cod_bag_y2,
+   #               hadd_min_alt = hadd_min_y2, hadd_bag_alt = hadd_bag_y2) %>%
   # ##open august
   # # dplyr::mutate(cod_bag_alt = dplyr::case_when(month1 == 8 ~ 1, TRUE ~ cod_bag_alt),
   # #                cod_min_alt = dplyr::case_when(month1 == 8 ~ 23*2.54, TRUE ~ cod_min_alt)) %>%
@@ -200,11 +200,11 @@ calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adju
 
 mrip_index <- c(unique(baseline_comparison1$mrip_index))
 
-mrip_index  <- mrip_index[1:400]
-#mrip_index  <- mrip_index[1:4]
+#mrip_index  <- mrip_index[1:400]
+mrip_index  <- mrip_index[381:400]
 
-#future::plan(future::multisession, workers = 6)
-future::plan(future::multisession, workers = 124)
+future::plan(future::multisession, workers = 6)
+#future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
 
   baseline_comparison<-baseline_comparison1 %>%
@@ -224,6 +224,10 @@ get_predictions_out<- function(x){
   #cost files
   #costs =  arrow::read_feather(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".feather")))
   costs =  readr::read_csv(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".csv")))
+
+  costs<- costs %>%
+    dplyr::mutate(tot_cod_catch = as.numeric(tot_keep_cod_base) + as.numeric(tot_rel_cod_base),
+                  tot_had_catch = tot_keep_had_base + tot_rel_had_base)
 
   # calibration_data_table_base <- split(calibration_output_by_period, calibration_output_by_period$state)
   # cost_files_all_base <- split(costs_new_all, costs_new_all$state)

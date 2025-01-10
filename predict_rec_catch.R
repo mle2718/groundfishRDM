@@ -209,8 +209,8 @@ predict_rec_catch <- function( x, draw,
       tidyr::uncount(n_draws)
 
     cod_catch_data <- costs_new_all %>%
-      dplyr::mutate(tot_cod_catch = tot_keep_cod_base + tot_rel_cod_base,
-                    tot_had_catch = tot_keep_had_base + tot_rel_had_base) %>%
+      # dplyr::mutate(tot_cod_catch = tot_keep_cod_base + tot_rel_cod_base,
+      #               tot_had_catch = tot_keep_had_base + tot_rel_had_base) %>%
       dplyr::left_join(open, by = "period2") %>%
       dplyr::select(mode,month,tot_cod_catch,tot_had_catch,
                     tripid,catch_draw,day, period2)
