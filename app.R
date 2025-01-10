@@ -429,8 +429,10 @@ server <- function(input, output, session){
       ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
-      ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200)) +
-      ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=1075))+
+      ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=1200) +
+      ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=80) +
+      #ggplot2::geom_text(ggplot2::aes(x=99, label="Cod ACL", y=1200)) +
+      #ggplot2::geom_text(ggplot2::aes(x=80, label="Had ACL", y=had_acl()))+
       #ggplot2::scale_colour_gradient(low = "white", high = "darkgreen")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
@@ -873,7 +875,7 @@ server <- function(input, output, session){
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock")) %>%
       dplyr::select(Category, Value_SQ, under_acl_SQ, Value_alt, under_acl_alt) %>%
-      dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ, `SQ % Under ACL (Out of 100 runs)` = under_acl_SQ,
+      dplyr::rename(Species = Category, `SQ Total Mortality (mt)` = Value_SQ, `SQ % Under ACL (Out of 100 runs)` = under_acl_SQ,
                     `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL (Out of 100 runs)` = under_acl_alt)
 
     return(catch_agg)
@@ -899,7 +901,7 @@ server <- function(input, output, session){
                     mode = dplyr::recode(mode, "fh" = "For Hire",
                                          "pr" = "Private")) %>%
       dplyr::select(Category, Value_SQ, Value_alt,  mode) %>%
-      dplyr::rename(Species = Category, `SQ Catch Total Mortality (mt)` = Value_SQ,
+      dplyr::rename(Species = Category, `SQ Total Mortality (mt)` = Value_SQ,
                     `Alternative Total Mortality (mt)` = Value_alt, `Mode` = mode)
 
     return(catch_by_mode)
@@ -934,8 +936,8 @@ server <- function(input, output, session){
                                                       "release" = "Discards")) %>%
       dplyr::select(Category, catch_disposition, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
       dplyr::rename(Species = Category, Variable = catch_disposition,
-                    `Total number of fish` = alt_Number, `% difference in number of fish` = perc_diff_num,
-                    `Total Weight (mt)` = alt_Weight, `% difference in weight of fish` = perc_diff_wt)
+                    `Total number of fish` = alt_Number, `% difference from SQ for number of fish` = perc_diff_num,
+                    `Total Weight (mt)` = alt_Weight, `% difference from SQ for weight of fish` = perc_diff_wt)
 
     return(keep_agg)
 
