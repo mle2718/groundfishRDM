@@ -424,7 +424,7 @@ server <- function(input, output, session){
 
     print(head(catch_agg))
     str(catch_agg)
-    colnames(your_dataframe)
+    colnames(catch_agg)
 
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
