@@ -223,6 +223,7 @@ ui <- fluidPage(
 server <- function(input, output, session){
 
   library(magrittr)
+  library(ggplot2)
   #library(webshot)
 
   observeEvent(input$updatedat,{
@@ -423,7 +424,7 @@ server <- function(input, output, session){
 
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, color = under_acl_cod))+
+      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, color = as.numeric(under_acl_cod)))+
       ggplot2::geom_point() + #ggplot2::aes(colour = under_acl_cod)) +
       ggplot2::scale_color_stepsn(
         limits = c(0,100), n.breaks = 10,
