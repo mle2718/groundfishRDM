@@ -408,8 +408,8 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
-      dplyr::rename(`Cod Mortality`=Value_cod) %>%
-      dplyr::rename(`Haddock Mortality`=Value_had) %>%
+      # dplyr::rename(`Cod Mortality`=Value_cod) %>%
+      # dplyr::rename(`Haddock Mortality`=Value_had) %>%
       dplyr::ungroup()
 
     # catch_agg <- data.frame(run_number = c("SQ","what", "test"),
@@ -424,7 +424,7 @@ server <- function(input, output, session){
 
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
+      ggplot2::ggplot(ggplot2::aes(x = Value_cod, y = Value_had))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
       ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
                                   colors =  c("red3","red3","red3","red3","red3","#C5E8B7",
