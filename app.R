@@ -428,9 +428,9 @@ server <- function(input, output, session){
 
     p<- catch_agg %>%
       dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
-      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`, color = as.numeric(under_acl_cod)))+
-      ggplot2::geom_point() + #ggplot2::aes(colour = under_acl_cod)) +
-      ggplot2::scale_color_steps(limits = c(0,100), n.breaks = 10,
+      ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
+      ggplot2::geom_point(ggplot2::aes(color = under_acl_cod)) +
+      ggplot2::scale_color_stepsn(limits = c(0,100), n.breaks = 10,
                                   colors =  c("red3","red3","red3","red3","red3","#C5E8B7",
                                               "#ABE098", "#83D475","green4","darkgreen"),
                                   name = "% Under Cod ACL")+
