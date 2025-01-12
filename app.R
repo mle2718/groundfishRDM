@@ -404,8 +404,10 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
-      dplyr::mutate(under_acl_cod = dplyr::case_when(under_acl_cod >= 50 ~ "More than 50%", TRUE ~ "Less than 50%")) %>%
-      dplyr::mutate(under_acl_had = dplyr::case_when(under_acl_had >= 50 ~ "More than 50%", TRUE ~ "Less than 50%")) %>%
+      dplyr::mutate(under_acl_cod = dplyr::case_when(under_acl_cod >= 50 ~ "More than 50%", TRUE ~ "Less than 50%"),
+                    under_acl_cod = dplyr::case_when(under_acl_cod >= 80 ~ "More than 80%", TRUE ~ under_acl_cod)) %>%
+      dplyr::mutate(under_acl_had = dplyr::case_when(under_acl_had >= 50 ~ "More than 50%", TRUE ~ "Less than 50%"),
+                    under_acl_had = dplyr::case_when(under_acl_had >= 80 ~ "More than 80%", TRUE ~ under_acl_had)) %>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had) %>%
       dplyr::ungroup()
@@ -424,8 +426,8 @@ server <- function(input, output, session){
       #dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod, size = under_acl_had)) +
-      ggplot2::scale_color_manual(values = c("More than 50%" = "darkgreen", "Less than 50%" = "red3"))+
-      ggplot2::scale_size_manual(values = c("More than 50%" = 1, "Less than 50%" = 1))+
+      ggplot2::scale_color_manual(values = c("More than 50%" = "lightgreen", "More than 80%" = "darkgreen", "Less than 50%" = "red3"))+
+      ggplot2::scale_size_manual(values = c("More than 80%" = 1, "More than 50%" = 1, "Less than 50%" = 1))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
       # ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
