@@ -565,13 +565,13 @@ server <- function(input, output, session){
 
       plotly::renderPlotly({
         release <-  df2() %>%
-          dplyr::filter(catch_disposition %in% c("release"),
+          dplyr::filter(catch_disposition %in% c("Discmortality"),
                         number_weight == "Weight") %>%
           dplyr::group_by(run_number, option, Category, draw_out) %>%
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::mutate(Value = Value * lb_to_mt()) %>%
           dplyr::group_by(run_number,option, Category) %>%
-          dplyr::summarise(release = round(median(Value),0))
+          dplyr::summarise(Discmortality = round(median(Value),0))
 
 
         catch<- df2() %>%
@@ -583,20 +583,20 @@ server <- function(input, output, session){
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value =round(median(Value),0)) %>%
           dplyr::left_join(release) %>%
-          tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))%>%
+          tidyr::pivot_wider(names_from = Category, values_from = c(Value, Discmortality))%>%
           dplyr::rename(`Cod Mortality`=Value_cod) %>%
           dplyr::rename(`Haddock Mortality`=Value_had)%>%
-          dplyr::rename(`Cod Release`=release_cod) %>%
-          dplyr::rename(`Haddock Release`=release_had)
+          dplyr::rename(`Cod Discard Mortality`=Discmortality_cod) %>%
+          dplyr::rename(`Haddock Discard Mortality`=Discmortality_had)
 
-        p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Release`, y = `Cod Mortality`))+
+        p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod Discard Mortality`, y = `Cod Mortality`))+
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
           ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=240)) +
-          ggplot2::xlab("Cod Discards (mt)")+
+          ggplot2::xlab("Cod Discard Mortality (mt)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Total Discarded Cod (mt)",
+          ggplot2::labs(title = "Total Cod Mortality (mt) compared to Discard Mortality(mt)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -614,13 +614,13 @@ server <- function(input, output, session){
 
           plotly::renderPlotly({
             release <-  df2() %>%
-              dplyr::filter(catch_disposition %in% c("release"),
+              dplyr::filter(catch_disposition %in% c("Discmortality"),
                             number_weight == "Weight") %>%
               dplyr::group_by(run_number, option, Category, draw_out) %>%
               dplyr::summarise(Value = sum(as.numeric(Value))) %>%
               dplyr::mutate(Value = Value * lb_to_mt()) %>%
               dplyr::group_by(run_number,option, Category) %>%
-              dplyr::summarise(release = round(median(Value),0))
+              dplyr::summarise(Discmortality = round(median(Value),0))
 
 
             catch<- df2() %>%
@@ -632,21 +632,21 @@ server <- function(input, output, session){
               dplyr::group_by(run_number, option, Category) %>%
               dplyr::summarise(Value = round(median(Value),0)) %>%
               dplyr::left_join(release) %>%
-              tidyr::pivot_wider(names_from = Category, values_from = c(Value, release))%>%
+              tidyr::pivot_wider(names_from = Category, values_from = c(Value, Discmortality))%>%
               dplyr::rename(`Cod Mortality`=Value_cod) %>%
               dplyr::rename(`Haddock Mortality`=Value_had)%>%
-              dplyr::rename(`Cod Release`=release_cod) %>%
-              dplyr::rename(`Haddock Release`=release_had)
+              dplyr::rename(`Cod Discard Mortality`=Discmortality_cod) %>%
+              dplyr::rename(`Haddock Discard Mortality`=Discmortality_had)
 
 
-            p4<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Release` , y = `Haddock Mortality`))+
+            p4<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Haddock Discard Mortality` , y = `Haddock Mortality`))+
               ggplot2::geom_point() +
               ggplot2::geom_hline( yintercept = had_acl())+
               ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
               ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=600)) +
-              ggplot2::xlab("Haddock Discards (mt)")+
+              ggplot2::xlab("Haddock Discard Mortality (mt)")+
               ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
-              ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Discarded Haddock (mt)",
+              ggplot2::labs(title = "Total Haddock Mortality (mt) compared to Discard Mortality (mt)",
                             subtitle = "testing")+
               ggplot2::theme(legend.position = "none")
 
