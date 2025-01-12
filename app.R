@@ -234,25 +234,25 @@ server <- function(input, output, session){
   df2 <- function(){
     fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
 
-    fnames2<- as.data.frame(fnames) %>%
-      tidyr::separate(fnames, into = c("a", "b"), sep = "_") %>%
-      dplyr::mutate(b = ifelse(stringr::str_detect(b, "202501"),  "NA", b),
-                    c=c(1:nrow(.)),
-                    run_name = dplyr::case_when(b != "NA" ~ b, TRUE ~ as.character(c))) %>%
-      dplyr::select(run_name)
-
     # fnames2<- as.data.frame(fnames) %>%
-    #   tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>%
-    #   dplyr::mutate(c = ifelse(stringr::str_detect(c, "202501"),  "NA", c),
-    #                 d=c(1:nrow(.)),
-    #                 run_name = dplyr::case_when(c != "NA" ~ c, TRUE ~ as.character(c))) %>%
+    #   tidyr::separate(fnames, into = c("a", "b"), sep = "_") %>%
+    #   dplyr::mutate(b = ifelse(stringr::str_detect(b, "202501"),  "NA", b),
+    #                 c=c(1:nrow(.)),
+    #                 run_name = dplyr::case_when(b != "NA" ~ b, TRUE ~ as.character(c))) %>%
     #   dplyr::select(run_name)
+
+    fnames2<- as.data.frame(fnames) %>%
+      tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>%
+      dplyr::mutate(c = ifelse(stringr::str_detect(c, "202501"),  "NA", c),
+                    d=c(1:nrow(.)),
+                    run_name = dplyr::case_when(c != "NA" ~ c, TRUE ~ as.character(c))) %>%
+      dplyr::select(run_name)
 
     df <- fnames %>%
       purrr::map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
 
-    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 6030)))
+    df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 90)))
     return(df2)
   }
 
@@ -429,7 +429,7 @@ server <- function(input, output, session){
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod, size = under_acl_had)) +
       ggplot2::scale_color_manual(values = c("More than 50%" = "darkgreen", "Less than 50%" = "red3"))+
-      ggplot2::scale_size_manual(values = c("More than 50%" = 1, "Less than 50%" = .5))+
+      ggplot2::scale_size_manual(values = c("More than 50%" = 1, "Less than 50%" = 1))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
       # ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
@@ -441,6 +441,7 @@ server <- function(input, output, session){
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=1200) +
       ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=80) +
+      ggplot2::guides(size = "none")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
       ggplot2::xlab("Median Recreational Cod Mortality (mt)")
