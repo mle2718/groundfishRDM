@@ -386,7 +386,7 @@ server <- function(input, output, session){
 
     # sq<- read.csv("predictions_sq_no_august.csv") %>%
     #   dplyr::mutate(run_number = "SQ")
-    #
+
     # aug<- read.csv("predictions_with_open_august.csv") %>%
     #   dplyr::mutate(run_number = "aug")
     #
@@ -395,7 +395,7 @@ server <- function(input, output, session){
     #
     # dat<- sq %>% rbind(aug, all)
 
-    catch_agg<- df2() %>%
+    catch_agg<- #df2() %>%
       #dat %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight") %>%
@@ -408,6 +408,7 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
+      dplyr::mutate(under_acl_cod = dplyr::case_when(under_acl_cod >= 50 ~ "More than 50%", TRUE ~ "Less than 50%")) %>%
       # dplyr::rename(`Cod Mortality`=Value_cod) %>%
       # dplyr::rename(`Haddock Mortality`=Value_had) %>%
       dplyr::ungroup()
@@ -423,13 +424,15 @@ server <- function(input, output, session){
     #                           "#ABE098", "#83D475","green4","darkgreen")
 
     p<- catch_agg %>%
-      dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
+      #dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = Value_cod, y = Value_had))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
-      ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
-                                  colors =  c("red3","red3","red3","red3","red3","#C5E8B7",
-                                              "#ABE098", "#83D475","green4","darkgreen"),
-                                  name = "% Under Cod ACL")+
+      ggplot2::scale_color_manual(values = c("More than 50%" = "darkgreen", "Less than 50%" = "red3"))+
+      ggplot2::labs(colour="% of simulations under cod ACL")+
+      # ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
+      #                             colors =  c("red3","red3","red3","red3","red3","#C5E8B7",
+      #                                         "#ABE098", "#83D475","green4","darkgreen"),
+      #                             name = "% Under Cod ACL")+
       ggplot2::geom_text(ggplot2::aes(label = run_number), check_overlap = TRUE)+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
