@@ -428,8 +428,8 @@ server <- function(input, output, session){
       #dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod, size = under_acl_had)) +
-      ggplot2::scale_size_manual(values = c("More than 50%" = 1, "Less than 50%" = .5))+
       ggplot2::scale_color_manual(values = c("More than 50%" = "darkgreen", "Less than 50%" = "red3"))+
+      ggplot2::scale_size_manual(values = c("More than 50%" = 1, "Less than 50%" = .5))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
       # ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
