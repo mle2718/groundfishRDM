@@ -190,7 +190,7 @@ ui <- fluidPage(
     #### Results ####
     tabPanel("Results",
              conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                              tags$div("Calculating...This will take ~30 min.",id="loadmessage")), #Warning for users
+                              tags$div("Calculating...This will take ~50 min.",id="loadmessage")), #Warning for users
 
              downloadButton(outputId = "downloadData", "Download"),
              actionButton("bymode", "Results by Mode"),
@@ -386,7 +386,7 @@ server <- function(input, output, session){
 
     # sq<- read.csv("predictions_sq_no_august.csv") %>%
     #   dplyr::mutate(run_number = "SQ")
-
+    #
     # aug<- read.csv("predictions_with_open_august.csv") %>%
     #   dplyr::mutate(run_number = "aug")
     #
@@ -409,6 +409,7 @@ server <- function(input, output, session){
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
       dplyr::mutate(under_acl_cod = dplyr::case_when(under_acl_cod >= 50 ~ "More than 50%", TRUE ~ "Less than 50%")) %>%
+      dplyr::mutate(under_acl_had = dplyr::case_when(under_acl_had >= 50 ~ "More than 50%", TRUE ~ "Less than 50%")) %>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had) %>%
       dplyr::ungroup()
@@ -426,9 +427,11 @@ server <- function(input, output, session){
     p<- catch_agg %>%
       #dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
-      ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod)) +
+      ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod, size = under_acl_had)) +
+      ggplot2::scale_size_manual(values = c("More than 50%" = 1, "Less than 50%" = .5))+
       ggplot2::scale_color_manual(values = c("More than 50%" = "darkgreen", "Less than 50%" = "red3"))+
-      ggplot2::labs(colour="% of simulations under cod ACL")+
+      ggplot2::labs(colour="% of simulations under cod ACL",
+                    size="% of simulations under haddock ACL")+
       # ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
       #                             colors =  c("red3","red3","red3","red3","red3","#C5E8B7",
       #                                         "#ABE098", "#83D475","green4","darkgreen"),
@@ -476,9 +479,10 @@ server <- function(input, output, session){
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value =round(median(Value),0)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
-          dplyr::left_join(welfare)
+          dplyr::left_join(welfare) %>%
+          dplyr::rename(`Angler Satisfaction($)` = median_cv)
 
-        p1<- catch %>% ggplot2::ggplot(ggplot2::aes(x = median_cv, y = cod))+
+        p1<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Angler Satisfaction($)`, y = cod))+
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
@@ -530,9 +534,10 @@ server <- function(input, output, session){
           dplyr::group_by(run_number, option, Category) %>%
           dplyr::summarise(Value =round(median(Value),0)) %>%
           tidyr::pivot_wider(names_from = Category, values_from = Value) %>%
-          dplyr::left_join(welfare)
+          dplyr::left_join(welfare) %>%
+          dplyr::rename(`Angler Satisfaction($)` = median_cv)
 
-        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = median_cv, y = had))+
+        p2<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Angler Satisfaction($)`, y = had))+
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =had_acl())+
           ggplot2::geom_text(ggplot2::aes(label=run_number), check_overlap = TRUE)+
