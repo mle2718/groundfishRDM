@@ -12,13 +12,9 @@ ui <- fluidPage(
     tabPanel("Cod and Haddock Model Summary",
              p("This page summarizes models results for sets of policies that have been run to date. These are
                intended as a jumping off point for your own model runs."),
-             p("The results of your own model runs are stored. Please give it a short, unique name."),
              p("Hover over each point to view the detailed statistics for each model run. The first section contains
                a table of recreational management measures. The second section contains graphs of mortality. The third
                section has graphs of other performance measures, including relative change in Angler Satisfaction, Trips, and Discards."),
-
-
-             p("The first figure plots the predicted median Cod and Haddock recreational mortality for previously simulated management measures."),
 
              shinyjs::useShinyjs(),
              shinyjs::extendShinyjs(text = "shinyjs.refresh_page = function() { location.reload(); }", functions = "refresh_page"),
