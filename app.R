@@ -978,13 +978,13 @@ server <- function(input, output, session){
       dplyr::group_by(option, Category, catch_disposition, number_weight, mode) %>%
       dplyr::summarise(Value = median(Value)) %>%
       tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
-      dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
-                    perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::mutate(perc_diff_num = ((alt_Number-SQ_Number)/SQ_Number) * 100,
+                    perc_diff_wt = ((alt_Weight-SQ_Weight)/SQ_Weight) * 100) %>%
       dplyr::group_by(Category, catch_disposition, mode) %>%
       dplyr::filter(!perc_diff_num == "NA",
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
-                       alt_Number = median(SQ_Number), alt_Weight = median(SQ_Weight),
+                       alt_Number = median(alt_Number), alt_Weight = median(alt_Weight),
                        perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
@@ -1171,10 +1171,31 @@ server <- function(input, output, session){
   output$downloadData <- downloadHandler(
     filename = function(){"RecDSToutput.xlsx"},
     content = function(filename) {
-      df_list <- list(Regulations=regulations(), Catch_Mortality_aggregated = catch_agg(), Catch_Mortality_by_mode = catch_by_mode(),
+      df_list <- list(Regulations=regs_agg(), Catch_Mortality_aggregated = catch_agg(), Catch_Mortality_by_mode = catch_by_mode(),
                       Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
                       Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_by_mode())
-      openxlsx::write.xlsx(x = df_list , file = filename, row.names = FALSE)
+      openxlsx::write.xlsx(append = TRUE, x = df_list , file = filename, row.names = FALSE)
+      # wb <- openxlsx::createWorkbook()
+      # sheet_1 <- xlsx::createSheet(wb, "Regulations")
+      #
+      # sheet_2 <- xlsx::createSheet(wb, "Catch_Mortality_aggregated")
+      #
+      # openxlsx::addDataFrame(
+      #   regulations(),
+      #   sheet         = sheet_1,
+      #   row.names     = FALSE
+      # )
+      #
+      # openxlsx::addDataFrame(
+      #   catch_agg(),
+      #   sheet         = sheet_2,
+      #   row.names     = FALSE
+      # )
+      #
+      # openxlsx::saveWorkbook(wb, file)
+
+
+      #openxlsx::saveWorkbook(g,filename)
     })
 
 }
