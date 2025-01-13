@@ -931,9 +931,12 @@ server <- function(input, output, session){
   which_keep_out<- reactiveVal(TRUE)
   keep_agg <- reactive({
 
-        # sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))
-        #  out<- read.csv(here::here("output/output__20250109_124835.csv"))
-        #  dat<- rbind(sq, out)
+# sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))%>%
+#   dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
+#  out<- read.csv(here::here("output/output_alt1_20250113_102706.csv"))%>%
+#    dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
+#  dat<- rbind(sq, out)
+
     keep_agg<- predictions() %>%
       #dat %>% #redictions_out %>%
       dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
@@ -941,12 +944,12 @@ server <- function(input, output, session){
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::group_by(option, Category, catch_disposition, number_weight) %>%
       tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
-      dplyr::mutate(perc_diff_num = (alt_Number-SQ_Number)/SQ_Number,
-                    perc_diff_wt = (alt_Weight-SQ_Weight)/SQ_Weight) %>%
+      dplyr::mutate(perc_diff_num = ((alt_Number-SQ_Number)/SQ_Number) * 100,
+                    perc_diff_wt = ((alt_Weight-SQ_Weight)/SQ_Weight) * 100) %>%
       dplyr::filter(!perc_diff_num == "NA",
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
-                       alt_Number = median(SQ_Number), alt_Weight = median(SQ_Weight),
+                       alt_Number = median(alt_Number), alt_Weight = median(alt_Weight),
                        perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
@@ -1168,7 +1171,7 @@ server <- function(input, output, session){
     content = function(filename) {
       df_list <- list(Regulations=regulations(), Catch_Mortality_aggregated = catch_agg(), Catch_Mortality_by_mode = catch_by_mode(),
                       Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
-                      Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_mode())
+                      Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_by_mode())
       openxlsx::write.xlsx(x = df_list , file = filename, row.names = FALSE)
     })
 
