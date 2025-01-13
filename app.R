@@ -404,10 +404,18 @@ server <- function(input, output, session){
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
       tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
-      dplyr::mutate(under_acl_cod = dplyr::case_when(under_acl_cod >= 50 ~ "More than 50%", TRUE ~ "Less than 50%"),
-                    under_acl_cod = dplyr::case_when(under_acl_cod >= 80 ~ "More than 80%", TRUE ~ under_acl_cod)) %>%
-      dplyr::mutate(under_acl_had = dplyr::case_when(under_acl_had >= 50 ~ "More than 50%", TRUE ~ "Less than 50%"),
-                    under_acl_had = dplyr::case_when(under_acl_had >= 80 ~ "More than 80%", TRUE ~ under_acl_had)) %>%
+      dplyr::mutate(under_acl_cod2 = dplyr::case_when(under_acl_cod < 50 ~ "Less than 50%", TRUE ~ under_cod_acl),
+                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 50 & under_acl_cod < 60 ~ "50-59%", TRUE ~ under_acl_cod2),
+                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 60 & under_acl_cod < 70~ "60-69%", TRUE ~ under_acl_cod2),
+                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 70 & under_acl_cod < 80 ~ "70-79%", TRUE ~ under_acl_cod2),
+                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 80 & under_acl_cod < 90 ~ "80-89%", TRUE ~ under_acl_cod2),
+                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 90 & under_acl_cod <=100 ~ "90-100%", TRUE ~ under_acl_cod2)) %>%
+      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_had < 50 ~ "Less than 50%", TRUE ~ under_had_acl),
+                    under_acl_had2 = dplyr::case_when(under_acl_had >= 50 & under_acl_had < 60 ~ "50-59%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_had >= 60 & under_acl_had < 70~ "60-69%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_had >= 70 & under_acl_had < 80 ~ "70-79%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_had >= 80 & under_acl_had < 90 ~ "80-89%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_had >= 90 & under_acl_had <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_had) %>%
       dplyr::ungroup()
@@ -415,8 +423,8 @@ server <- function(input, output, session){
     # catch_agg <- data.frame(run_number = c("SQ","what", "test"),
     #                         Cod_Mortality = c(43, 60, 130),
     #                         Haddock_Mortality = c(810, 955, 1099),
-    #                         under_acl_cod = c(100,60,  40),
-    #                         under_acl_had = c(94,70,  60)) %>%
+    #                         under_acl_cod2 = c("90-100%","60-69%", "Less than 50%"),
+    #                         under_acl_had2 = c("90-100%","60-69%", "Less than 50%")) %>%
     #   dplyr::rename(`Cod Mortality`=Cod_Mortality, `Haddock Mortality`=Haddock_Mortality)
 
     # my_palette <- c("red3","red3","red3","red3","red3","#C5E8B7",
@@ -425,9 +433,13 @@ server <- function(input, output, session){
     p<- catch_agg %>%
       #dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
-      ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod, size = under_acl_had)) +
-      ggplot2::scale_color_manual(values = c("More than 50%" = "lightgreen", "More than 80%" = "darkgreen", "Less than 50%" = "red3"))+
-      ggplot2::scale_size_manual(values = c("More than 80%" = 1, "More than 50%" = 1, "Less than 50%" = 1))+
+      ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod2, size = under_acl_had2)) +
+      ggplot2::scale_color_manual(values = c("50-59%" = "#A9DFBF", "60-69%" = "#7DCEA0",
+                                             "70-79%" = "#52BE80","80-89%" = "#27AE60",
+                                             "90-100%" = "#1B5E20", "Less than 50%" = "red3"))+
+      ggplot2::scale_size_manual(values = c("50-59%" = 1, "60-69%" = 1,
+                                             "70-79%" = 1,"80-89%" = 1,
+                                             "90-100%" = 1, "Less than 50%" = 1))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
       # ggplot2::scale_colour_stepsn(limits = c(0,100), n.breaks = 10,
