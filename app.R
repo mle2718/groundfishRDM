@@ -403,14 +403,16 @@ server <- function(input, output, session){
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))%>%
-      dplyr::mutate(under_acl_cod2 = dplyr::case_when(under_acl_cod < 50 ~ "Less than 50%", TRUE ~ under_cod_acl),
+      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))
+
+    catch_agg2<- catch_agg %>%
+      dplyr::mutate(under_acl_cod2 = dplyr::case_when(under_acl_cod < 50 ~ "Less than 50%", TRUE ~ ""),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 50 & under_acl_cod < 60 ~ "50-59%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 60 & under_acl_cod < 70~ "60-69%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 70 & under_acl_cod < 80 ~ "70-79%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 80 & under_acl_cod < 90 ~ "80-89%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 90 & under_acl_cod <=100 ~ "90-100%", TRUE ~ under_acl_cod2)) %>%
-      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_had < 50 ~ "Less than 50%", TRUE ~ under_had_acl),
+      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_had < 50 ~ "Less than 50%", TRUE ~ ""),
                     under_acl_had2 = dplyr::case_when(under_acl_had >= 50 & under_acl_had < 60 ~ "50-59%", TRUE ~ under_acl_had2),
                     under_acl_had2 = dplyr::case_when(under_acl_had >= 60 & under_acl_had < 70~ "60-69%", TRUE ~ under_acl_had2),
                     under_acl_had2 = dplyr::case_when(under_acl_had >= 70 & under_acl_had < 80 ~ "70-79%", TRUE ~ under_acl_had2),
@@ -430,7 +432,7 @@ server <- function(input, output, session){
     # my_palette <- c("red3","red3","red3","red3","red3","#C5E8B7",
     #                           "#ABE098", "#83D475","green4","darkgreen")
 
-    p<- catch_agg %>%
+    p<- catch_agg2 %>%
       #dplyr::mutate(under_acl_cod = as.numeric(under_acl_cod)) %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod2, size = under_acl_had2)) +
