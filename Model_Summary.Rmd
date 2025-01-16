@@ -94,10 +94,12 @@ lb_to_mt <- function(){
       ggplot2::guides(size = "none")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
-      ggplot2::xlab("Median Recreational Cod Mortality (mt)")
+      ggplot2::xlab("Median Recreational Cod Mortality (mt)")+
+      ggplot2::theme(legend.position = "bottom")
 
     fig<- plotly::ggplotly(p) %>% 
-      plotly::style(textposition = "top center")
+      plotly::style(textposition = "top center") %>% 
+      plotly::layout(legend = list(orientation = "h", x = 0.1, y = -0.2))
     fig
 
 ```
@@ -335,10 +337,10 @@ knitr::kable(catch_agg)
       dplyr::group_by(Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
   dplyr::mutate(Value = Value * lb_to_mt()) %>% 
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
+      # dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
+      #               under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(Category, mode) %>%
-      dplyr::summarise(under_acl = sum(under_acl),
+      dplyr::summarise(#under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       #tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
@@ -584,6 +586,7 @@ knitr::kable(catch_agg)
 
 ```{r}
 
+    
     catch_by_mode<- #predictions() %>%
       dat %>% #test %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -591,10 +594,10 @@ knitr::kable(catch_agg)
       dplyr::group_by(Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
   dplyr::mutate(Value = Value * lb_to_mt()) %>% 
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
+      # dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
+      #               under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(Category, mode) %>%
-      dplyr::summarise(under_acl = sum(under_acl),
+      dplyr::summarise(#under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       #tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
@@ -605,6 +608,7 @@ knitr::kable(catch_agg)
       dplyr::rename(Species = Category, `Total Mortality (mt)` = Value)
 
 knitr::kable(catch_by_mode)
+
 ```
 
 #### Keep/Release/Dead Discards
@@ -847,10 +851,10 @@ knitr::kable(catch_agg)
       dplyr::group_by(Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
   dplyr::mutate(Value = Value * lb_to_mt()) %>% 
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
+      # dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
+      #               under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(Category, mode) %>%
-      dplyr::summarise(under_acl = sum(under_acl),
+      dplyr::summarise(#under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       #tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
@@ -1095,6 +1099,7 @@ knitr::kable(catch_agg)
 
 ```{r}
 
+    
     catch_by_mode<- #predictions() %>%
       dat %>% #test %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -1102,10 +1107,10 @@ knitr::kable(catch_agg)
       dplyr::group_by(Category, draw_out, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
   dplyr::mutate(Value = Value * lb_to_mt()) %>% 
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
+      # dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
+      #               under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(Category, mode) %>%
-      dplyr::summarise(under_acl = sum(under_acl),
+      dplyr::summarise(#under_acl = sum(under_acl),
                        Value = median(Value)) %>%
       #tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
