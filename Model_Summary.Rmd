@@ -1,7 +1,16 @@
 ---
 title: "DST Run Summary"
-output: html_document
+output:
+  html_document:
+    theme: default
 ---
+<style>
+.main-container { width: 1500px; max-width:2800px;}
+</style>
+---
+
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
@@ -43,7 +52,7 @@ lb_to_mt <- function(){
 
 ## Total Catch Mortality
 
-```{r}
+```{r, out.width="100%"}
  catch_agg<- df2 %>%
       #dat %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -51,7 +60,8 @@ lb_to_mt <- function(){
       dplyr::group_by(run_number, Category,draw_out) %>%
       dplyr::summarise(Value = sum(as.numeric(Value))) %>%
       dplyr::mutate(Value = Value * lb_to_mt()) %>%
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0)) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0), 
+                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(run_number, Category) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
@@ -81,9 +91,9 @@ lb_to_mt <- function(){
       ggplot2::scale_color_manual(values = c("50-59%" = "#A9DFBF", "60-69%" = "#7DCEA0",
                                              "70-79%" = "#52BE80","80-89%" = "#27AE60",
                                              "90-100%" = "#1B5E20", "Less than 50%" = "red3"))+
-      ggplot2::scale_size_manual(values = c("50-59%" = 1, "60-69%" = 1,
-                                             "70-79%" = 1,"80-89%" = 1,
-                                             "90-100%" = 1, "Less than 50%" = 1))+
+      ggplot2::scale_size_manual(values = c("50-59%" = 1.0000001, "60-69%" = 1.0000002,
+                                             "70-79%" = 1.0000000003,"80-89%" = 1.0000000004,
+                                             "90-100%" = 1.00000005, "Less than 50%" = 1.000000006))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
       ggplot2::geom_text(ggplot2::aes(label = run_number), check_overlap = TRUE)+
@@ -108,7 +118,7 @@ lb_to_mt <- function(){
 
 ## Distribution of total recreational fishing mortaltiy
 
-```{r}
+```{r, out.width="100%"}
 dat<- df2 %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight", Category == "cod") %>%
@@ -150,7 +160,8 @@ p2<-dat %>%
             inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
   ylim(ylim_l, ylim_u)  + 
   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
-             color = "red", size = 1)
+             color = "red", size = 1)+
+  scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 20))
   
 
 fig2<- plotly::ggplotly(p2) 
@@ -159,7 +170,7 @@ fig2
 ```
 
 
-```{r}
+```{r, out.width="100%"}
 dat<- df2 %>%
       dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
                     number_weight == "Weight", Category == "had") %>%
@@ -197,7 +208,8 @@ p2<-dat %>%
             inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
   ylim(ylim_l, ylim_u)  + 
   geom_hline(aes(yintercept = had_acl()), linetype = "dashed",
-             color = "red", size = 1)
+             color = "red", size = 1)+
+  scale_y_continuous(breaks = seq(round(400, -1), round(ylim_u,-1), by = 100))
   
 
 fig2<- plotly::ggplotly(p2) 
@@ -209,7 +221,7 @@ fig2
 ### Distribution of  change in angler satisfaction ($)
 Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?
 
-```{r}
+```{r, out.width="100%"}
 cv_agg_SQ<- df2 %>%
   dplyr::filter(Category == c("CV") & run_number=="SQ") %>%
   dplyr::rename(Value_SQ=Value) %>%
@@ -259,16 +271,9 @@ cv_plot<-ggplot(cv, aes(x = run_number, y = diff)) +
     y = "million $"
   ) +
   theme_minimal() +
-  geom_text(
-    data = dat2,
-    aes(x = run_number, y = min(cv$diff) - .5, label = Label),  # Position the table below the boxplot
-    inherit.aes = FALSE,
-    hjust = 0.5,
-    vjust = 1,
-    size = 3,
-    color = "black"
-  ) +
-  ylim(ylim_l, ylim_u)  
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed",)+
+  ylim(ylim_l, ylim_u)  +
+  scale_y_continuous(breaks = seq(round(-2.5, 2), round(4,2), by = 0.5))
 
 fig3<- plotly::ggplotly(cv_plot) %>% 
       plotly::style(textposition = "top center")
@@ -279,7 +284,7 @@ fig3
 
 ### Distribution of dead discards
 
-```{r}
+```{r, out.width="100%"}
 dat<- df2 %>%
       dplyr::filter(catch_disposition %in% c("Discmortality"),
                     number_weight == "Weight", Category == "cod") %>%
@@ -315,8 +320,7 @@ p2<-dat %>%
   #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
   ylim(ylim_l, ylim_u)  + 
-  geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
-             color = "red", size = 1)
+  scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 10))
   
 
 fig2<- plotly::ggplotly(p2) 
@@ -324,7 +328,7 @@ fig2
   
 ```
 
-```{r}
+```{r, out.width="100%"}
 dat<- df2 %>%
       dplyr::filter(catch_disposition %in% c("Discmortality"),
                     number_weight == "Weight", Category == "had") %>%
@@ -358,8 +362,7 @@ p2<-dat %>%
   #           aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #           inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
   ylim(ylim_l, ylim_u)  + 
-  geom_hline(aes(yintercept = had_acl()), linetype = "dashed",
-             color = "red", size = 1)
+  scale_y_continuous(breaks = seq(round(100, -1), round(ylim_u,-1), by = 50))
   
 
 fig2<- plotly::ggplotly(p2) 
@@ -418,7 +421,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -489,8 +492,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -525,8 +528,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -543,7 +546,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -624,6 +627,7 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
 
 
 
@@ -677,7 +681,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -748,8 +752,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -784,8 +788,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -802,7 +806,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -883,6 +887,11 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
+
+
+
 
 
 
@@ -934,7 +943,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -1005,8 +1014,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1041,8 +1050,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1059,7 +1068,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -1140,6 +1149,11 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
+
+
+
 
 
 
@@ -1191,7 +1205,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -1262,8 +1276,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1298,8 +1312,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1316,7 +1330,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -1397,6 +1411,9 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
+
 
 
 
@@ -1450,7 +1467,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -1521,8 +1538,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1557,8 +1574,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1575,7 +1592,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -1656,6 +1673,11 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
+
+
+
 
 
 
@@ -1707,7 +1729,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -1778,8 +1800,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1814,8 +1836,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -1832,7 +1854,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -1913,6 +1935,9 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
+
 
 
 
@@ -1966,7 +1991,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -2037,8 +2062,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -2073,8 +2098,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -2091,7 +2116,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -2172,6 +2197,9 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
+
 
 
 
@@ -2225,7 +2253,7 @@ dat<- df2 %>%
 knitr::kable(Regs_out)
 ```
 
-#### Catch
+#### Total mortality
 
 ```{r}
 catch_agg<-  dat %>%
@@ -2296,8 +2324,8 @@ sq<-read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number),0), alt_Weight = round(median(alt_Weight),0),
-                       perc_diff_num = round(median(perc_diff_num),digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits = -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num),digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits = 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -2332,8 +2360,8 @@ keep_by_mode<- #predictions() %>%
                     !perc_diff_wt == "NA") %>%
       dplyr::summarise(SQ_Number = round(median(SQ_Number), 0), SQ_Weight = round(median(SQ_Weight),0),
                        alt_Number = round(median(alt_Number), 0), alt_Weight = round(median(alt_Weight),0), 
-                       perc_diff_num = round(median(perc_diff_num), digits = -2), 
-                       perc_diff_wt = round(median(perc_diff_wt), digits= -2)) %>%
+                       perc_diff_num = round(median(perc_diff_num), digits = 2), 
+                       perc_diff_wt = round(median(perc_diff_wt), digits= 2)) %>%
       dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
       dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
                                              "had" = "Haddock"),
@@ -2350,7 +2378,7 @@ keep_by_mode<- #predictions() %>%
 knitr::kable(keep_by_mode)
 ```
 
-#### Angler satisfaction
+#### Angler satisfaction/trips
 
 ```{r}
     welfare2_agg <- #predictions() %>%
@@ -2431,6 +2459,8 @@ knitr::kable(welfare_agg)
     
 knitr::kable(welfare_by_mode)
 ```
+
+
 
 
 
