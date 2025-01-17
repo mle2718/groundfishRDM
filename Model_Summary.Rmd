@@ -124,12 +124,11 @@ dat2<- dat %>%
 
 dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
 dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-ylim_l<-min(dat$Value-5)
+ylim_l<-min(dat$Value-10)
 ylim_u<-max(dat$Value+5)
 
 summary_data_labels<-dat2 %>%
   dplyr::select(run_number, Label)
-
 
 ordered_groups <- c("SQ", dat2$run_number[order(dat2$median[dat2$run_number != "SQ"])])
 dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
@@ -147,7 +146,7 @@ p2<-dat %>%
   ggtitle("Cod total mortality (% of runs below ACL in parenthesis)")+
     theme_minimal() +
   geom_text(data = dat2,
-            aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
+            aes(x = run_number, y = min(dat$Value) - 10, label = Label),  
             inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
   ylim(ylim_l, ylim_u)  + 
   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
@@ -176,7 +175,7 @@ dat2<- dat %>%
 
 dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
 dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-ylim_l<-min(dat$Value-5)
+ylim_l<-min(dat$Value-40)
 ylim_u<-max(dat$Value+5)
 
 dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
@@ -194,7 +193,7 @@ p2<-dat %>%
   ggtitle("Haddock total mortality (% of runs below ACL in parenthesis)")+
     theme_minimal() +
   geom_text(data = dat2,
-            aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
+            aes(x = run_number, y = min(dat$Value) - 40, label = Label),  
             inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
   ylim(ylim_l, ylim_u)  + 
   geom_hline(aes(yintercept = had_acl()), linetype = "dashed",
