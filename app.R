@@ -180,38 +180,38 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadPR_3_len", label ="Min Length",
-                                                                 min = 15, max = 30, value = 18, step = 1)))))))),
+                                                                 min = 15, max = 30, value = 18, step = 1))))))))#,
 
 
-    #### Results ####
-    tabPanel("Results",
-             conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                              tags$div("Calculating...This will take ~50 min.",id="loadmessage")), #Warning for users
-
-             downloadButton(outputId = "downloadData", "Download"),
-             actionButton("bymode", "Results by Mode"),
-             # Add table outputs
-             ## KB - Make tables DTs - should fix RMD documentation issue
-             tableOutput(outputId = "regtableout"),
-
-             tableOutput(outputId = "catch_tableout"),
-             #tableOutput(outputId = "catchmode"),
-
-             tableOutput(outputId = "welfare_tableout"),
-             #tableOutput(outputId = "welfaremode"),
-
-             tableOutput(outputId = "keep_tableout")),
-             #tableOutput(outputId = "keepmode")),
-     #### By Mode ####
-     # tabPanel("Results - By Mode",
-     #          tableOutput(outputId = "regtableout"),
-     #          tableOutput(outputId = "catchmode"),
-     #          tableOutput(outputId = "welfaremode"),
-     #          tableOutput(outputId = "keepmode"))#,
-
-    ### Documentation ####
-    tabPanel("Documentation",
-             htmlOutput("documentation"))
+    # #### Results ####
+    # tabPanel("Results",
+    #          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+    #                           tags$div("Calculating...This will take ~50 min.",id="loadmessage")), #Warning for users
+    #
+    #          downloadButton(outputId = "downloadData", "Download"),
+    #          actionButton("bymode", "Results by Mode"),
+    #          # Add table outputs
+    #          ## KB - Make tables DTs - should fix RMD documentation issue
+    #          tableOutput(outputId = "regtableout"),
+    #
+    #          tableOutput(outputId = "catch_tableout"),
+    #          #tableOutput(outputId = "catchmode"),
+    #
+    #          tableOutput(outputId = "welfare_tableout"),
+    #          #tableOutput(outputId = "welfaremode"),
+    #
+    #          tableOutput(outputId = "keep_tableout")),
+    #          #tableOutput(outputId = "keepmode")),
+    #  #### By Mode ####
+    #  # tabPanel("Results - By Mode",
+    #  #          tableOutput(outputId = "regtableout"),
+    #  #          tableOutput(outputId = "catchmode"),
+    #  #          tableOutput(outputId = "welfaremode"),
+    #  #          tableOutput(outputId = "keepmode"))#,
+    #
+    # ### Documentation ####
+    # tabPanel("Documentation",
+    #          htmlOutput("documentation"))
 
   ))
 
