@@ -1,0 +1,1060 @@
+
+
+
+/*This code uses the MRIP data to: 
+ 
+	* Part A)  
+		1) estimate mean harvest-, discards-, and catch-per-trip and their standard errors at the state, wave, and fishing mode level in the calibration period
+		2) For some combinations of state-wave-mode, there is only a single PSU and thus no standard error available for the mean estimates. In these cases, I impute 
+			a standard error based on other recent data or difference levels of aggregation. 
+		3) Once a mean and standard errors have been estimated for all strata, I save the file and run the "copula_loop.R" in R. This file simulates random 
+			draws of harvest and discards-per trip, accounting for possible intra-species correlation in harvest and discards
+			
+	* Part B)  
+		1) Compute catch'harvest totals by state/mode/etc.in the caliabration year to compare with simulated caliabration-year fishery data 
+	
+*/
+		
+************** Part A  **************
+
+* Pull in MRIP data
+
+cd $input_data_cd
+
+clear
+mata: mata clear
+
+tempfile tl1 cl1
+dsconcat $triplist
+
+sort year strat_id psu_id id_code
+drop if strmatch(id_code, "*xx*")==1
+duplicates drop 
+save `tl1'
+clear
+
+dsconcat $catchlist
+sort year strat_id psu_id id_code
+replace common=subinstr(lower(common)," ","",.)
+save `cl1'
+
+replace var_id=strat_id if strmatch(var_id,"")
+
+use `tl1'
+merge 1:m year strat_id psu_id id_code using `cl1', keep(1 3) nogenerate /*Keep all trips including catch==0*/
+replace var_id=strat_id if strmatch(var_id,"")
+
+
+* Format MRIP data for estimation 
+
+* Ensure only relevant states 
+keep if inlist(st, 23, 33, 25)
+
+
+keep if $calibration_year
+ 
+gen st2 = string(st,"%02.0f")
+
+gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
+replace mode1="pr" if inlist(mode_fx, "7")
+replace mode1="fh" if inlist(mode_fx, "4", "5")
+
+*drop shore trips
+drop if mode1=="sh"
+
+* classify trips that I care about into the things I care about (caught or targeted sf/bsb) and things I don't care about "ZZ" 
+replace prim1_common=subinstr(lower(prim1_common)," ","",.)
+replace prim2_common=subinstr(lower(prim1_common)," ","",.)
+
+* We need to retain 1 observation for each strat_id, psu_id, and id_code
+/* A.  Trip (Targeted or Caught) (fluke, sea bass, or scup) then it should be marked in the domain "_ATLCO"
+   B.  Trip did not (Target or Caught) (fluke, sea bass, or scup) then it is marked in the the domain "ZZZZZ"
+*/
+
+gen common_dom="ZZ"
+replace common_dom="ATLCO" if inlist(common, "atlanticcod") 
+replace common_dom="ATLCO" if inlist(common, "haddock") 
+
+replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
+replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
+
+
+*New MRIP site allocations
+preserve 
+import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
+keep SITE_EXTERNAL_ID NMFS_STAT_AREA
+renvarlab, lower
+rename site_external_id intsite
+tempfile mrip_sites
+save `mrip_sites', replace 
+restore
+
+merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+
+/*classify into GOM or GBS */
+gen str3 area_s="AAA"
+
+replace area_s="GOM" if st2=="23" | st2=="33"
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
+replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
+replace area_s="GOM" if st2=="25" & intsite==224
+
+
+tostring wave, gen(wv2)
+tostring year, gen(yr2)
+
+gen my_dom_id_string=area_s+"_"+month+"_"+mode1+"_"+common_dom
+
+* Define the list of species to process
+local species "atlanticcod haddock"
+
+* Loop over each species
+foreach s of local species {
+
+    * Create short species prefix (e.g., cod, hadd)
+    local short = substr("`s'", 1, 4)
+    if "`s'" == "atlanticcod" local short "cod"
+    if "`s'" == "haddock"     local short "hadd"
+
+    * Generate species-specific totals
+    gen `short'_tot_cat = tot_cat if common == "`s'"
+    egen sum_`short'_tot_cat = sum(`short'_tot_cat), by(strat_id psu_id id_code)
+
+    gen `short'_harvest = landing if common == "`s'"
+    egen sum_`short'_harvest = sum(`short'_harvest), by(strat_id psu_id id_code)
+
+    gen `short'_releases = release if common == "`s'"
+    egen sum_`short'_releases = sum(`short'_releases), by(strat_id psu_id id_code)
+}
+
+rename sum_cod_tot_cat cod_cat
+rename sum_cod_harvest cod_keep
+rename sum_cod_releases cod_rel
+rename sum_hadd_tot_cat hadd_cat
+rename sum_hadd_harvest hadd_keep
+rename sum_hadd_releases hadd_rel
+
+* Set a variable "no_dup"=0 if the record is "$my_common" catch and no_dup=1 otherwise
+  
+gen no_dup=0
+replace no_dup=1 if  strmatch(common, "atlanticcod")==0
+replace no_dup=1 if strmatch(common, "haddock")==0
+
+/*
+We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (fluke, sea bass, or scup) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
+
+After sorting, we generate a count variable (count_obs1 from 1....n) and we keep only the "first" observations within each "year, strat_id, psu_id, and id_codes" group.
+*/
+
+bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
+
+keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
+
+order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
+keep if common_dom=="ATLCO"
+keep if area_s=="GOM"
+
+replace my_dom_id_string=month+"_"+mode1+"_"+common_dom
+
+svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
+
+/*
+local vars sf_catch sf_keep sf_rel bsb_catch bsb_keep bsb_rel  scup_catch scup_keep scup_rel
+foreach v of local vars{
+	replace `v'=round(`v')
+}
+*/
+
+drop if wp_int==0
+encode my_dom_id_string, gen(my_dom_id)
+
+preserve
+keep my_dom_id my_dom_id_string
+duplicates drop 
+tempfile domains
+save `domains', replace 
+restore
+
+tempfile basefile
+save `basefile', replace 
+
+
+* Here I will estimate mean catch/harvest/discards per trip for each strata in order to identify strata with missing SE
+* For strata with missing SE's, I'll follow similar approch to MRIP's hot and cold deck imputation for observations with missing lengths and weights
+
+/* From the MRIP data handbook:
+
+"For intercepted angler trips with landings where both length and weight measurements are missing, paired length and weight observations are imputed from complete cases using hot and cold deck imputation. (Complete cases include records with both length and weight data available, as well as records where we were able to compute a missing length or weight using the length-weight modeling described above.) Up to five rounds of imputation are conducted in an attempt to fill in missing values. These rounds begin with imputation cells that correspond to the most detailed MRIP estimation cells, but are aggregated to higher levels in subsequent rounds to bring in more length-weight data. 
+	- Round 1: Current year, two-month sampling wave, sub-region, state, mode, area fished, species. 
+	- Round 2: Current year, half-year, sub-region, state, mode, species. 
+	- Round 3: Current + most recent prior year, two-month sampling wave, sub-region, state, mode, area fished, species. 
+	- Round 4: Current + most recent prior year, sub-region, state, mode, species. 
+	- Round 5: Current + most recent prior year, sub-region, species."
+	
+
+* The calibration estimation strata is: current year + wave + state + mode, for harvest/discards/catch per trip
+
+* For strata with missing, I'll impute a PSE from other strata and apply it to the missing-SE strata. 
+	- Round 1: current year + TWO WAVE PERIOD + state + mode
+	- Round 2: current year + HALF YEAR PERIOD + state + mode
+ */
+
+* Create a postfile to collect results
+tempfile results
+postfile handle str15 varname str15 domain float mean se ll95 ul95 using `results', replace
+
+* Loop over variables
+foreach var in cod_keep cod_rel cod_cat hadd_keep hadd_rel hadd_cat  {
+
+    * Run svy mean for the variable by domain
+    svy: mean `var', over(my_dom_id)
+
+    * Grab result matrix and domain labels
+    matrix M = r(table)
+    local colnames : colnames M
+
+    * Loop over columns (domains)
+    foreach col of local colnames {
+        local m  = M[1, "`col'"]
+        local se = M[2, "`col'"]
+        local lb = M[5, "`col'"]
+        local ub = M[6, "`col'"]
+
+        post handle ("`var'") ("`col'") (`m') (`se') (`lb') (`ub')
+    }
+}
+
+postclose handle
+
+* Load results back into memory
+use `results', clear
+
+split domain, parse("@")
+drop domain1
+split domain2, parse(.)
+split domain21, parse(b)
+
+drop domain2 domain21 domain22 domain212
+destring domain211, replace
+rename domain211 my_dom_id
+merge m:1 my_dom_id using `domains' 
+sort varname  my_dom_id
+keep varname mean se my_dom_id_string
+drop if mean==0
+
+tempfile base_results
+save `base_results', replace
+
+gen pse=se/mean
+keep if se==.
+
+split my, parse(_)
+rename my_dom_id_string1 month
+rename my_dom_id_string2 mode
+drop my_dom_id_string3 
+
+gen shoulder_month="10" if month=="11"
+
+
+gen strata_id=_n
+levelsof strata_id, local(stratz)
+
+tempfile missing_se
+save `missing_se', replace 
+
+* Round 1
+global impute
+foreach s of local stratz{
+	u `missing_se', clear 
+	keep if strata_id==`s'
+	
+	levelsof mode, local(md) clean
+	levelsof month, local(month1) clean
+	levelsof shoulder_month, local(month2) clean
+	levelsof varname, local(outcome) clean
+	levelsof my_dom_id_string, local(my_dom_id_string) clean
+
+	u `basefile', clear 
+	keep if mode1=="`md'" & inlist(month, "`month1'", "`month2'")
+	drop my_dom_id_string my_dom_id
+	gen my_dom_id_string="`my_dom_id_string'"
+	encode my_dom_id_string, gen(my_dom_id)
+
+	
+	* Create a postfile to collect results
+	tempfile results
+	postfile handle2 str15 varname str15 domain float mean se ll95 ul95 using `results', replace
+
+    * Run svy mean for the variable by domain
+    svy: mean `outcome', over(my_dom_id)
+
+    * Grab result matrix and domain labels
+    matrix M = r(table)
+    local colnames : colnames M
+
+    * Loop over columns (domains)
+    foreach col of local colnames {
+        local m  = M[1, "`col'"]
+        local se = M[2, "`col'"]
+        local lb = M[5, "`col'"]
+        local ub = M[6, "`col'"]
+
+        post handle2 ("`outcome'") ("`my_dom_id_string'") (`m') (`se') (`lb') (`ub')
+    }
+
+
+postclose handle2
+
+* Load results back into memory
+use `results', clear
+
+gen pse_impute=se/mean
+rename domain my_dom_id_string
+keep varname pse_impute my_dom_id_string
+
+tempfile impute`s'
+save `impute`s'', replace
+global impute "$impute "`impute`s''" " 
+
+}	
+dsconcat $impute 
+
+merge 1:1  varname my_dom_id_string using `missing_se'
+keep if _merge==3
+drop _merge
+merge 1:1 varname my_dom_id_string using `base_results'
+
+replace se=mean*pse_impute if se==. & _merge==3
+
+
+* Stop code if non-value mean harvest/discards/catch-per trip are missing standard errors
+* Check condition across the dataset
+summarize if mean != 0 & missing(se)
+
+* If any observations meet the condition, stop
+if r(N) > 0 {
+    display "Stopping: mean is not zero and se is missing for some observations."
+    exit 1
+}
+
+gen missing_se=1 if _merge==3
+drop _merge
+sort my_dom_id_string var
+drop pse
+keep varname my mean se missing
+reshape wide mean se missing, i(my) j(varname) string
+
+* make indicator variables for whether each domain contains keep, discards, or keep and discards of each species 
+mvencode meanhadd_keep meanhadd_rel  meancod_keep meancod_rel, mv(0) override
+
+gen cod_only_keep=1 if meancod_keep>0 & meancod_rel==0
+gen cod_only_rel=1 if meancod_rel>0 & meancod_keep==0
+gen cod_keep_and_rel=1 if meancod_rel>0 & meancod_keep>0
+gen cod_no_catch=1 if meancod_rel==0 & meancod_keep==0
+
+gen hadd_only_keep=1 if meanhadd_keep>0 & meanhadd_rel==0
+gen hadd_only_rel=1 if meanhadd_rel>0 & meanhadd_keep==0
+gen hadd_keep_and_rel=1 if meanhadd_rel>0 & meanhadd_keep>0
+gen hadd_no_catch=1 if meanhadd_rel==0 & meanhadd_keep==0
+
+
+mvencode cod_only_keep cod_only_rel cod_keep_and_rel cod_no_catch hadd_only_keep hadd_only_rel hadd_keep_and_rel hadd_no_catch, mv(0) override
+
+merge 1:m my_dom_id_string using `basefile'
+
+*condition for when keep and release are both positive for a stratum, but they never occur on the same trip
+*Will model these distributions as independent
+gen tab=1 if cod_keep>0 & cod_keep!=. & cod_rel>0 & cod_rel!=.
+egen sumtab=sum(tab), by(my_dom_id_string)
+gen cod_keep_and_rel_ind=1 if cod_keep_and_rel==1 & sumtab==0
+replace cod_keep_and_rel=0 if cod_keep_and_rel_ind==1
+drop tab sumtab
+
+gen tab=1 if hadd_keep>0 & hadd_keep!=. & hadd_rel>0 & hadd_rel!=.
+egen sumtab=sum(tab), by(my_dom_id_string)
+gen hadd_keep_and_rel_ind=1 if hadd_keep_and_rel==1 & sumtab==0
+replace hadd_keep_and_rel=0 if hadd_keep_and_rel_ind==1
+drop tab sumtab
+
+*condition for when keep and release are both positive for a stratum, but occured together on only one trip so that the correlation==1.
+*Will model these distributions as independent
+*cod
+gen perfect_corr=.
+levelsof my_dom_id_string if cod_keep_and_rel==1, local(doms)
+foreach d of local doms{
+di "`d'" 
+egen rank_keep = rank(cod_keep) if my_dom_id_string=="`d'" 
+egen rank_rel  = rank(cod_rel) if my_dom_id_string=="`d'" 
+count if  my_dom_id_string=="`d'" 
+if `r(N)'>1{
+corr rank_keep rank_rel if my_dom_id_string=="`d'"  [aw=wp_int]
+if `r(rho)'==1 | `r(rho)'==. {
+	replace perfect_corr=1 if my_dom_id_string=="`d'"
+}
+}
+	drop rank*
+
+}
+
+replace cod_keep_and_rel=0 if cod_keep_and_rel==1 & perfect_corr==1
+replace cod_keep_and_rel_ind=1 if perfect_corr==1
+
+drop perfect_corr
+
+*hadd
+gen perfect_corr=.
+levelsof my_dom_id_string if hadd_keep_and_rel==1, local(doms)
+foreach d of local doms{
+di "`d'" 
+egen rank_keep = rank(hadd_keep) if my_dom_id_string=="`d'" 
+egen rank_rel  = rank(hadd_rel) if my_dom_id_string=="`d'" 
+count if  my_dom_id_string=="`d'" 
+if `r(N)'>1{
+corr rank_keep rank_rel if my_dom_id_string=="`d'"   [aw=wp_int]
+if `r(rho)'==1 | `r(rho)'==. {
+	replace perfect_corr=1 if my_dom_id_string=="`d'" 
+}
+}
+	drop rank*
+
+}
+
+replace hadd_keep_and_rel=0 if hadd_keep_and_rel==1 & perfect_corr==1
+replace hadd_keep_and_rel_ind=1 if perfect_corr==1
+drop perfect_corr
+
+
+keep wp_int my_dom_id_string meancod_cat-id_code year common_dom cod_tot_cat-hadd_rel cod_keep_and_rel_ind hadd_keep_and_rel_ind
+
+mvencode se*, mv(0) override
+mvencode missing*, mv(0) override
+
+export excel "$input_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
+import excel using "$input_data_cd\baseline_mrip_catch_processed.xlsx", clear first
+
+
+************** Part B  **************
+* Compute MRIP estimates for comparison with simulated estimates 
+
+* Estimates by mode
+cd $input_data_cd
+
+clear
+mata: mata clear
+
+tempfile tl1 cl1
+dsconcat $triplist
+
+sort year strat_id psu_id id_code
+drop if strmatch(id_code, "*xx*")==1
+duplicates drop 
+save `tl1'
+clear
+
+dsconcat $catchlist
+sort year strat_id psu_id id_code
+replace common=subinstr(lower(common)," ","",.)
+save `cl1'
+
+replace var_id=strat_id if strmatch(var_id,"")
+
+use `tl1'
+merge 1:m year strat_id psu_id id_code using `cl1', keep(1 3) nogenerate /*Keep all trips including catch==0*/
+replace var_id=strat_id if strmatch(var_id,"")
+
+
+* Format MRIP data for estimation 
+
+* ensure only relevant states/year
+keep if inlist(st, 23, 33, 25)
+keep if $calibration_year
+ 
+gen st2 = string(st,"%02.0f")
+
+gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
+replace mode1="pr" if inlist(mode_fx, "7")
+replace mode1="fh" if inlist(mode_fx, "4", "5")
+
+*drop shore trips
+drop if mode1=="sh"
+
+* classify trips that I care about into the things I care about (caught or targeted sf/bsb) and things I don't care about "ZZ" 
+replace prim1_common=subinstr(lower(prim1_common)," ","",.)
+replace prim2_common=subinstr(lower(prim1_common)," ","",.)
+
+* We need to retain 1 observation for each strat_id, psu_id, and id_code
+/* A.  Trip (Targeted or Caught) (fluke, sea bass, or scup) then it should be marked in the domain "_ATLCO"
+   B.  Trip did not (Target or Caught) (fluke, sea bass, or scup) then it is marked in the the domain "ZZZZZ"
+*/
+
+gen common_dom="ZZ"
+replace common_dom="ATLCO" if inlist(common, "atlanticcod") 
+replace common_dom="ATLCO" if inlist(common, "haddock") 
+
+replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
+replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
+
+
+* New MRIP site allocations
+preserve 
+import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
+keep SITE_EXTERNAL_ID NMFS_STAT_AREA
+renvarlab, lower
+rename site_external_id intsite
+tempfile mrip_sites
+save `mrip_sites', replace 
+restore
+
+merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+
+* classify into GOM or GBS
+gen str3 area_s="AAA"
+
+replace area_s="GOM" if st2=="23" | st2=="33"
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
+replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
+replace area_s="GOM" if st2=="25" & intsite==224
+
+
+tostring wave, gen(wv2)
+tostring year, gen(yr2)
+
+gen my_dom_id_string=area_s+"_"+month+"_"+mode1+"_"+common_dom
+
+* Define the list of species to process
+local species "atlanticcod haddock"
+
+* Loop over each species
+foreach s of local species {
+
+    * Create short species prefix (e.g., cod, hadd)
+    local short = substr("`s'", 1, 4)
+    if "`s'" == "atlanticcod" local short "cod"
+    if "`s'" == "haddock"     local short "hadd"
+
+    * Generate species-specific totals
+    gen `short'_tot_cat = tot_cat if common == "`s'"
+    egen sum_`short'_tot_cat = sum(`short'_tot_cat), by(strat_id psu_id id_code)
+
+    gen `short'_harvest = landing if common == "`s'"
+    egen sum_`short'_harvest = sum(`short'_harvest), by(strat_id psu_id id_code)
+
+    gen `short'_releases = release if common == "`s'"
+    egen sum_`short'_releases = sum(`short'_releases), by(strat_id psu_id id_code)
+}
+
+rename sum_cod_tot_cat cod_cat
+rename sum_cod_harvest cod_keep
+rename sum_cod_releases cod_rel
+rename sum_hadd_tot_cat hadd_cat
+rename sum_hadd_harvest hadd_keep
+rename sum_hadd_releases hadd_rel
+
+* Set a variable "no_dup"=0 if the record is "$my_common" catch and no_dup=1 otherwise
+  
+gen no_dup=0
+replace no_dup=1 if  strmatch(common, "atlanticcod")==0
+replace no_dup=1 if strmatch(common, "haddock")==0
+
+/*
+We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (fluke, sea bass, or scup) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
+
+After sorting, we generate a count variable (count_obs1 from 1....n) and we keep only the "first" observations within each "year, strat_id, psu_id, and id_codes" group.
+*/
+
+bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
+
+keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
+
+order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
+keep if common_dom=="ATLCO"
+keep if area_s=="GOM"
+
+replace my_dom_id_string=mode1+"_"+common_dom
+
+svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
+
+drop if wp_int==0
+encode my_dom_id_string, gen(my_dom_id)
+
+preserve
+keep my_dom_id my_dom_id_string
+duplicates drop 
+tempfile domains
+save `domains', replace 
+restore
+
+tempfile basefile
+save `basefile', replace 
+
+
+* Create a postfile to collect results
+tempfile results
+postfile handle str15 varname str15 domain float total se ll95 ul95 using `results', replace
+
+* Loop over variables
+foreach var in cod_keep cod_rel cod_cat hadd_keep hadd_rel hadd_cat  {
+
+    * Run svy mean for the variable by domain
+    svy: total `var', over(my_dom_id)
+
+    * Grab result matrix and domain labels
+    matrix M = r(table)
+    local colnames : colnames M
+
+    * Loop over columns (domains)
+    foreach col of local colnames {
+        local m  = M[1, "`col'"]
+        local se = M[2, "`col'"]
+        local lb = M[5, "`col'"]
+        local ub = M[6, "`col'"]
+
+        post handle ("`var'") ("`col'") (`m') (`se') (`lb') (`ub')
+    }
+}
+
+postclose handle
+
+* Load results back into memory
+use `results', clear
+
+split domain, parse("@")
+drop domain1
+split domain2, parse(.)
+split domain21, parse(b)
+
+drop domain2 domain21 domain22 domain212
+destring domain211, replace
+rename domain211 my_dom_id
+merge m:1 my_dom_id using `domains' 
+sort varname  my_dom_id
+keep varname total se my_dom_id_string ll95 ul95
+reshape wide total se ll95 ul95, i(my_dom) j(varname) string
+
+ds my_dom_id_string, not
+renvarlab `r(varlist)', postfix(_mrip)
+
+split my_dom, parse(_)
+rename my_dom_id_string1 mode
+drop  my_dom_id_string2 
+order my_dom_id_string mode 
+
+save "$input_data_cd\mrip_catch_by_mode.dta", replace 
+
+
+
+
+
+* Estimates by mode and month 
+cd $input_data_cd
+
+clear
+mata: mata clear
+
+tempfile tl1 cl1
+dsconcat $triplist
+
+sort year strat_id psu_id id_code
+drop if strmatch(id_code, "*xx*")==1
+duplicates drop 
+save `tl1'
+clear
+
+dsconcat $catchlist
+sort year strat_id psu_id id_code
+replace common=subinstr(lower(common)," ","",.)
+save `cl1'
+
+replace var_id=strat_id if strmatch(var_id,"")
+
+use `tl1'
+merge 1:m year strat_id psu_id id_code using `cl1', keep(1 3) nogenerate /*Keep all trips including catch==0*/
+replace var_id=strat_id if strmatch(var_id,"")
+
+
+* Format MRIP data for estimation 
+
+* ensure only relevant states/year
+keep if inlist(st, 23, 33, 25)
+keep if $calibration_year
+ 
+gen st2 = string(st,"%02.0f")
+
+gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
+replace mode1="pr" if inlist(mode_fx, "7")
+replace mode1="fh" if inlist(mode_fx, "4", "5")
+
+*drop shore trips
+drop if mode1=="sh"
+
+* classify trips that I care about into the things I care about (caught or targeted sf/bsb) and things I don't care about "ZZ" 
+replace prim1_common=subinstr(lower(prim1_common)," ","",.)
+replace prim2_common=subinstr(lower(prim1_common)," ","",.)
+
+* We need to retain 1 observation for each strat_id, psu_id, and id_code
+/* A.  Trip (Targeted or Caught) (fluke, sea bass, or scup) then it should be marked in the domain "_ATLCO"
+   B.  Trip did not (Target or Caught) (fluke, sea bass, or scup) then it is marked in the the domain "ZZZZZ"
+*/
+
+gen common_dom="ZZ"
+replace common_dom="ATLCO" if inlist(common, "atlanticcod") 
+replace common_dom="ATLCO" if inlist(common, "haddock") 
+
+replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
+replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
+
+
+* New MRIP site allocations
+preserve 
+import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
+keep SITE_EXTERNAL_ID NMFS_STAT_AREA
+renvarlab, lower
+rename site_external_id intsite
+tempfile mrip_sites
+save `mrip_sites', replace 
+restore
+
+merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+
+* classify into GOM or GBS
+gen str3 area_s="AAA"
+
+replace area_s="GOM" if st2=="23" | st2=="33"
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
+replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
+replace area_s="GOM" if st2=="25" & intsite==224
+
+gen my_dom_id_string=month+"_"+mode1+"_"+common_dom
+
+tostring wave, gen(wv2)
+tostring year, gen(yr2)
+
+* Define the list of species to process
+local species "atlanticcod haddock"
+
+* Loop over each species
+foreach s of local species {
+
+    * Create short species prefix (e.g., cod, hadd)
+    local short = substr("`s'", 1, 4)
+    if "`s'" == "atlanticcod" local short "cod"
+    if "`s'" == "haddock"     local short "hadd"
+
+    * Generate species-specific totals
+    gen `short'_tot_cat = tot_cat if common == "`s'"
+    egen sum_`short'_tot_cat = sum(`short'_tot_cat), by(strat_id psu_id id_code)
+
+    gen `short'_harvest = landing if common == "`s'"
+    egen sum_`short'_harvest = sum(`short'_harvest), by(strat_id psu_id id_code)
+
+    gen `short'_releases = release if common == "`s'"
+    egen sum_`short'_releases = sum(`short'_releases), by(strat_id psu_id id_code)
+}
+
+rename sum_cod_tot_cat cod_cat
+rename sum_cod_harvest cod_keep
+rename sum_cod_releases cod_rel
+rename sum_hadd_tot_cat hadd_cat
+rename sum_hadd_harvest hadd_keep
+rename sum_hadd_releases hadd_rel
+
+* Set a variable "no_dup"=0 if the record is "$my_common" catch and no_dup=1 otherwise
+  
+gen no_dup=0
+replace no_dup=1 if  strmatch(common, "atlanticcod")==0
+replace no_dup=1 if strmatch(common, "haddock")==0
+
+/*
+We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (fluke, sea bass, or scup) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
+
+After sorting, we generate a count variable (count_obs1 from 1....n) and we keep only the "first" observations within each "year, strat_id, psu_id, and id_codes" group.
+*/
+
+bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
+
+keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
+
+order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
+keep if common_dom=="ATLCO"
+keep if area_s=="GOM"
+
+
+svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
+
+drop if wp_int==0
+encode my_dom_id_string, gen(my_dom_id)
+
+preserve
+keep my_dom_id my_dom_id_string
+duplicates drop 
+tempfile domains
+save `domains', replace 
+restore
+
+tempfile basefile
+save `basefile', replace 
+
+
+* Create a postfile to collect results
+tempfile results
+postfile handle str15 varname str15 domain float total se ll95 ul95 using `results', replace
+
+* Loop over variables
+foreach var in cod_keep cod_rel cod_cat hadd_keep hadd_rel hadd_cat  {
+
+    * Run svy mean for the variable by domain
+    svy: total `var', over(my_dom_id)
+
+    * Grab result matrix and domain labels
+    matrix M = r(table)
+    local colnames : colnames M
+
+    * Loop over columns (domains)
+    foreach col of local colnames {
+        local m  = M[1, "`col'"]
+        local se = M[2, "`col'"]
+        local lb = M[5, "`col'"]
+        local ub = M[6, "`col'"]
+
+        post handle ("`var'") ("`col'") (`m') (`se') (`lb') (`ub')
+    }
+}
+
+postclose handle
+
+* Load results back into memory
+use `results', clear
+
+split domain, parse("@")
+drop domain1
+split domain2, parse(.)
+split domain21, parse(b)
+
+drop domain2 domain21 domain22 domain212
+destring domain211, replace
+rename domain211 my_dom_id
+merge m:1 my_dom_id using `domains' 
+sort varname  my_dom_id
+keep varname total se my_dom_id_string ll95 ul95
+reshape wide total se ll95 ul95, i(my_dom) j(varname) string
+
+ds my_dom_id_string, not
+renvarlab `r(varlist)', postfix(_mrip)
+
+split my_dom, parse(_)
+rename my_dom_id_string1 month
+rename  my_dom_id_string2 mode
+drop my_dom_id_string3
+order my_dom_id_string month mode 
+
+save "$input_data_cd\mrip_catch_by_mode_month.dta", replace 
+
+
+* Estimates by mode and season 
+cd $input_data_cd
+
+clear
+mata: mata clear
+
+tempfile tl1 cl1
+dsconcat $triplist
+
+sort year strat_id psu_id id_code
+drop if strmatch(id_code, "*xx*")==1
+duplicates drop 
+save `tl1'
+clear
+
+dsconcat $catchlist
+sort year strat_id psu_id id_code
+replace common=subinstr(lower(common)," ","",.)
+save `cl1'
+
+replace var_id=strat_id if strmatch(var_id,"")
+
+use `tl1'
+merge 1:m year strat_id psu_id id_code using `cl1', keep(1 3) nogenerate /*Keep all trips including catch==0*/
+replace var_id=strat_id if strmatch(var_id,"")
+
+
+* Format MRIP data for estimation 
+
+* ensure only relevant states/year
+keep if inlist(st, 23, 33, 25)
+keep if $calibration_year
+ 
+gen st2 = string(st,"%02.0f")
+
+gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
+replace mode1="pr" if inlist(mode_fx, "7")
+replace mode1="fh" if inlist(mode_fx, "4", "5")
+
+*drop shore trips
+drop if mode1=="sh"
+
+* classify trips that I care about into the things I care about (caught or targeted sf/bsb) and things I don't care about "ZZ" 
+replace prim1_common=subinstr(lower(prim1_common)," ","",.)
+replace prim2_common=subinstr(lower(prim1_common)," ","",.)
+
+* We need to retain 1 observation for each strat_id, psu_id, and id_code
+/* A.  Trip (Targeted or Caught) (fluke, sea bass, or scup) then it should be marked in the domain "_ATLCO"
+   B.  Trip did not (Target or Caught) (fluke, sea bass, or scup) then it is marked in the the domain "ZZZZZ"
+*/
+
+gen common_dom="ZZ"
+replace common_dom="ATLCO" if inlist(common, "atlanticcod") 
+replace common_dom="ATLCO" if inlist(common, "haddock") 
+
+replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
+replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
+
+
+* New MRIP site allocations
+preserve 
+import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
+keep SITE_EXTERNAL_ID NMFS_STAT_AREA
+renvarlab, lower
+rename site_external_id intsite
+tempfile mrip_sites
+save `mrip_sites', replace 
+restore
+
+merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+
+* classify into GOM or GBS
+gen str3 area_s="AAA"
+
+replace area_s="GOM" if st2=="23" | st2=="33"
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
+replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
+replace area_s="GOM" if st2=="25" & intsite==224
+
+gen season= "open" if inlist(month, "09", "10")
+replace season="closed" if !inlist(month, "09", "10")
+
+gen my_dom_id_string=season+"_"+mode1+"_"+common_dom
+
+tostring wave, gen(wv2)
+tostring year, gen(yr2)
+
+* Define the list of species to process
+local species "atlanticcod haddock"
+
+* Loop over each species
+foreach s of local species {
+
+    * Create short species prefix (e.g., cod, hadd)
+    local short = substr("`s'", 1, 4)
+    if "`s'" == "atlanticcod" local short "cod"
+    if "`s'" == "haddock"     local short "hadd"
+
+    * Generate species-specific totals
+    gen `short'_tot_cat = tot_cat if common == "`s'"
+    egen sum_`short'_tot_cat = sum(`short'_tot_cat), by(strat_id psu_id id_code)
+
+    gen `short'_harvest = landing if common == "`s'"
+    egen sum_`short'_harvest = sum(`short'_harvest), by(strat_id psu_id id_code)
+
+    gen `short'_releases = release if common == "`s'"
+    egen sum_`short'_releases = sum(`short'_releases), by(strat_id psu_id id_code)
+}
+
+rename sum_cod_tot_cat cod_cat
+rename sum_cod_harvest cod_keep
+rename sum_cod_releases cod_rel
+rename sum_hadd_tot_cat hadd_cat
+rename sum_hadd_harvest hadd_keep
+rename sum_hadd_releases hadd_rel
+
+* Set a variable "no_dup"=0 if the record is "$my_common" catch and no_dup=1 otherwise
+  
+gen no_dup=0
+replace no_dup=1 if  strmatch(common, "atlanticcod")==0
+replace no_dup=1 if strmatch(common, "haddock")==0
+
+/*
+We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (fluke, sea bass, or scup) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
+
+After sorting, we generate a count variable (count_obs1 from 1....n) and we keep only the "first" observations within each "year, strat_id, psu_id, and id_codes" group.
+*/
+
+bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
+
+keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
+
+order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
+keep if common_dom=="ATLCO"
+keep if area_s=="GOM"
+
+
+svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
+
+drop if wp_int==0
+encode my_dom_id_string, gen(my_dom_id)
+
+preserve
+keep my_dom_id my_dom_id_string
+duplicates drop 
+tempfile domains
+save `domains', replace 
+restore
+
+tempfile basefile
+save `basefile', replace 
+
+
+* Create a postfile to collect results
+tempfile results
+postfile handle str15 varname str15 domain float total se ll95 ul95 using `results', replace
+
+* Loop over variables
+foreach var in cod_keep cod_rel cod_cat hadd_keep hadd_rel hadd_cat  {
+
+    * Run svy mean for the variable by domain
+    svy: total `var', over(my_dom_id)
+
+    * Grab result matrix and domain labels
+    matrix M = r(table)
+    local colnames : colnames M
+
+    * Loop over columns (domains)
+    foreach col of local colnames {
+        local m  = M[1, "`col'"]
+        local se = M[2, "`col'"]
+        local lb = M[5, "`col'"]
+        local ub = M[6, "`col'"]
+
+        post handle ("`var'") ("`col'") (`m') (`se') (`lb') (`ub')
+    }
+}
+
+postclose handle
+
+* Load results back into memory
+use `results', clear
+
+split domain, parse("@")
+drop domain1
+split domain2, parse(.)
+split domain21, parse(b)
+
+drop domain2 domain21 domain22 domain212
+destring domain211, replace
+rename domain211 my_dom_id
+merge m:1 my_dom_id using `domains' 
+sort varname  my_dom_id
+keep varname total se my_dom_id_string ll95 ul95
+reshape wide total se ll95 ul95, i(my_dom) j(varname) string
+
+ds my_dom_id_string, not
+renvarlab `r(varlist)', postfix(_mrip)
+
+split my_dom, parse(_)
+rename my_dom_id_string1 season
+rename  my_dom_id_string2 mode
+drop my_dom_id_string3
+order my_dom_id_string season mode 
+
+save "$input_data_cd\mrip_catch_by_mode_season.dta", replace 
+
+
