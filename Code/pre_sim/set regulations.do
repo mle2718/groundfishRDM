@@ -14,15 +14,21 @@ gen cod_min=100
 gen hadd_bag=0
 gen hadd_min=100
 
+* 2024 haddock regs were not implemented until july 24th, 2024, so use FY 2023 regs until then
+replace hadd_bag=15 if  day>=td(01may2024) & day<=td(23jul2024)  & mode=="fh"
+replace hadd_min=18*2.54 if  day>=td(01may2024) & day<=td(23jul2024)  & mode=="fh"
 
-replace hadd_bag=15 if  day>=td(01may2024) & day<=td(28feb2024) 
-replace hadd_min=18*2.54 if  day>=td(01may2024) & day<=td(28feb2024) 
+replace hadd_bag=10 if  day>=td(01may2024) & day<=td(23jul2024)  & mode=="pr"
+replace hadd_min=17*2.54 if  day>=td(01may2024) & day<=td(23jul2024)  & mode=="pr"
+
+replace hadd_bag=15 if  day>=td(24jul2024) & day<=td(28feb2025) 
+replace hadd_min=18*2.54 if  day>=td(24jul2024) & day<=td(28feb2025) 
 
 replace hadd_bag=15 if  day>=td(01apr2025) & day<=td(30apr2025) 
 replace hadd_min=18*2.54  if  day>=td(01apr2025) & day<=td(30apr2025) 
 
 
-*Cod regs 
+* 2024 cod regs were not implemented untuil August 14, 2024 - not open until Septmeber, so no mid season changes. 
 replace cod_bag=1 if  day>=td(01sep2024) & day<=td(31oct2024)
 replace cod_min=23*2.54 if  day>=td(01sep2024) & day<=td(31oct2024)
 
@@ -70,12 +76,19 @@ sort  mode day draw
 
 *************************
 *Create status-quo regualtions for projection period here: 01may2025  -  td(30apr2026)
-gen cod_bag_y2=cod_bag
-gen cod_min_y2=cod_min
+gen cod_bag_y2_same=cod_bag
+gen cod_min_y2_same=cod_min
 
-gen hadd_bag_y2=hadd_bag
-gen hadd_min_y2=hadd_min
+gen hadd_bag_y2_same=hadd_bag
+gen hadd_min_y2_same=hadd_min
 
+gen cod_bag_y2_alt=cod_bag
+replace  cod_bag_y2_alt=1 if day_y2>=td(01may2026) & day_y2<=td(31may2026)
 
+gen cod_min_y2_alt=cod_min
+replace  cod_min_y2_alt=23*2.54 if day_y2>=td(01may2026) & day_y2<=td(31may2026)
+
+gen hadd_bag_y2_alt=hadd_bag
+gen hadd_min_y2_alt=17*2.54
 *************************
 

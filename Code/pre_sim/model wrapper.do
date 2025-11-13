@@ -145,17 +145,20 @@ do "$input_code_cd\survey trip costs.do"
 
 
 // 5) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-do "$input_code_cd\compare calibration output to MRIP.do" 
+		do "$input_code_cd\compare calibration output to MRIP.do" 
+
+// 6) add additonal angler demographics based on results of utilty model
+		do "$input_code_cd\additional_angler_dems.do" 
 
 
-// 6) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
-do "$input_code_cd\catch_at_length.do"
+// 7) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
+		do "$input_code_cd\catch_at_length_calibration.do"
 
-// 7) Generate projection-year catch-at-length, incorporating the stock assessment data
+// 8) Generate projection-year catch-at-length, incorporating the stock assessment data
 		do "$input_code_cd\projected_catch_at_length.do"
 
 		
-// 8)  Estimate projected catch-per-trips at the month and mode level
+// 9)  Estimate projected catch-per-trips at the month and mode level
 		 *will use MRIP catch data from the last two full years. 
 		 *For 2026 mgt. cycle: 2025 waves 1-4, 2024 waves 1-6, 2023 waves 5 & 6	 
 		 
@@ -171,9 +174,6 @@ do "$input_code_cd\catch_at_length.do"
 		//d) compare estimates of mean projected catch to MRIP data to ensure consistency and remove extraneous columns from projected catch draw data
 		do "$input_code_cd\compare projection catch to MRIP.do"
 		
-
-// 9) Generate random draws of harvest and discard weight-per-fish to use when projecting SQ scenario 
-		do "$input_code_cd\.do"
 
 // Steps 7-10 are not necessary to run. They compare the disaggregated simulated catch and effort data to aggreagte MRIP estimates, and compute catch weight totals in the calibration year 
 

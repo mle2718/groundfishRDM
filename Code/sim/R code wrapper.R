@@ -2,15 +2,16 @@
 options(scipen = 999)
 
 packages <- c("tidyr",  "magrittr", "tidyverse", "reshape2", "splitstackshape","doBy","WriteXLS","Rcpp",
-              "ggplot2","dplyr","rlist","fitdistrplus","MASS","psych","rgl","copula","VineCopula","scales",
+              "ggplot2","rlist","fitdistrplus","MASS","psych","rgl","copula","VineCopula","scales",
               "univariateML","logspline","readr","data.table","conflicted", "readxl", "writexl", "fs",
-              "purrr", "readr", "here","plyr" , "furrr", "profvis", "future", "magrittr", "feather", "RStata", "haven")
+              "purrr", "readr", "here", "furrr", "profvis", "future", "magrittr", "feather", "RStata", "haven")
 
 # Install only those not already installed
-installed <- packages %in% rownames(installed.packages())
-if (any(!installed)) {
-  install.packages(packages[!installed])
-}
+# installed <- packages %in% rownames(installed.packages())
+# if (any(!installed)) {
+#   install.packages(packages[!installed])
+# }
+
 lapply(packages, library, character.only = TRUE)
 
 library(plyr)
@@ -35,7 +36,7 @@ conflicts_prefer(dplyr::count)
 
 
 #Set up R globals for input/output data and code scripts
-code_cd=here("Code", "pre_sim")
+code_cd=here("Code", "sim")
 input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
 iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
 final_process_data_cd="E:/Lou_projects/groundfishRDM/final_process_data"

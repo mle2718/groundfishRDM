@@ -99,24 +99,27 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3)
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
 /*classify into GOM or GBS */
-gen str3 area_s="AAA"
-
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area,521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
 
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
 gen my_dom_id_string=area_s+"_"+year2+"_"+month1+"_"+kod+"_"+mode1+"_"+ dom_id
@@ -392,14 +395,18 @@ save  "$input_data_cd\cod_open_season_dates.dta",  replace
 restore 
 
 preserve
-keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 dtrip cod_bag_y2 cod_min_y2 hadd_bag_y2 hadd_min_y2
+keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 dtrip ///
+			cod_bag_y2_same cod_min_y2_same hadd_bag_y2_same hadd_min_y2_same ///
+			cod_bag_y2_alt cod_min_y2_alt hadd_bag_y2_alt hadd_min_y2_alt
 compress
 export delimited using "$iterative_input_data_cd\directed_trip_draws.csv",  replace 
 restore
 
 **Now adjust for the differences in directed trips due to changes in kod between calibration year y and  y+1 
-keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 dtrip cod_bag_y2 cod_min_y2 hadd_bag_y2 hadd_min_y2 kod kod_y2
-
+keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 kod kod_y2 dtrip ///
+			cod_bag_y2_same cod_min_y2_same hadd_bag_y2_same hadd_min_y2_same ///
+			cod_bag_y2_alt cod_min_y2_alt hadd_bag_y2_alt hadd_min_y2_alt
+			
 gen month_y1=month(day)
 gen month_y2=month(day_y2)
 tostring month_y1, replace
@@ -555,23 +562,27 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3)
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
 /*classify into GOM or GBS */
-gen str3 area_s="AAA"
-
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area,521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
+
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
@@ -722,24 +733,27 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3)
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
 /*classify into GOM or GBS */
-gen str3 area_s="AAA"
-
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area,521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
 
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
 gen my_dom_id_string=month+"_"+mode1+"_"+ dom_id
@@ -893,23 +907,27 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3)
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
 /*classify into GOM or GBS */
-gen str3 area_s="AAA"
-
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area,521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
+
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 gen season= "open" if inlist(month1, "09", "10")
 replace season="closed" if !inlist(month1, "09", "10")

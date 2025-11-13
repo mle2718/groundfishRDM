@@ -52,23 +52,27 @@ gen st2 = string(st,"%02.0f")
 
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-*classify into GOM or GBS 
-gen str3 area_s="AAA"
-
+/*classify into GOM or GBS */
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
+
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
@@ -216,24 +220,27 @@ gen st2 = string(st,"%02.0f")
 
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-*classify into GOM or GBS 
-gen str3 area_s="AAA"
-
+/*classify into GOM or GBS */
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
 
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -468,7 +475,7 @@ replace draw=domain3
 sort species season draw fitted_length
 
 drop _merge domain1 domain2 domain3
-
+/*
 * Graphs of the fitted observed/fitted probabilities
 * Create a local macro for unique draws 
 levelsof draw if draw < 20, local(draws)
@@ -489,7 +496,7 @@ twoway `plots', ///
     ylabel(, labsize(small)) ///
     title("Fitted catch-at-length probabilities by length (Haddock, closed season)", size(medium)) ///
     ytitle("Probability", size(medium)) xtitle("Length (cm)", size(medium)) xlab(#40)
-
+*/
 	
 keep fitted_length fitted_prob draw season species observed_prob
 order draw season species fitted_length fitted_prob observed_prob	

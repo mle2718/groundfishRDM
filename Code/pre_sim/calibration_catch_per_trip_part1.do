@@ -78,26 +78,30 @@ replace common_dom="ATLCO" if inlist(common, "haddock")
 replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
 
-
 *New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
+drop _merge
 
 /*classify into GOM or GBS */
-gen str3 area_s="AAA"
-
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
+
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 
 tostring wave, gen(wv2)
@@ -495,26 +499,30 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod")
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
 
 
-* New MRIP site allocations
+
+*New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-* classify into GOM or GBS
-gen str3 area_s="AAA"
-
+/*classify into GOM or GBS */
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
 
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 tostring wave, gen(wv2)
 tostring year, gen(yr2)
@@ -704,25 +712,30 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod")
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
 
 
-* New MRIP site allocations
+
+*New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-* classify into GOM or GBS
-gen str3 area_s="AAA"
-
+/*classify into GOM or GBS */
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
+
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 gen my_dom_id_string=month+"_"+mode1+"_"+common_dom
 
@@ -909,25 +922,30 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod")
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
 
 
-* New MRIP site allocations
+
+*New MRIP site allocations
 preserve 
-import excel using "$input_data_cd/ma_site_list_updated_SS.xlsx", clear first
-keep SITE_EXTERNAL_ID NMFS_STAT_AREA
-renvarlab, lower
-rename site_external_id intsite
+import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+keep if state=="MA"
+keep state intsite nmfs_stock_area nmfs_stat_area
+sort intsite nmfs_stock_area  
+replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
+replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
+replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
+keep nmfs_stock_area intsite nmfs_stat_area 
+duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite using `mrip_sites',  keep(1 3) nogen
+merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-* classify into GOM or GBS
-gen str3 area_s="AAA"
-
+/*classify into GOM or GBS */
+gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area,511, 512, 513,  514)
-replace area_s="GBS" if st2=="25" & inlist(nmfs_stat_area, 521, 526, 537,  538)
-replace area_s="GOM" if st2=="25" & intsite==224
+replace area_s=nmfs_stock_area if st2=="25"
+
+replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 gen season= "open" if inlist(month, "09", "10")
 replace season="closed" if !inlist(month, "09", "10")

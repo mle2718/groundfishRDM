@@ -2,13 +2,17 @@
 
 #This is the calibration-year trip simulation WITHOUT any adjustments for illegal harvest or voluntary release
 
-s<-"closed"
-md<-"pr"
-i<-1
+# s<-"closed"
+# md<-"pr"
+# i<-3
 
 mode_draw <- c("pr", "fh")
-draws <- 1:n_simulations
+draws <- 1:10
 season_draw <- c("open", "closed")
+
+# mode_draw <- c("pr")
+# draws <- 1:n_simulations
+# season_draw <- c( "closed")
 
 # Create an empty list to collect results
 calib_comparison <- list()
@@ -36,15 +40,19 @@ for (s in season_draw) {
                       season = ifelse(lubridate::month(date) %in% c(9, 10), "open", "closed")) %>%
         dplyr::filter(mode==md) %>%
         dplyr::filter(season==s) %>%
+        dplyr::select(-season, -day) %>%
         dplyr::left_join(dtripz, by=c("mode", "date"))
 
       angler_dems<-catch_data %>%
-        dplyr::select(date, mode, tripid, total_trips_12, age, cost)%>%
+        dplyr::select(date, mode, tripid, total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost) %>%
         dplyr::filter(mode==md)
 
       angler_dems<-dplyr::distinct(angler_dems)
 
-      cod_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE)  %>%
+      catch_data<-catch_data %>%
+        dplyr::select(-total_trips_12, -fish_pref_more, -educ1, -educ2, -educ3, -own_boat, -cost, -age, -day, -dtrip)
+
+      cod_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE) %>%
         dplyr::filter(species=="cod", draw==i, season==s) %>%
         dplyr::filter(!is.na(fitted_prob)) %>%
         dplyr::select(fitted_prob, length)
@@ -230,16 +238,18 @@ for (s in season_draw) {
       # utility params
       parameters<-  parameters %>%
         #dplyr::arrange(date, mode, tripid) %>%
-        dplyr::mutate(beta_sqrt_cod_keep= rnorm(nrow(parameters), mean = 0.827, sd = 1.267),
-                      beta_sqrt_cod_release = rnorm(nrow(parameters), mean = 0.065 , sd = 0.325) ,
-                      beta_sqrt_hadd_keep = rnorm(nrow(parameters), mean = 0.353, sd = 0.129),
-                      beta_sqrt_hadd_release = rnorm(nrow(parameters), mean = 0.074 , sd = 0),
-                      beta_sqrt_cod_hadd_keep = rnorm(nrow(parameters), mean=-0.056  , sd = 0.196 ),
-                      beta_sqrt_scup_catch = rnorm(nrow(parameters), mean = 0.018 , sd = 0),
-                      beta_opt_out = rnorm(nrow(parameters), mean =-2.056 , sd = 1.977),
-                      beta_opt_out_avidity = rnorm(nrow(parameters), mean =-0.010 , sd = 0),
-                      beta_opt_out_age = rnorm(nrow(parameters), mean =0.010 , sd = 0),
-                      beta_cost = -0.012)
+        dplyr::mutate(beta_sqrt_cod_keep= rnorm(nrow(parameters), mean = 1.212, sd = .466),
+                      beta_sqrt_cod_release = rnorm(nrow(parameters), mean = 0.127 , sd = 0) ,
+                      beta_sqrt_hadd_keep = rnorm(nrow(parameters), mean = 0.842, sd = 0.940),
+                      beta_sqrt_hadd_release = rnorm(nrow(parameters), mean = 0.261 , sd = 0.370),
+                      beta_sqrt_cod_hadd_keep = rnorm(nrow(parameters), mean=-0.199  , sd = 0.503 ),
+                      beta_opt_out = rnorm(nrow(parameters), mean =0 , sd = 3.463),
+                      beta_opt_out_trips12 = rnorm(nrow(parameters), mean =0.020 , sd = 0),
+                      beta_opt_out_fish_pref = rnorm(nrow(parameters), mean =-0.912 , sd = 0),
+                      beta_opt_out_educ2 = rnorm(nrow(parameters), mean =-1.944 , sd = 0),
+                      beta_opt_out_educ3 = rnorm(nrow(parameters), mean =-2.622 , sd = 0),
+                      beta_opt_out_ownboat = rnorm(nrow(parameters), mean =0.977 , sd = 0),
+                      beta_cost = -0.011)
 
 
       trip_data<- trip_data %>%
@@ -259,7 +269,6 @@ for (s in season_draw) {
       trip_data <-trip_data %>%
         dplyr::mutate(
           vA = beta_sqrt_cod_keep*sqrt(tot_keep_cod_new) +
-            #beta_NJ_cod_keep*NJ_dummy +
             beta_sqrt_cod_release*sqrt(tot_rel_cod_new) +
             beta_sqrt_hadd_keep*sqrt(tot_keep_hadd_new) +
             beta_sqrt_hadd_release*sqrt(tot_rel_hadd_new) +
@@ -285,8 +294,11 @@ for (s in season_draw) {
       # Filter only alt == 2 once, and calculate vA
       mean_trip_data[alt == 2, "vA" := .(
         beta_opt_out * opt_out +
-          beta_opt_out_age * (age * opt_out) +
-          beta_opt_out_avidity * (total_trips_12 * opt_out)
+          beta_opt_out_trips12 * (total_trips_12 * opt_out) +
+          beta_opt_out_fish_pref * (fish_pref_more * opt_out)+
+          beta_opt_out_educ2 * (educ2 * opt_out)+
+          beta_opt_out_educ3 * (educ3 * opt_out)+
+          beta_opt_out_ownboat * (own_boat * opt_out)
       )]
 
       # Pre-compute exponential terms
@@ -305,7 +317,8 @@ for (s in season_draw) {
       mean_trip_data <- mean_trip_data %>%
         dplyr::filter(alt==1) %>%
         dplyr::select(-matches("beta")) %>%
-        dplyr::select(-"alt", -"opt_out", -"vA" ,-"cost", -"age", -"total_trips_12", -"catch_draw")
+        dplyr::select(-"alt", -"opt_out", -"vA" ,-"cost", -"total_trips_12", -"catch_draw",
+                      -"educ1", -"educ2", -"educ3", -"fish_pref_more", -"own_boat")
 
       all_vars<-c()
       all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c("date","mode", "tripid")]
@@ -323,13 +336,6 @@ for (s in season_draw) {
         as.data.table() %>%
         .[,as.vector(list_names) := lapply(.SD, function(x) x * prob0), .SDcols = list_names] %>%
         .[]
-
-
-      # dtrips<-feather::read_feather(file.path(iterative_input_data_cd, paste0("directed_trips_calibration_", s, ".feather"))) %>%
-      #   tibble::tibble() %>%
-      #   dplyr::filter(draw == i) %>%
-      #   dplyr::select(mode, date, dtrip) %>%
-      #   dplyr::filter(mode==md)
 
       mean_trip_data<-mean_trip_data %>%
         left_join(dtripz, by = c("mode", "date"))
@@ -470,17 +476,24 @@ for (s in season_draw) {
       compare_k<-compare %>%
         dplyr::filter(disposition=="keep") %>%
         dplyr::select(mode, species, MRIP, model, diff, pct_diff, keep_to_rel, rel_to_keep) %>%
-        dplyr::rename(MRIP_keep=MRIP, model_keep=model)
+        dplyr::rename(MRIP_keep=MRIP, model_keep=model, diff_keep=diff, pct_diff_keep=pct_diff)
+
+      compare_c<-compare %>%
+        dplyr::filter(disposition=="catch") %>%
+        dplyr::select(mode, species, MRIP, model, diff, pct_diff) %>%
+        dplyr::rename(MRIP_catch=MRIP, model_catch=model, diff_catch=diff, pct_diff_catch=pct_diff)
 
       compare_r<-compare %>%
         dplyr::filter(disposition=="rel") %>%
-        dplyr::select(mode, species, MRIP, model) %>%
-        dplyr::rename(MRIP_rel=MRIP, model_rel=model) %>%
-        dplyr::left_join(compare_k, by=c("mode", "species"))
+        dplyr::select(mode, species, MRIP, model, diff, pct_diff) %>%
+        dplyr::rename(MRIP_rel=MRIP, model_rel=model, diff_rel=diff, pct_diff_rel=pct_diff) %>%
+        dplyr::left_join(compare_k, by=c("mode", "species")) %>%
+        dplyr::left_join(compare_c, by=c("mode", "species"))
+
 
       calib_comparison[[k]]<-compare_r %>%
-        dplyr::mutate(p_rel_to_keep=abs(diff/model_rel),
-                      p_keep_to_rel=abs(diff/model_keep),
+        dplyr::mutate(p_rel_to_keep=abs(diff_keep/model_rel),
+                      p_keep_to_rel=abs(diff_keep/model_keep),
                       draw=i, season=s)
 
 
@@ -492,9 +505,9 @@ for (s in season_draw) {
 calib_comparison_combined <- do.call(rbind, calib_comparison)
 
 calib_comparison_combined<-calib_comparison_combined %>%
-  dplyr::select(state, mode, species, draw, everything())
+  dplyr::select(season, mode, species, draw, everything())
 
-write_feather(calib_comparison_combined, file.path(iterative_input_data_cd, "calibration_comparison.feather"))
+write_csv(calib_comparison_combined, file.path(iterative_input_data_cd, "calibration_comparison.csv"))
 
 
 
