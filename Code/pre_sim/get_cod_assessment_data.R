@@ -47,27 +47,17 @@
 
 ############ End description###################################################
 
-
+library(tidyverse)
+library(TMB)
+library(haven)
+library(glue)
 
 ###########Begin Housekeeping##################################################
-# Install wham if needed, load libraries
+#Set paths, input names, and savefile names.
 
-# Install the version of wham that corresponds to the version used to do the stock assessment.
-packageDescription("wham")$RemoteSha
-# If the result of the previous command is not "cc1264219b07dbaf07ff07e6e6d549b44addab28", you will need to
-# install the version of wham that was used to do the initial estimation.
-# pak::pak("timjmiller/wham@cc1264219b07dbaf07ff07e6e6d549b44addab28", ask=FALSE)
-# You should also probably restart R before running the rest of the code.
-library(tidyverse)
-library(wham)
-library(haven)
-
-#Set paths, input names, and savefile names. Load in data
-
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST","cod_haddock_fy2025")
-
-input_folder<-file.path(BLAST_root,"source_data","cod","input")
-output_folder<-file.path(BLAST_root,"source_data","cod","output",Sys.Date())
+BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
+input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
+output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
 dir.create(file.path(output_folder), showWarnings = FALSE)
 
 
@@ -75,6 +65,49 @@ ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-"WGOMCod_Projections.rds"
 ProjectedNAASaveFile<-"WGOM_Cod_projected_NAA_2024Assessment.dta"
 HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_2024Assessment.dta"
+
+# Read in accepted model
+mod_accepted <-
+  readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
+
+###################################################################################
+###################################################################################
+#Make sure that the version of WHAM that was used to generate the model is installed
+###################################################################################
+###################################################################################
+
+# take a look at the version of WHAM used to generate the model.
+model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
+model_wham_commit<-gsub(")", "", model_wham_commit)
+
+mod_accepted$model_name <- "Accepted"
+mod_list <- list(mod_accepted)
+
+# Install check wham commit, install proper commit if needed
+# No wham installed, install the one that matches the model_wham_commit
+if(!require("wham")){
+  remotes::install_github(glue("timjmiller/@{model_wham_commit}"), auth_token=NULL)
+}
+
+if (model_wham_commit!=packageDescription("wham")$RemoteSha){
+  remotes::install_github(glue("timjmiller/@{model_wham_commit}"), auth_token=NULL)
+} else{
+}
+
+cat("Model Wham version is", model_wham_commit)
+cat("Installed wham commit is", packageDescription("wham")$RemoteSha)
+
+stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
+
+library(wham)
+
+# Install the version of wham that corresponds to the version used to do the stock assessment.
+# If the result of the previous command is not "cc1264219b07dbaf07ff07e6e6d549b44addab28", you will need to
+# install the version of wham that was used to do the initial estimation.
+# pak::pak("github::timjmiller/wham@cc1264219b07dbaf07ff07e6e6d549b44addab28", ask=FALSE)
+# You should also probably restart R before running the rest of the code.
+
+
 
 
 
@@ -149,16 +182,8 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 ################################################################################
 ################################################################################
 
-mod_accepted <-
-  readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
-# take a look at the version of WHAM used to generate the model. Throw an error it does not match the currently installed WHAM
-wham_commit<-strsplit(mod$wham_commit,split="@")[[1]][2]
-wham_commit<-gsub(")", "", wham_commit)
-stopifnot(wham_commit==packageDescription("wham")$RemoteSha)
 
-mod_accepted$model_name <- "Accepted"
 
-mod_list <- list(mod_accepted)
 
 
 ###################################PROJECTIONS #################################
