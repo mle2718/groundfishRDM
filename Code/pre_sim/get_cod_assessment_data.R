@@ -192,17 +192,6 @@ set_specs <- function(mod) {
   bridge <- sum(tail(mod$env$data$agg_catch,1)) #Catch in the last year of the assessment
   Fmsy <- exp(mod$rep$log_FXSPR_static)         #FMSY
 
-  # This is a mini-projection done if you wanted to get the catch in 2025 that
-  # results from 75%FMSY and then apply that constant amount in the future.
-  # catch2025 <-
-  #   project_wham(model = mod,
-  #                proj.opts = list(n.yrs = 2,
-  #                                 proj_F_opt = c(5, 4),
-  #                                 proj_Fcatch = c(bridge, 0.75 * Fmsy)),
-  #                do.sdrep = F, MakeADFun.silent = T)$rep$
-  #   pred_catch[mod$env$data$n_years_model + 2, ] %>%
-  #   sum()
-
 
   proj.opts_list <-
     list(Model = rep(mod$model_name, times = 1),
