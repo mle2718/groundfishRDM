@@ -84,7 +84,7 @@ if (min(dtripz$hadd_min)==100){
   floor_subl_hadd_harv<-hadd_min_size_FY-3*2.54
 }
 
-# begin trip simulation
+# Begin trip simulation
 
 # subset trips with zero catch, as no size draws are required
 cod_zero_catch <- dplyr::filter(catch_data, cod_cat == 0)
@@ -99,7 +99,7 @@ calib_comparison<-read_csv(file.path(iterative_input_data_cd, "calibration_compa
 
 
 # cod trip simulation
-#keep trips with positive cod catch
+# keep trips with positive cod catch
 if (cod_catch_check!=0){
 
   cod_catch_data <- dplyr::filter(catch_data, cod_cat > 0)
@@ -117,7 +117,7 @@ if (cod_catch_check!=0){
                                          prob = cod_size_data$fitted_prob,
                                          replace = TRUE))
 
-  # Impose regulations, calculate keep and release per trip
+  # impose regulations, calculate keep and release per trip
   catch_size_data <- catch_size_data %>%
     dplyr::mutate(posskeep = ifelse(fitted_length>=cod_min ,1,0)) %>%
     dplyr::group_by(tripid, date, mode, catch_draw) %>%
@@ -375,10 +375,10 @@ if (hadd_catch_check!=0){
 
   }
 
-  ##Reallocate a portion of all keeps as releases if needed
+  # reallocate a portion of all keeps as releases if needed
   if (keep_to_rel_hadd==1 & sum_hadd_keep>0){
 
-    #If all kept must be release, p_keep_to_rel_hadd==1
+    # if all kept must be release, p_keep_to_rel_hadd==1
     if (all_keep_to_rel_hadd==1){
 
       n_kept_hadd_rel<-sum(catch_size_data$keep)
@@ -394,7 +394,7 @@ if (hadd_catch_check!=0){
 
     }
 
-    #If not all kept must be release, p_keep_to_rel_hadd<1
+    # if not all kept must be release, p_keep_to_rel_hadd<1
     if (all_keep_to_rel_hadd!=1){
 
       catch_size_data_re_allocate<- catch_size_data %>%
@@ -476,13 +476,13 @@ if (hadd_catch_check==0){
 
 rm(catch_size_data,trip_data)
 
+
 # merge the hadd trip data with the rest of the trip data
 trip_data<- cod_trip_data[hadd_trip_data, on = "domain2"]
 
 trip_data<- trip_data %>%
   dplyr::mutate(tot_hadd_catch = tot_keep_hadd_new + tot_rel_hadd_new,
                 tot_cod_catch = tot_keep_cod_new + tot_rel_cod_new)
-
 
 parameters <- trip_data %>%
   dplyr::select(date, mode, tripid)
@@ -506,22 +506,22 @@ parameters<-  parameters %>%
                 beta_cost = -0.011)
 
 
-
 trip_data<- trip_data %>%
   dplyr::left_join(parameters, by = c("date", "mode", "tripid")) %>%
   dplyr::arrange(date, mode, tripid, tripid, catch_draw) %>%
   dplyr::left_join(angler_dems, by = c("date", "mode", "tripid"))
 
 # base_outcomes_s_md_i data sets will retain trip outcomes from the baseline scenario.
-# We will merge these data to the prediction year outcomes to calculate changes in effort and CS.
-# We will merge these data to the prediction year outcomes to calculate changes in effort and CS.
+# we will merge these data to the prediction year outcomes to calculate changes in effort and CS.
+
 baseline_outcomes<- trip_data %>%
   dplyr::rename(tot_keep_hadd_base = tot_keep_hadd_new,
                 tot_keep_cod_base = tot_keep_cod_new,
                 tot_rel_hadd_base = tot_rel_hadd_new,
                 tot_rel_cod_base = tot_rel_cod_new)
 
-write_rds(baseline_outcomes, file.path(iterative_input_data_cd, paste0("base_outcomes_", s,"_", md, "_", i,".rds")))
+#write_rds(baseline_outcomes, file.path(iterative_input_data_cd, paste0("base_outcomes_", s,"_", md, "_", i,".rds")))
+fst::write_fst(baseline_outcomes, file.path(iterative_input_data_cd, paste0("base_outcomes_", s,"_", md, "_", i, ".fst")))
 
 #  utility
 trip_data <-trip_data %>%
@@ -537,19 +537,19 @@ trip_data <-trip_data %>%
 mean_trip_data <- trip_data %>% data.table::data.table() %>%
   .[, group_index := .GRP, by = .(date, mode, catch_draw, tripid)]
 
-# Now expand the data to create two alternatives, representing the alternatives available in choice survey
+# expand the data to create two alternatives, representing the alternatives available in choice survey
 mean_trip_data <- mean_trip_data %>%
   dplyr::mutate(n_alt = rep(2,nrow(.))) %>%
   tidyr::uncount(n_alt) %>%
   dplyr::mutate(alt = rep(1:2,nrow(.)/2),
                 opt_out = ifelse(alt == 2, 1, 0))
 
-#Calculate the expected utility of alts 2 parameters of the utility function,
-#put the two values in the same column, exponentiate, and calculate their sum (vA_col_sum)
+# calculate the expected utility of alts 2 parameters of the utility function,
+# put the two values in the same column, exponentiate, and calculate their sum (vA_col_sum)
 
 setDT(mean_trip_data)
 
-# Filter only alt == 2 once, and calculate vA
+# filter only alt == 2 once, and calculate vA
 mean_trip_data[alt == 2, "vA" := .(
   beta_opt_out * opt_out +
     beta_opt_out_trips12 * (total_trips_12 * opt_out) +
@@ -559,10 +559,10 @@ mean_trip_data[alt == 2, "vA" := .(
     beta_opt_out_ownboat * (own_boat * opt_out)
 )]
 
-# Pre-compute exponential terms
+# pre-compute exponential terms
 mean_trip_data[, `:=`(exp_vA = exp(vA))]
 
-# Group by group_index and calculate probabilities and log-sums
+# group by group_index and calculate probabilities and log-sums
 mean_trip_data[, `:=`(
   prob0 = exp_vA / sum(exp_vA)
 ), by = group_index]
@@ -571,7 +571,7 @@ mean_trip_data[, `:=`(
 mean_trip_data<- subset(mean_trip_data, alt==1) %>%
   dplyr::select(-domain2, -group_index, -exp_vA)
 
-# Get rid of things we don't need.
+# get rid of things we don't need.
 mean_trip_data <- mean_trip_data %>%
   dplyr::filter(alt==1) %>%
   dplyr::select(-matches("beta")) %>%
@@ -596,6 +596,7 @@ mean_trip_data <- mean_trip_data %>%
   .[]
 
 
+# compute how many trips each simulated trip represents
 mean_trip_data<-mean_trip_data %>%
   left_join(dtripz, by = c("mode", "date"))
 
@@ -607,7 +608,7 @@ mean_trip_data <-mean_trip_data %>%
                 expand=sims/50, #number of trips per day,
                 n_choice_occasions=1)
 
-# Expand outcomes
+# expand trip outcomes
 list_names <- c("tot_keep_cod_new",   "tot_rel_cod_new",  "tot_cod_catch",
                 "tot_keep_hadd_new",  "tot_rel_hadd_new", "tot_hadd_catch",
                 "n_choice_occasions", "prob0" )
@@ -632,9 +633,6 @@ aggregate_trip_data<-aggregate_trip_data %>%
                 cod_rel=tot_rel_cod_new,
                 hadd_rel=tot_rel_hadd_new)
 
-#saveRDS(aggregate_trip_data, file = paste0(output_data_cd, "calibration_data_", s,"_", i, ".rds"))
-
-
 list_names = c("hadd_catch","hadd_keep","hadd_rel",
                "cod_catch", "cod_keep","cod_rel",
                "estimated_trips","n_choice_occasions")
@@ -643,21 +641,21 @@ summed_results <- aggregate_trip_data %>%
   data.table::as.data.table() %>%
   .[,lapply(.SD, sum),  by = c("mode"), .SDcols = list_names]
 
-
 aggregate_trip_data<-aggregate_trip_data %>%
   dplyr::select(date, mode, n_choice_occasions, estimated_trips)
 
-write_rds(aggregate_trip_data, file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s,"_", md, "_", i, ".rds")))
+# write_rds(aggregate_trip_data, file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s,"_", md, "_", i, ".rds")))
+fst::write_fst(aggregate_trip_data, file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s,"_", md, "_", i, ".fst")))
 
-########
-#Compare calibration output to MRIP by state-mode
+# compare calibration output to MRIP by state-mode
 
-#Save simulation results by mode as objects
-# Loop over rows (modes)
+# save simulation results by mode as objects
+# loop over rows (modes)
+
 for (r in 1:nrow(summed_results)) {
   mode_val <- summed_results$mode[r]
 
-  # Loop over summary columns
+  # loop over summary columns
   for (var in c("hadd_catch","hadd_keep","hadd_rel","cod_catch","cod_keep","cod_rel")) {
     value <- summed_results[[var]][r]
     obj_name <- paste0(var, "_", "model")
@@ -666,7 +664,7 @@ for (r in 1:nrow(summed_results)) {
 }
 
 
-#Save MRIP estimates  by mode as objects
+# save MRIP estimates by mode as objects
 MRIP_comparison_draw <- baseline_output0 %>%
   dplyr::filter(draw==i & season==s & mode==md)
 
@@ -676,7 +674,6 @@ for (p in 1:nrow(MRIP_comparison_draw)) {
   assign(paste0(sp,"_catch_MRIP" ), MRIP_comparison_draw$MRIP_catch[p])
   assign(paste0(sp,"_keep_MRIP" ), MRIP_comparison_draw$MRIP_keep[p])
   assign(paste0(sp,"_rel_MRIP" ), MRIP_comparison_draw$MRIP_rel[p])
-
 
 }
 
@@ -769,11 +766,7 @@ compare1_c<-compare1 %>%
   dplyr::left_join(compare1_r, by=c("mode", "species"))
 
 calib_comparison1<-compare1_c %>%
-  dplyr::mutate(draw=i, season=s) #%>%
-  # dplyr::mutate(rel_to_keep_new = if_else(diff_keep < 0, 1, 0),
-  #               keep_to_rel_new = if_else(diff_keep > 0, 1, 0)) %>%
-  # dplyr::mutate(p_rel_to_keep_new=abs(diff_keep/model_rel),
-  #               p_keep_to_rel_new=abs(diff_keep/model_keep))
+  dplyr::mutate(draw=i, season=s)
 
 
 # Vector of object names you want to remove

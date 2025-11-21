@@ -21,19 +21,17 @@ MRIP_comparison = read_dta(file.path(input_data_cd,"simulated_catch_totals.dta")
 baseline_output0<-read_csv(file.path(iterative_input_data_cd, "calibration_comparison.csv"), show_col_types = FALSE)
 
 
-
 # mode_draw <- c("pr", "fh")
 # draws <- 1:n_simulations
 # season_draw <- c("open", "closed")
 
-
 mode_draw <- c("pr", "fh")
-draws <- 1:10
+draws <- 1:5
 season_draw <- c("open", "closed")
 
-# s<-"open"
-# md<-"pr"
-# i<-1
+ # s<-"open"
+ # md<-"pr"
+ # i<-1
 
 # Create an empty list to collect results
 calibrated <- list()
@@ -83,8 +81,6 @@ for (s in season_draw) {
         assign(paste0("model_keep_", sp), calib_comparison1$model_keep[p])
         assign(paste0("harv_diff_", sp), calib_comparison1$diff_keep[p])
         assign(paste0("harv_pct_diff_", sp), calib_comparison1$pct_diff_keep[p])
-        # assign(paste0("rel_to_keep_", sp), calib_comparison1$rel_to_keep_new[p])
-        # assign(paste0("keep_to_rel_", sp), calib_comparison1$keep_to_rel_new[p])
       }
 
       message("run ", i, " season ", s, " mode ", md)
@@ -107,37 +103,48 @@ for (s in season_draw) {
       cod_achieved<-case_when((abs(harv_diff_cod)<500 | (abs(harv_pct_diff_cod)<5 & !is.na(harv_pct_diff_cod))) ~1, TRUE~0)
       hadd_achieved<-case_when((abs(harv_diff_hadd)<500 | (abs(harv_pct_diff_hadd)<5 & !is.na(harv_pct_diff_hadd))) ~1, TRUE~0)
 
-      # Here I add a non-convergence indicator and artificially deem the run as achieved
+
+      # Here I add a non-convergence indicator =1 which artificially deems the run as achieved.
+      # This changes to zero (in section [A] below) only in cases when (a) we need to re-allocate fish from kept to released,
+      # and (b) there are not enough fish within 3-inches of the minimum size for this re-allocation
+      # and thus the simulation will never converge.
+
       cod_convergence<-1
       hadd_convergence<-1
 
 
       while(cod_achieved+hadd_achieved<2){
 
-        #For draws where release_to_keep==1:
-        #If baseline cod harvest is less than MRIP, but in a new run cod harvest is greater than MRIP,
-        #reduce the baseline p_rel_to_keep value
+      # Cod
+
+        # For draws where release_to_keep==1:
+          # If baseline cod harvest is less than MRIP, but in a new run
+          # cod harvest is greater than MRIP,reduce p_rel_to_keep
 
         if(cod_achieved!=1){
           if(rel_to_keep_cod==1){
             if(harv_diff_cod>0){
               p_rel_to_keep_cod<-p_rel_to_keep_cod - p_rel_to_keep_cod*.15
             }
-            #If baseline cod harvest is less than MRIP, and in the new run cod harvest is still less than MRIP,
-            #increase the baseline p_rel_to_keep value
+
+            # If baseline cod harvest is less than MRIP, and in the new run
+            # cod harvest is still less than MRIP, increase p_rel_to_keep
+
             if(harv_diff_cod<0) {
               p_rel_to_keep_cod<-p_rel_to_keep_cod + p_rel_to_keep_cod*.16
             }
           }
-          #For draws where keep_to_release==1
-          #If in the baseline run, harvest is less than MRIP, but in a new run harvest is greater than MRIP,
-          #reduce the baseline p_keep_to_rel value
+
+          # For draws where keep_to_release==1:
+           # If in the baseline run, harvest is less than MRIP, but in a new run
+           # harvest is greater than MRIP, reduce p_keep_to_rel
+
           if(keep_to_rel_cod==1 & all_keep_to_rel_cod!=1) {
             if(harv_diff_cod>0){
               p_keep_to_rel_cod<-p_keep_to_rel_cod + p_keep_to_rel_cod*.16
             }
-            #If in the baseline run, harvest is less than MRIP, and in the new run harvest is still less than MRIP,
-            #increase the baseline p_keep_to_rel value
+            # If in the baseline run, harvest is less than MRIP, and in the new run
+            # harvest is still less than MRIP, increase p_keep_to_rel
             if(harv_diff_cod<0){
               p_keep_to_rel_cod<-p_keep_to_rel_cod - p_keep_to_rel_cod*.15
             }
@@ -145,38 +152,44 @@ for (s in season_draw) {
 
         }
 
+      # Haddock
 
-        #hadd
-        #For draws where release_to_keep==1:
-        #If baseline hadd harvest is less than MRIP, but in a new run cod harvest is greater than MRIP,
-        #reduce the baseline p_rel_to_keep value
+        # For draws where release_to_keep==1:
+          # If baseline hadd harvest is less than MRIP, but in a new run
+          # cod harvest is greater than MRIP,reduce p_rel_to_keep
+
         if(hadd_achieved!=1){
           if(rel_to_keep_hadd==1){
             if(harv_diff_hadd>0){
               p_rel_to_keep_hadd<-p_rel_to_keep_hadd - p_rel_to_keep_hadd*.15
             }
-            #If baseline hadd harvest is less than MRIP, and in the new run hadd harvest is still less than MRIP,
-            #increase the baseline p_rel_to_keep value
+
+            # If baseline hadd harvest is less than MRIP, and in the new run
+            # hadd harvest is still less than MRIP,increase p_rel_to_keep
+
             if(harv_diff_hadd<0) {
               p_rel_to_keep_hadd<-p_rel_to_keep_hadd + p_rel_to_keep_hadd*.16
             }
           }
-          #For draws where keep_to_release==1
-          #If in the baseline run, harvest is less than MRIP, but in a new run harvest is greater than MRIP,
-          #reduce the baseline p_keep_to_rel value
+
+          # For draws where keep_to_release==1
+            # If in the baseline run, harvest is less than MRIP, but in a new run
+            # harvest is greater than MRIP,reduce p_keep_to_rel
+
           if(keep_to_rel_hadd==1 & all_keep_to_rel_hadd!=1) {
             if(harv_diff_hadd>0){
               p_keep_to_rel_hadd<-p_keep_to_rel_hadd + p_keep_to_rel_hadd*.16
             }
-            #If in the baseline run, harvest is less than MRIP, and in the new run harvest is still less than MRIP,
-            #increase the baseline p_keep_to_rel value
+
+            # If in the baseline run, harvest is less than MRIP, and in the new run
+            # harvest is still less than MRIP,increase p_keep_to_rel
+
             if(harv_diff_hadd<0){
               p_keep_to_rel_hadd<-p_keep_to_rel_hadd - p_keep_to_rel_hadd*.15
             }
           }
 
         }
-
 
         source(file.path(code_cd, "calibrate_rec_catch1.R"))
 
@@ -187,8 +200,6 @@ for (s in season_draw) {
           assign(paste0("model_keep_", sp), calib_comparison1$model_keep[p])
           assign(paste0("harv_diff_", sp), calib_comparison1$diff_keep[p])
           assign(paste0("harv_pct_diff_", sp), calib_comparison1$pct_diff_keep[p])
-          # assign(paste0("rel_to_keep_", sp), calib_comparison1$rel_to_keep_new[p])
-          # assign(paste0("keep_to_rel_", sp), calib_comparison1$keep_to_rel_new[p])
 
         }
 
@@ -212,30 +223,28 @@ for (s in season_draw) {
         cod_achieved<-case_when((abs(harv_diff_cod)<500 | (abs(harv_pct_diff_cod)<5 & !is.na(harv_pct_diff_cod))) ~1, TRUE~0)
         hadd_achieved<-case_when((abs(harv_diff_hadd)<500 | (abs(harv_pct_diff_hadd)<5 & !is.na(harv_pct_diff_hadd))) ~1, TRUE~0)
 
+        # [A]
         # In some cases, there are not enough fish within 3-inches of the minimum size to re-allocate
-        # from kept to release. In this case, p_rel_to_keep_SP will continue to grow unbounded.
+        # from kept to release. In this case, p_rel_to_keep_SP will continue to grow unbounded and the
+        # simulation will never converge.
 
 
         if(rel_to_keep_cod==1 & p_rel_to_keep_cod>1){
           cod_convergence<-0
           cod_achieved<-1
-
         }
-
 
         if(rel_to_keep_hadd==1 & p_rel_to_keep_hadd>1){
           hadd_convergence<-0
           hadd_achieved<-1
-
         }
-
       }
 
       k <- k + 1
 
       calibrated[[k]] <- calib_comparison1 %>%
         dplyr::mutate(keep_to_rel_cod=keep_to_rel_cod,
-                      rel_to_keep_cod=  rel_to_keep_cod,
+                      rel_to_keep_cod=rel_to_keep_cod,
                       p_rel_to_keep_cod=p_rel_to_keep_cod,
                       p_keep_to_rel_cod= p_keep_to_rel_cod,
                       cod_convergence=cod_convergence,
@@ -262,10 +271,11 @@ for (s in season_draw) {
 }
 
 
-calibrated_combined <- do.call(rbind, calibrated) %>%
-  dplyr::select(-rel_to_keep_new, -keep_to_rel_new, -p_keep_to_rel_new, -p_rel_to_keep_new)
+calibrated_combined <- do.call(rbind, calibrated)
+saveRDS(calibrated_combined, file = file.path(iterative_input_data_cd, "calibrated_model_stats_raw.rds"))
 
-# saveRDS(calibrated_combined, file = file.path(iterative_input_data_cd, "calibrated_model_stats.rds"))
+
+
 
 
 

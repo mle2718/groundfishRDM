@@ -1,6 +1,8 @@
 
 ***This code creates trip cost distributions based on the Sabrina's 2017 trip expenditure survey data
 
+set seed $seed
+
 *Enter a directory with the expenditure survey data 
 u "$input_data_cd\gulf_atl_2022.dta", clear
 renvarlab *, lower

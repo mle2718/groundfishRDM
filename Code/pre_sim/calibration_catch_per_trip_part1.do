@@ -16,6 +16,7 @@
 */
 		
 ************** Part A  **************
+set seed $seed
 
 * Pull in MRIP data
 

@@ -8,6 +8,7 @@
 	5) set the baseline year and projection year regulations ("$input_code_cd/set regulations.do")
 */
 		
+set seed $seed 
 
 cd $input_data_cd
 

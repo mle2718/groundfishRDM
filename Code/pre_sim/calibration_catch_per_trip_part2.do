@@ -5,7 +5,8 @@
 	* 50 trips in each day of the calibration year in which there were directed trips, each with 30 draws of catch-per-trip
 	* demographics for each trip that are constant across catch draws
 	
-	
+set seed $seed
+
 ********************************
 * Demographics: age and avidity (number trips past 12 months) 
 	* Ages and avidity come from the fishing effort survey 12 MONTH files. 

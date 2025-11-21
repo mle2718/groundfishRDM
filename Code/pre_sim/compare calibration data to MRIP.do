@@ -4,6 +4,8 @@
 * First compare copula-simulated mean catch-per-trip to MRIP 
 * Estimates were generated at the month and mode level
 
+set seed $seed
+
 *A) 
 clear
 tempfile master
@@ -805,10 +807,23 @@ foreach v of local vars{
 	mvencode `v', mv(0) override
 }
 
+preserve
+gen season="1" if inlist(month, "01", "02")
+replace season="2" if inlist(month, "03", "04")
+replace season="3" if inlist(month, "05", "06")
+replace season="4" if inlist(month, "07", "08")
+replace season="5" if inlist(month, "09", "10")
+replace season="6" if inlist(month, "11", "12")
+collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
+						  tot_hadd_keep_sim tot_hadd_rel_sim tot_hadd_cat_sim ///
+						  tot_dtrip_sim , by( season draw)				  
+save "$input_data_cd\simulated_catch_totals_for_catch_length_wave.dta", replace 
+restore 
 
 gen season= "open" if inlist(month, "09", "10")
 replace season="closed" if !inlist(month, "09", "10")
-	
+
+
 collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
 						  tot_hadd_keep_sim tot_hadd_rel_sim tot_hadd_cat_sim ///
 						  tot_dtrip_sim , by( mode season draw)

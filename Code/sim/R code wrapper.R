@@ -3,10 +3,10 @@ options(scipen = 999)
 
 packages <- c("tidyr",  "magrittr", "tidyverse", "reshape2", "splitstackshape","doBy","WriteXLS","Rcpp",
               "ggplot2","rlist","fitdistrplus","MASS","psych","rgl","copula","VineCopula","scales",
-              "univariateML","logspline","readr","data.table","conflicted", "readxl", "writexl", "fs",
+              "univariateML","logspline","readr","data.table","conflicted", "readxl", "writexl", "fs", "fst",
               "purrr", "readr", "here", "furrr", "profvis", "future", "magrittr", "feather", "RStata", "haven")
 
-# Install only those not already installed
+#Install only those not already installed
 # installed <- packages %in% rownames(installed.packages())
 # if (any(!installed)) {
 #   install.packages(packages[!installed])
@@ -39,7 +39,11 @@ conflicts_prefer(dplyr::count)
 code_cd=here("Code", "sim")
 input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
 iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+
 final_process_data_cd="E:/Lou_projects/groundfishRDM/final_process_data"
+final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/final_process_data/base_outcomes"
+final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/final_process_data/n_choice_occasions"
+final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscellaneous"
 
 ###################################################
 ###############Pre-sim Stata code##################
@@ -154,7 +158,7 @@ source(file.path(code_cd,"calibrate_rec_catch0.R"))
 #Scripts needed:
 #calibration_catch_weights.R - can be commented out to save time if calibration catch weight are not needed.
 
-source(file.path(code_cd,"calibration routine.R"))
+source(file.path(code_cd,"calibration_routine.R"))
 
 #Output files:
 #calibration_comparison.rds
@@ -163,25 +167,81 @@ source(file.path(code_cd,"calibration routine.R"))
 #paste0("costs_", i,".rds"))), where i is an indicator for a domain-draw combination
 
 
-# Run the stata code "check calibration convergence.do". This will select 100 of 125 draws out of
-# for each state/mode combo. This file creates "calibration_good_draws.xlsx", which contains the
-# original draw number and the "new" draw number (1-100) which facilitates looping/functions
-# In each data input file for the projections, we need map draw (original # of draw) to draw2 (new draw scled 1-100)
+# Filter out model iterations that did not converge on harvest for both species
+converged<-read_rds(file = file.path(iterative_input_data_cd, "calibrated_model_stats_raw.rds")) %>%
+  dplyr::mutate(abs_pct_diff_keep=abs(pct_diff_keep),
+                abs_diff_keep=abs(diff_keep)) %>%
+  dplyr::filter(abs_pct_diff_keep<5 | abs_diff_keep<500) %>%
+  dplyr::group_by(draw) %>%
+  dplyr::count() %>%
+  dplyr::filter(n==8) %>%
+  dplyr::select(draw)
 
-# Directed trips
-statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-for(st in statez) {
+converged<-converged %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(good_draw=1,
+                draw2 = dplyr::row_number())
 
-  good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx")) %>%
-    dplyr::filter(state==st)
+# Now select from the projection input data only the "good draws", i.e., model iterations that
+# converged on harvest for both species
+  # input data files for projections:
+    # directed_trip_draws.csv
+    # calibrated_model_stats_raw.rds
+    # base_outcomes_"season"_"md"_"dr".fst
+    # n_choice_occasions_"season"_"md"_"dr".fst
+    # next year calendar adjustments.csv
 
-  directed_trips<-feather::read_feather(file.path(iterative_input_data_cd, paste0("directed_trips_calibration_", st, ".feather")))%>%
-    dplyr::left_join(good_draws, by=c("state", "mode", "draw")) %>%
-    dplyr::filter(!is.na(draw2)) %>%
-    dplyr::select(-draw) %>%
-    dplyr::rename(draw=draw2)
+# directed trips
+directed_trips<-read_csv(file.path(iterative_input_data_cd,"directed_trip_draws.csv"), show_col_types = FALSE) %>%
+  dplyr::left_join(converged, by="draw") %>%
+  dplyr::filter(!is.na(good_draw)) %>%
+  dplyr::select(-draw) %>%
+  dplyr::rename(draw=draw2)
 
-  write_feather(directed_trips, file.path(iterative_input_data_cd, paste0("directed_trips_calibration_new_", st,".feather")))
+write_csv(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")))
+
+# calibration model stats
+calib_stats<-read_rds(file.path(iterative_input_data_cd,"calibrated_model_stats_raw.rds")) %>%
+  dplyr::left_join(converged, by="draw") %>%
+  dplyr::filter(!is.na(good_draw)) %>%
+  dplyr::select(-draw) %>%
+  dplyr::rename(draw=draw2)
+write_csv(calib_stats, file.path(final_process_misc_cd, paste0("calibrated_model_stats_final.csv")))
+
+# calibration model stats
+calendar_adj<-read_csv(file.path(input_data_cd,"next year calendar adjustments.csv"), show_col_types = FALSE) %>%
+  dplyr::left_join(converged, by="draw") %>%
+  dplyr::filter(!is.na(good_draw)) %>%
+  dplyr::select(-draw) %>%
+  dplyr::rename(draw=draw2)
+write_csv(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_final.csv")))
+
+
+# Baseline year outcomes and number of choice occasions
+mode_draw <- c("pr", "fh")
+season_draw <- c("open", "closed")
+for(dr in 1:10){
+  for (md in mode_draw) {
+    for(s in season_draw) {
+
+      good_draws<-converged %>%
+        dplyr::filter(draw2==dr)
+
+      draw_orig<-mean(good_draws$draw)
+
+      # pull trip outcomes from the calibration year
+      base_outcomes_in<-read_rds(file.path(iterative_input_data_cd, paste0("base_outcomes_", s, "_", md, "_", draw_orig, ".rds"))) %>%
+        data.table::as.data.table()
+
+      write_rds(base_outcomes_in, file.path(final_process_outcomes_cd, paste0("base_outcomes_final_", s, "_", md, "_", dr, ".rds")))
+
+      # pull in data on the number of choice occasions per mode-day
+      n_choice_occasions_in<-read_rds(file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s, "_", md, "_", draw_orig, ".rds"))) %>%
+        data.table::as.data.table()
+
+      write_rds(n_choice_occasions_in, file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_", s, "_", md, "_", dr, ".rds")))
+    }
+  }
 
 }
 
@@ -209,96 +269,6 @@ for(st in statez){
 }
 length_draws <- dplyr::bind_rows(purrr::flatten(length_draw_list))
 write_csv(length_draws, file.path(iterative_input_data_cd, paste0("projected_catch_at_length_new.csv")))
-
-# After testing with projected catch data, I found no projected catch-at-length distribution for NC summer flounder.
-# This happened because there was no summer flounder catch in NC in the calibration year.
-# To fix, use length distribution from nearest state, which for NC is VA.
-
-check_size_data <- read_csv(file.path(iterative_input_data_cd, "projected_catch_at_length_new.csv"), show_col_types = FALSE) %>%
-  dplyr::mutate(domain=paste0(state, "_", species))
-unique(check_size_data$domain)
-check_size_data<-check_size_data %>% dplyr::select(-domain)
-
-# Identify rows to duplicate (e.g., where state=="MD" & species=="sf")
-rows_to_duplicate <- check_size_data %>% dplyr::filter(state=="MD" & species=="sf")
-rows_to_duplicate$state <- "NC"
-
-check_size_data<-bind_rows(check_size_data, rows_to_duplicate)
-check_size_data<-check_size_data%>% dplyr::mutate(domain=paste0(state, "_", species))
-unique(check_size_data$domain)
-check_size_data<-check_size_data %>% dplyr::select(-domain)
-write_csv(check_size_data, file.path(iterative_input_data_cd, paste0("projected_catch_at_length_new.csv")))
-
-
-
-
-# Calendar year adjustments
-statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-for(st in statez) {
-
-  good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx")) %>%
-    dplyr::filter(state==st)
-
-  calendar_adj<- readr::read_csv(file.path(iterative_input_data_cd, paste0("proj_year_calendar_adjustments_", st, ".csv")), show_col_types = FALSE) %>%
-    dplyr::filter(state == st) %>%
-    dplyr::left_join(good_draws, by=c("mode", "draw")) %>%
-    dplyr::filter(!is.na(draw2)) %>%
-    dplyr::mutate(draw=draw2)%>%
-    dplyr::select(-draw2)
-
-  write_csv(calendar_adj, file.path(iterative_input_data_cd, paste0("proj_year_calendar_adjustments_new_", st, ".csv")))
-
-}
-
-# Baseline year outcomes and number of choice occassions
-for(dr in 1:100)
-  statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-mode_draw <- c("sh", "pr", "fh")
-for(dr in 1:100){
-  for (md in mode_draw) {
-    for(st in statez) {
-      good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx")) %>%
-        dplyr::filter(state==st & mode==md & draw2==dr)
-
-      draw_orig<-mean(good_draws$draw)
-
-      # pull trip outcomes from the calibration year
-      base_outcomes_in<-feather::read_feather(file.path(iterative_input_data_cd, paste0("base_outcomes_", st, "_", md, "_", draw_orig, ".feather"))) %>%
-        data.table::as.data.table()
-
-      write_feather(base_outcomes_in, file.path(iterative_input_data_cd, paste0("base_outcomes_new_", st, "_", md, "_", dr, ".feather")))
-
-      # pull in data on the number of choice occasions per mode-day
-      n_choice_occasions_in<-feather::read_feather(file.path(iterative_input_data_cd, paste0("n_choice_occasions_", st, "_", md, "_", draw_orig, ".feather"))) %>%
-        data.table::as.data.table()
-
-      write_feather(n_choice_occasions_in, file.path(iterative_input_data_cd, paste0("n_choice_occasions_new_", st, "_", md, "_", dr, ".feather")))
-    }
-  }
-
-}
-
-# Calibration statistics (sublegal harvest/voluntary release information)
-good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx"))
-calib_comparison<-readRDS(file.path(iterative_input_data_cd, "calibrated_model_stats.rds")) %>%
-  dplyr::left_join(good_draws, by=c("state", "mode", "draw")) %>%
-  dplyr::filter(!is.na(draw2)) %>%
-  dplyr::select(-draw) %>%
-  dplyr::rename(draw=draw2)
-
-saveRDS(calib_comparison, file = file.path(iterative_input_data_cd, "calibrated_model_stats_new.rds"))
-
-
-# re-save new directed trips files as excel files to pull into Stata and compute projected catch draws
-library(writexl)
-
-statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-for(st in statez) {
-
-  directed_trips<-feather::read_feather(file.path(iterative_input_data_cd, paste0("directed_trips_calibration_new_", st, ".feather")))
-  write_xlsx(directed_trips, file.path(iterative_input_data_cd, paste0("directed_trips_calibration_new_", st, ".xlsx")))
-
-}
 
 
 # Transfer projected catch draw files from .dta to .feather

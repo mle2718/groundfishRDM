@@ -2,6 +2,8 @@
 
 * This file compiles angler demographics that enter the trip utility model 
 
+set seed $seed
+
 * Variables needed: 
 	* # days fished past 12 months - I get this from the MRIP FES 
 	* Do you like saltwater fishing more or less than other recreational activities? - I get this below from the new choice experiment 

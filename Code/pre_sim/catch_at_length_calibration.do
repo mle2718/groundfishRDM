@@ -6,6 +6,7 @@
 		 *length-weight equations that vary by season (for haddock)
 	*2) Raw proportions harvest- and discards-at-length for each species for the entire year
 	
+set seed $seed
 	
 *MRIP release data 
 cd $input_data_cd
@@ -18,7 +19,6 @@ tempfile tl1 sl1 cl1
 dsconcat $triplist
 
 sort year strat_id psu_id id_code
-*replace id_code=ID_CODE if id_code=="" & ID_CODE!=""
 drop if strmatch(id_code, "*xx*")==1
 drop if strat_id==""
 duplicates drop 
@@ -475,6 +475,7 @@ replace draw=domain3
 sort species season draw fitted_length
 
 drop _merge domain1 domain2 domain3
+
 /*
 * Graphs of the fitted observed/fitted probabilities
 * Create a local macro for unique draws 
