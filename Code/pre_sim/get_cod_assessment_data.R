@@ -63,8 +63,8 @@ dir.create(file.path(output_folder), showWarnings = FALSE)
 
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-"WGOMCod_Projections.rds"
-ProjectedNAASaveFile<-"WGOM_Cod_projected_NAA_2024Assessment.dta"
-HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_2024Assessment.dta"
+ProjectedNAASaveFile<-"WGOM_Cod_projected_NAA_from_2024Assessment.dta"
+HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_from_2024Assessment.dta"
 
 # Read in accepted model
 mod_accepted <-
@@ -83,32 +83,37 @@ model_wham_commit<-gsub(")", "", model_wham_commit)
 mod_accepted$model_name <- "Accepted"
 mod_list <- list(mod_accepted)
 
+
+
+all_packages <- installed.packages()
+
 # Install check wham commit, install proper commit if needed
 # No wham installed, install the one that matches the model_wham_commit
-if(!require("wham")){
-  remotes::install_github(glue("timjmiller/@{model_wham_commit}"), auth_token=NULL)
+if("wham" %in% all_packages[, "Package"]==FALSE){
+  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
 }
 
 if (model_wham_commit!=packageDescription("wham")$RemoteSha){
-  remotes::install_github(glue("timjmiller/@{model_wham_commit}"), auth_token=NULL)
+  cat("Installed WHAM commit is", packageDescription("wham")$RemoteSha, "does not match the \n",
+      "WHAM commit from projection model.  Changing WHAM version \n",
+      "This may take a few minutes\n")
+  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
 } else{
 }
-
-cat("Model Wham version is", model_wham_commit)
-cat("Installed wham commit is", packageDescription("wham")$RemoteSha)
-
 stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
+# keep getting a warning message about magrittr, but things seem to work.
+
+cat("Model Wham version is", model_wham_commit, "\n")
+cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
+
+
+###################################################################################
+###################################################################################
+#End WHAM commit verification
+###################################################################################
+###################################################################################
 
 library(wham)
-
-# Install the version of wham that corresponds to the version used to do the stock assessment.
-# If the result of the previous command is not "cc1264219b07dbaf07ff07e6e6d549b44addab28", you will need to
-# install the version of wham that was used to do the initial estimation.
-# pak::pak("github::timjmiller/wham@cc1264219b07dbaf07ff07e6e6d549b44addab28", ask=FALSE)
-# You should also probably restart R before running the rest of the code.
-
-
-
 
 
 ################################################################################
@@ -275,7 +280,7 @@ saveRDS(proj_list, file = file.path(output_folder,FullProjectionsSaveFile))
 # Get historical and projected NAA
 ################################################################################
 ################################################################################
-#This pulls objects out of the sdreport.
+#This pulls objects out of the sdreport. Models are stacked into the proj_list object
 std1 <- list(TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Est", report = TRUE),
              TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Std", report = TRUE))
 
@@ -298,8 +303,8 @@ historical_NAA<-exp(NAA_logmean)
 colnames(historical_NAA)<-names
 historical_NAA<-as.data.frame(cbind(year,historical_NAA))
 
-#historical_NAA <- historical_NAA %>%
-#  dplyr::filter(year<YearProj)
+historical_NAA <- historical_NAA %>%
+  dplyr::filter(year<YearProj)
 
 write_dta(historical_NAA, path=file.path(output_folder,HistoricalNAASaveFile))
 
@@ -319,15 +324,13 @@ NAA_logsd<-NAA_logsd[RowPick,]
 stopifnot(length(NAA_logmean)==length(NAA_logsd))
 
 
-# Simulate NAA
+#To "bias-correct" the lognormal you would change the SIM_NAA[[ageclass]] line to:
 NAA<-list()
 for (ageclass in 1:length(NAA_logmean)){
-  NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass],NAA_logsd[ageclass])
+  NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass]) # Feed it straight into rlnorm
 }
 
 
-#To "bias-correct" the lognormal you would change the SIM_NAA[[ageclass]] line to:
-#SIM_NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass]) # Feed it straight into rlnorm
 
 
 
