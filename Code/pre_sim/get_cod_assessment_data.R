@@ -188,6 +188,10 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 ################################################################################
 
 
+# Set some specifications ######################################################
+actual_2023_catch<-NA
+actual_2024_catch<-NA
+actual_2025_catch<-NA
 
 
 

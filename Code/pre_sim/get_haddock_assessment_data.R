@@ -119,6 +119,11 @@ set.seed(6)
 
 # Set some specifications ######################################################
 bridge_year_catch <- 2105 #GOM haddock 2024 MT PDT-supplied catch
+
+actual_2023_catch<-NA
+actual_2024_catch<-NA
+actual_2025_catch<-NA
+
 ################################################################################
 
 # Load WAA projections (specific to GOM haddock) ###############################
