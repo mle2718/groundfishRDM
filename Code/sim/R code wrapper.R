@@ -197,7 +197,6 @@ directed_trips<-read_csv(file.path(iterative_input_data_cd,"directed_trip_draws.
   dplyr::filter(!is.na(good_draw)) %>%
   dplyr::select(-draw) %>%
   dplyr::rename(draw=draw2)
-
 write_csv(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")))
 
 # calibration model stats
@@ -220,7 +219,7 @@ write_csv(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_fi
 # Baseline year outcomes and number of choice occasions
 mode_draw <- c("pr", "fh")
 season_draw <- c("open", "closed")
-for(dr in 1:10){
+for(dr in 1:5){
   for (md in mode_draw) {
     for(s in season_draw) {
 
@@ -230,16 +229,16 @@ for(dr in 1:10){
       draw_orig<-mean(good_draws$draw)
 
       # pull trip outcomes from the calibration year
-      base_outcomes_in<-read_rds(file.path(iterative_input_data_cd, paste0("base_outcomes_", s, "_", md, "_", draw_orig, ".rds"))) %>%
+      base_outcomes_in<-fst::read_fst(file.path(iterative_input_data_cd, paste0("base_outcomes_", s, "_", md, "_", draw_orig, ".fst"))) %>%
         data.table::as.data.table()
 
-      write_rds(base_outcomes_in, file.path(final_process_outcomes_cd, paste0("base_outcomes_final_", s, "_", md, "_", dr, ".rds")))
+      write_fst(base_outcomes_in, file.path(final_process_outcomes_cd, paste0("base_outcomes_final_", s, "_", md, "_", dr, ".fst")))
 
       # pull in data on the number of choice occasions per mode-day
-      n_choice_occasions_in<-read_rds(file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s, "_", md, "_", draw_orig, ".rds"))) %>%
+      n_choice_occasions_in<-fst::read_fst(file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s, "_", md, "_", draw_orig, ".fst"))) %>%
         data.table::as.data.table()
 
-      write_rds(n_choice_occasions_in, file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_", s, "_", md, "_", dr, ".rds")))
+      write_fst(n_choice_occasions_in, file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_", s, "_", md, "_", dr, ".fst")))
     }
   }
 

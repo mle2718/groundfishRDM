@@ -156,7 +156,7 @@ do "$input_code_cd\survey trip costs.do"
 		do "$input_code_cd\catch_at_length_calibration.do"
 
 // 8) Generate projection-year catch-at-length, incorporating the stock assessment data
-		do "$input_code_cd\projected_catch_at_length.do"
+		do "$input_code_cd\catch_at_length_projection.do"
 
 		
 // 9)  Estimate projected catch-per-trips at the month and mode level

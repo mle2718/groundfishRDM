@@ -179,149 +179,157 @@ save `pop_naa_calibration', replace
 	*5) Merge the age-length keys to the population numbers-at-age, compute population numbers-at-length
 
 *C1) 
-import delimited using "$input_data_cd/length_data/NEFSC trawl survey data.csv", clear
-tab stratum
-gen str5 stratum2 = string(stratum, "%05.0f")
-gen str2 stratum_group = substr(stratum2, 1, 2)   // first 2 characters
-gen str3 stratum_number = substr(stratum2, 3, 3)   // last 3 characters
+* cod 
+*****Now obtain draws of population numbers at length from AGEPRO/WHAM and translate these to numbers at length 
+*1) pull raw trawl survey data and create age-length key. M-Y has not been smoothing these data 
+		* use the last three years of data available. 
+		* by the time we update the data (~Nov. 15), there will only be spring trawl survey data from the most recent year 
+		* for now I will use the datas M-Y has pulled, but will have to pull new data for final model estimation
 
+		
+* for cod, there are few obs for age 7+
+* combine these into 6+ category
+**M-Y 2023 model:
+	*Bottomtrawl survey data from 2021-2023 to form the age-length keys.
 
-/*
-Stratum group code: 
-01 = Trawl, offshore north of Hatteras; 
-02 = BIOM; 
-03 = Trawl, inshore north of Hatteras; 
-04 = Shrimp; 
-05 = Scotian shelf; 
-06 = Shellfish; 
-07 = Trawl, inshore south of Hatteras; 
-08 = Trawl, Offshore south of Hatteras; 
-09 = MA DMF; 
-99 = Offshore deepwater (outside the stratified area)
-*/
-
-keep if inlist(stratum_group, "01", "03", "09")
-
-tostring cruise, gen(cruise2)
-gen year=substr(cruise2, 1, 4)
-destring year, replace
-
-/*
-svspp codes:
-summer flounder =103
-bsb =141
-scup =143
-*/
-
-gen species="sf" if svspp==103 
-replace species="bsb" if svspp==141 
-replace species="scup" if svspp==143 
-
-keep if $NEFSC_svy_yrs
-replace age=7 if age>=7
-
-collapse (sum) countage, by(species age length)
-rename count naa
-
-expand 9 
-bysort species length age: gen n=_n 
-gen state="MA" if n==1
-replace state="MD" if n==2
-replace state="RI" if n==3
-replace state="CT" if n==4
-replace state="NY" if n==5
-replace state="NJ" if n==6
-replace state="DE" if n==7
-replace state="VA" if n==8
-replace state="NC" if n==9
-drop n
-
-sort state species age length 
-order state species age length 
-
-
-*C2)  
-gen domain=state+"_"+species
-levelsof domain, local(domz)
-
-tempfile base
-save `base', replace
-
-clear 
-tempfile master
-save `master', emptyok
-
-foreach d of local domz{
 	
-	*local d="CT_bsb"
-	u `cal', clear 
-	su length if domain=="`d'" & fitted!=.
-	local min=`r(min)'
-	local max=`r(max)'
-	
-	clear 
-	set obs 2
-	gen length=`r(min)' if _n==1
-	replace length =`r(max)' if _n==2
-	tsset length
-	tsfill, full
-	expand 8
-	bysort length: gen age=_n
-	replace age=age-1
+* Cod ALK
 
-	tempfile range
-	save `range', replace 
-	
-	u `base', clear 
-	keep if domain=="`d'"
-	merge 1:1 length age using `range', keep(2 3) nogen
-	sort age length 
-	
-	tsset age length
-	tsfill, full
-	mvencode naa, mv(0) override 
+import delimited using "$input_data_cd/NEFSC_cruises.csv", clear 
+renvarlab, lower
+tempfile cruises
+sort year 
+save `cruises', replace 
 
-	sort age length 
-	replace domain="`d'" if domain==""
-	
+import delimited using "$input_data_cd/NEFSC_trawl_cod.csv", clear 
+renvarlab, lower
+rename count count 
+merge m:1 cruise6 using `cruises'
+*drop if age==0
+*replace age=6 if age>=6
+collapse (sum) count, by(year season svspp age length)
+tostring year, gen(year2)
+gen yr_season=year2+"_"+season
+tab yr_season if year>2020
+keep if year>2022
+collapse (sum) count, by(year age length)
+
+su year
+local min_svy_yr=`r(min)'
+local max_svy_yr=`r(max)'
+di `min_svy_yr'
+tabstat count, stat(sum) by(age)
+replace age=6 if age>=6
+collapse (sum) count, by (age length)
+drop if age==. | length==.
+
+tsset age length
+tsfill, full
+
+sort age length 
+mvencode count, mv(0) override 
 
 levelsof age, local(ages)
 foreach a of local ages{
-	
-	*su length if age==`a' & count!=0
-	*lowess count length if age==`a' & length>=`r(min)' & length<=`r(max)', adjust bwidth(.3) gen(s`a') nograph
-	lowess naa length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
-
+	lowess count length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
 	replace s`a'=0 if s`a'<=0
 }
-egen smoothed_naa=rowtotal(s0-s7)
 
-append using `master'
-save `master', replace
-clear                            
-}
+egen smoothed=rowtotal(s0-s6)
+drop s0-s6
 
-use `master', clear
+egen sum=sum(smoothed), by(age)	
+gen prop_smoothed=smoothed/sum	
 
-drop s0-s7
-drop species state
-split domain, parse(_)
-rename domain1 state
-rename domain2 species
+egen sum_raw=sum(count), by(age)	
+gen prop_raw=count/sum_raw	
 
 
-levelsof age if species=="sf" & state=="NJ", local(ages)
+levelsof age, local(ages)
 foreach a of local ages{
-twoway(scatter naa length if age==`a' & species=="sf" & state=="NJ", connect(direct) lcol(red)   lwidth(medthick)  lpat(solid) msymbol(i) ) ///
-			(scatter smoothed length if age==`a' & species=="sf" & state=="NJ", connect(direct) lcol(blue)  ///
+twoway(scatter prop_raw length if age==`a',   connect(direct) lcol(red)   lpat(solid) msymbol(i) ) ///
+			(scatter prop_smoothed length if age==`a', connect(direct) lcol(blue) title("cod age `a' NEFSC trawl `min_svy_yr'-`max_svy_yr'", size(small)) ///
 			ytitle("proportion of fish that are age-a", size(small)) ytick(, angle(horizontal) labsize(small)) xtitle(length cms, size(small)) xlab(, labsize(small)) ///
-			ylab(, labsize(small) angle(horizontal)) xtick(, labsize(small)) lwidth(medthick)  title(`a') lpat(solid) msymbol(i)  name(dom`a', replace))
+			ylab(, labsize(small) angle(horizontal)) xtick(, labsize(small)) lpat(solid) msymbol(i)  name(dom`a', replace))
  local graphnames `graphnames' dom`a'
 }
 
 grc1leg `graphnames' 
-*graph export "$figure_cd/cod_prop_length_at_age.png", as(png) replace
-*/
+graph export "$figure_cd/cod_prop_length_at_age.png", as(png) replace
+
+drop sum sum_raw
+tempfile al_cod
+save `al_cod', replace 
+
+
+
+* Haddock ALK
+
+import delimited using "$input_data_cd/NEFSC_cruises.csv", clear 
+renvarlab, lower
+tempfile cruises
+sort year 
+save `cruises', replace 
+
+import delimited using "$input_data_cd/NEFSC_trawl_hadd.csv", clear 
+renvarlab, lower
+rename count count 
+merge m:1 cruise6 using `cruises'
+*drop if age==0
+*replace age=6 if age>=6
+collapse (sum) count, by(year season svspp age length)
+tostring year, gen(year2)
+gen yr_season=year2+"_"+season
+tab yr_season if year>2020
+keep if year>2022
+collapse (sum) count, by(year age length)
+
+su year
+local min_svy_yr=`r(min)'
+local max_svy_yr=`r(max)'
+di `min_svy_yr'
+tabstat count, stat(sum) by(age)
+replace age=9 if age>=9
+collapse (sum) count, by (age length)
+drop if age==. | length==.
+
+tsset age length
+tsfill, full
+
+sort age length 
+mvencode count, mv(0) override 
+
+levelsof age, local(ages)
+foreach a of local ages{
+	lowess count length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
+	replace s`a'=0 if s`a'<=0
+}
+
+egen smoothed=rowtotal(s0-s9)
+drop s0-s9
+
+egen sum=sum(smoothed), by(age)	
+gen prop_smoothed=smoothed/sum	
+
+egen sum_raw=sum(count), by(age)	
+gen prop_raw=count/sum_raw	
+
+
+levelsof age, local(ages)
+foreach a of local ages{
+twoway(scatter prop_raw length if age==`a',   connect(direct) lcol(red)   lpat(solid) msymbol(i) ) ///
+			(scatter prop_smoothed length if age==`a', connect(direct) lcol(blue) title("haddock age `a' NEFSC trawl `min_svy_yr'-`max_svy_yr'", size(small)) ///
+			ytitle("proportion of fish that are age-a", size(small)) ytick(, angle(horizontal) labsize(small)) xtitle(length cms, size(small)) xlab(, labsize(small)) ///
+			ylab(, labsize(small) angle(horizontal)) xtick(, labsize(small)) lpat(solid) msymbol(i)  name(dom`a', replace))
+ local graphnames `graphnames' dom`a'
+}
+
+grc1leg `graphnames' 
+graph export "$figure_cd/hadd_prop_length_at_age.png", as(png) replace
+
+drop sum sum_raw
+tempfile al_hadd
+save `al_hadd', replace 
 
 
 *C3)  
