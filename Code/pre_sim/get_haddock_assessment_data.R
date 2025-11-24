@@ -110,7 +110,7 @@ library(wham)
 periods<-12 # there are 12 months in a year
 # Which year do you want a projection for, How many projections? Set a seed.
 YearProj<-2026
-num_NAA_draws<-10000
+num_NAA_draws<-500
 set.seed(6)
 ###########End Housekeeping#####################################################
 
