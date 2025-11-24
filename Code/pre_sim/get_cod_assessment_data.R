@@ -188,23 +188,23 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 ################################################################################
 
 
-# Define catch in previous years  ######################################################
+# Define catch in previous years######################################################
 # I use GARFOs quota monitoring page for Rec, since the FY catch is equal to the CY catch.
 # Doesn't quite work for commercial
 
-actual_2023_commercial_catch<-438
-actual_2024_commercial_catch<-550
-actual_2025_commercial_catch<-NA
+actual_2023_commercial_catch_mt<-438
+actual_2024_commercial_catch_mt<-550
+actual_2025_commercial_catch_mt<-NA
 
-actual_2023_rec_catch<-192 # From GARFO quota monitoring report
-actual_2024_rec_catch<-72
-actual_2025_rec_catch<-NA
+actual_2023_rec_catch_mt<-192 # From GARFO quota monitoring report
+actual_2024_rec_catch_mt<-72
+actual_2025_rec_catch_mt<-NA
 
 
-actual_2023_catch<-actual_2023_commercial_catch+actual_2023_rec_catch
-actual_2024_catch<-actual_2024_commercial_catch+actual_2024_rec_catch
+actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
+actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 # 2025 not used (yet)
-# actual_2025_catch<-actual_2025_commercial_catch+actual_2025_rec_catch
+# actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
 
 
 
@@ -220,7 +220,7 @@ set_specs <- function(mod) {
          scenario    = c("0.75Fmsy (2025-2027)"), #Scenario 2 from the original projections. This is just a string.
          n.yrs       = rep(list(4), times = 1),   # Number of years is set in in (list(numyears)). Number of scenarios is set with times
          proj_F_opt  = list(c(5, 5, 4, 4)),  # length=numyears.  stack on different things to make different projections. 5=metric tons, 4=an instantanous fishing mortality rate (F)
-         proj_Fcatch = list(c(actual_2023_catch, actual_2024_catch, rep(0.75 * Fmsy, 2))) #2 # length=numyears
+         proj_Fcatch = list(c(actual_2023_catch_mt, actual_2024_catch_mt, rep(0.75 * Fmsy, 2))) #2 # length=numyears
     )
 }
 

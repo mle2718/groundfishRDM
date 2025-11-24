@@ -123,20 +123,20 @@ old_bridge_year_catch <- 2105 #GOM haddock 2024 MT PDT-supplied catch
 # I use GARFOs quota monitoring page for Rec, since the FY catch is equal to the CY catch.
 # Doesn't quite work for commercial
 
-actual_2023_commercial_catch<-2277
-actual_2024_commercial_catch<-1405
-actual_2025_commercial_catch<-NA
+actual_2023_commercial_catch_mt<-2277
+actual_2024_commercial_catch_mt<-1405
+actual_2025_commercial_catch_mt<-NA
 
-actual_2023_rec_catch<-793 # From GARFO quota monitoring report
-actual_2024_rec_catch<-899
-actual_2025_rec_catch<-NA
+actual_2023_rec_catch_mt<-793 # From GARFO quota monitoring report
+actual_2024_rec_catch_mt<-899
+actual_2025_rec_catch_mt<-NA
 
 
-actual_2023_catch<-actual_2023_commercial_catch+actual_2023_rec_catch
-actual_2024_catch<-actual_2024_commercial_catch+actual_2024_rec_catch
+actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
+actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 
 # 2025 not used yet.
-# actual_2025_catch<-actual_2025_commercial_catch+actual_2025_rec_catch
+# actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
 
 
 ################################################################################
@@ -196,8 +196,8 @@ set_specs <- function(mod, bridge_year_catch) {
          )
 }
 
-# pass in "actual_2024_catch"
-proj.opts_list2 <- map_df(mod_list, .f = set_specs, actual_2024_catch)
+# pass in "actual_2024_catch_mt"
+proj.opts_list2 <- map_df(mod_list, .f = set_specs, actual_2024_catch_mt)
 
 
 # Run projections ##############################################################
