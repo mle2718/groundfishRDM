@@ -5,9 +5,10 @@
 # It also needs some parameters that come out of the stock assessment.
 # This code does just 1 projection.
 # 2) 75%Fmsy 2025-2027 (potential ABCs)
-# Bridging is done by picking the last row of "agg_catch" from the projection
+# Bridging was originally done by picking the last row of "agg_catch" from the projection
 # for 2023 and 2024
-# This is pretty standard.
+# I've modified it to pass in numbers for 2023 and 2024 based on recent data updates
+
 # Some inputs to ASAP are scalars, some are vectors, and some are matrices.
 # I use tail(.x, 1) to pick the last "thing" of a vector or matrix, which is usually the final year of data.
 
@@ -86,13 +87,12 @@ mod_list <- list(mod_accepted)
 
 
 all_packages <- installed.packages()
-
-# Install check wham commit, install proper commit if needed
 # No wham installed, install the one that matches the model_wham_commit
 if("wham" %in% all_packages[, "Package"]==FALSE){
   remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
 }
 
+# Check the commit of the current WHAM. Install a different version if needed
 if (model_wham_commit!=packageDescription("wham")$RemoteSha){
   cat("Installed WHAM commit is", packageDescription("wham")$RemoteSha, "does not match the \n",
       "WHAM commit from projection model.  Changing WHAM version \n",
@@ -127,7 +127,7 @@ asap3 <- read_asap3_dat(file.path(input_folder,ASAP_file_in))
 # Placeholders and parameters
 periods<-12 # there are 12 months in a year
 # Which year do you want a projection for, How many projections? Set a seed.
-YearProj<-2025
+YearProj<-2026
 num_NAA_draws<-10000
 set.seed(6)
 
@@ -188,17 +188,30 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 ################################################################################
 
 
-# Set some specifications ######################################################
-actual_2023_catch<-NA
-actual_2024_catch<-NA
-actual_2025_catch<-NA
+# Define catch in previous years  ######################################################
+# I use GARFOs quota monitoring page for Rec, since the FY catch is equal to the CY catch.
+# Doesn't quite work for commercial
+
+actual_2023_commercial_catch<-438
+actual_2024_commercial_catch<-550
+actual_2025_commercial_catch<-NA
+
+actual_2023_rec_catch<-192 # From GARFO quota monitoring report
+actual_2024_rec_catch<-72
+actual_2025_rec_catch<-NA
+
+
+actual_2023_catch<-actual_2023_commercial_catch+actual_2023_rec_catch
+actual_2024_catch<-actual_2024_commercial_catch+actual_2024_rec_catch
+# 2025 not used (yet)
+# actual_2025_catch<-actual_2025_commercial_catch+actual_2025_rec_catch
 
 
 
 ###################################PROJECTIONS #################################
 # Set specs ####################################################################
 set_specs <- function(mod) {
-  bridge <- sum(tail(mod$env$data$agg_catch,1)) #Catch in the last year of the assessment
+  #bridge <- sum(tail(mod$env$data$agg_catch,1)) #Catch in the last year of the assessment
   Fmsy <- exp(mod$rep$log_FXSPR_static)         #FMSY
 
 
@@ -207,7 +220,7 @@ set_specs <- function(mod) {
          scenario    = c("0.75Fmsy (2025-2027)"), #Scenario 2 from the original projections. This is just a string.
          n.yrs       = rep(list(4), times = 1),   # Number of years is set in in (list(numyears)). Number of scenarios is set with times
          proj_F_opt  = list(c(5, 5, 4, 4)),  # length=numyears.  stack on different things to make different projections. 5=metric tons, 4=an instantanous fishing mortality rate (F)
-         proj_Fcatch = list(c(bridge, bridge, rep(0.75 * Fmsy, 2))) #2 # length=numyears
+         proj_Fcatch = list(c(actual_2023_catch, actual_2024_catch, rep(0.75 * Fmsy, 2))) #2 # length=numyears
     )
 }
 

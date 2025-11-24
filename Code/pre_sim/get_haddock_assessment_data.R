@@ -11,7 +11,8 @@
 
 # The bioeconomic model needs a few parameters that go into the stock assessment.
 # It also needs some parameters that come out of the stock assessment.
-# Bridging (2024 removals) is set at 2105mt, following the groundfish PDT
+# Bridging (2024 removals) was orginally set at 2105mt, following the groundfish PDT
+# I've updated it to 2024 actuals
 # This is pretty standard.
 # Some inputs to ASAP are scalars, some are vectors, and some are matrices.
 # I use tail(.x, 1) to pick the last "thing" of a vector or matrix, which is usually the final year of data.
@@ -73,26 +74,26 @@ model_wham_commit<-gsub(")", "", model_wham_commit)
 mod_accepted$model_name <- "Accepted"
 mod_list <- list(mod_accepted)
 
+
+
 all_packages <- installed.packages()
 
-
-# Install check wham commit, install proper commit if needed
 # No wham installed, install the one that matches the model_wham_commit
 if("wham" %in% all_packages[, "Package"]==FALSE){
   remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
 }
 
-
-
+# Check the commit of the current WHAM. Install a different version if needed
 if (model_wham_commit!=packageDescription("wham")$RemoteSha){
-  cat("The installed WHAM commit is", packageDescription("wham")$RemoteSha, ". \n It does  not match the
-      WHAM commit from projection model (",model_wham_commit,"). \n Changing WHAM version. This may take a few minutes.\n")
+  cat("Installed WHAM commit is", packageDescription("wham")$RemoteSha, "does not match the \n",
+      "WHAM commit from projection model.  Changing WHAM version \n",
+      "This may take a few minutes\n")
   remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
 } else{
 }
+stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
 # keep getting a warning message about magrittr, but things seem to work.
 
-stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
 
 cat("Model Wham version is", model_wham_commit, "\n")
 cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
@@ -108,7 +109,7 @@ library(wham)
 # Placeholders and parameters
 periods<-12 # there are 12 months in a year
 # Which year do you want a projection for, How many projections? Set a seed.
-YearProj<-2025
+YearProj<-2026
 num_NAA_draws<-10000
 set.seed(6)
 ###########End Housekeeping#####################################################
@@ -117,12 +118,26 @@ set.seed(6)
 
 
 
-# Set some specifications ######################################################
-bridge_year_catch <- 2105 #GOM haddock 2024 MT PDT-supplied catch
+# Define catch in previous years  ######################################################
+old_bridge_year_catch <- 2105 #GOM haddock 2024 MT PDT-supplied catch
+# I use GARFOs quota monitoring page for Rec, since the FY catch is equal to the CY catch.
+# Doesn't quite work for commercial
 
-actual_2023_catch<-NA
-actual_2024_catch<-NA
-actual_2025_catch<-NA
+actual_2023_commercial_catch<-2277
+actual_2024_commercial_catch<-1405
+actual_2025_commercial_catch<-NA
+
+actual_2023_rec_catch<-793 # From GARFO quota monitoring report
+actual_2024_rec_catch<-899
+actual_2025_rec_catch<-NA
+
+
+actual_2023_catch<-actual_2023_commercial_catch+actual_2023_rec_catch
+actual_2024_catch<-actual_2024_commercial_catch+actual_2024_rec_catch
+
+# 2025 not used yet.
+# actual_2025_catch<-actual_2025_commercial_catch+actual_2025_rec_catch
+
 
 ################################################################################
 
@@ -155,20 +170,12 @@ mod_accepted$model_name <- model_name
 mod_list <- list(mod_accepted)
 
 # Set specs ####################################################################
+# If I want to pass in a different catch for 2025, I can just modify this to have 2 args bridge_year_catch1, bridge_year_catch2 or something
+# Also would need to set the proj_F_opt option accordingly.
+
 set_specs <- function(mod, bridge_year_catch) {
 
   Fmsy <- exp(mod$rep$log_FXSPR_static)
-  #I think this is unused.
-  catch2025 <-
-    project_wham(model = mod,
-                 proj.opts = list(n.yrs = 2,
-                                  proj_F_opt = c(5, 4),
-                                  proj_Fcatch = c(bridge_year_catch, 0.75 * Fmsy)),
-                 do.sdrep = F, MakeADFun.silent = T,
-                 check.version = FALSE)$rep$
-    pred_catch[mod$env$data$n_years_model + 2, ] %>%
-    sum()
-
 
   proj.opts_list <-
     list(Model = rep(mod$model_name, times = 2),
@@ -189,7 +196,8 @@ set_specs <- function(mod, bridge_year_catch) {
          )
 }
 
-proj.opts_list2 <- map_df(mod_list, .f = set_specs, bridge_year_catch)
+# pass in "actual_2024_catch"
+proj.opts_list2 <- map_df(mod_list, .f = set_specs, actual_2024_catch)
 
 
 # Run projections ##############################################################
@@ -307,9 +315,10 @@ ggplot(proj2plot %>% filter(variable %in% c("Catch (Total)", "SSB")),
 ################################################################################
 ################################################################################
 #This pulls objects out of the sdreport. Models are stacked into the proj_list object
-std1 <- list(TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Est", report = TRUE),
-             TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Std", report = TRUE))
-year<-proj_list[[1]]$years_full
+# this is pulling out the 2nd model (75% FMSY)
+std1 <- list(TMB:::as.list.sdreport(proj_list[[2]]$sdrep, what = "Est", report = TRUE),
+             TMB:::as.list.sdreport(proj_list[[2]]$sdrep, what = "Std", report = TRUE))
+year<-proj_list[[2]]$years_full
 
 # Extract the mean and std dev of log_NAA from the results.
 # the 1st dimension of this array contains stock, the second contains region.
@@ -320,16 +329,20 @@ NAA_logsd<-std1[[2]]$log_NAA_rep[1,1,,]
 #column names
 names<-paste0("age",1:ncol(NAA_logmean))
 
-TerminalAssess<-tail(mod$years_full,1)
+TerminalAssess<-tail(mod_accepted$years_full,1)
 
 
 # Construct a dataframe of historical Numbers at Age
 historical_NAA<-exp(NAA_logmean)
-historical_NAA2<-exp(NAA_logmean)*exp((NAA_logsd^2)/2)
+#historical_NAA2<-exp(NAA_logmean)*exp((NAA_logsd^2)/2)
 
 
 colnames(historical_NAA)<-names
 historical_NAA<-as.data.frame(cbind(year,historical_NAA))
+# colnames(historical_NAA2)<-names
+#historical_NAA2<-as.data.frame(cbind(year,historical_NAA2))
+
+
 
 historical_NAA <- historical_NAA %>%
   dplyr::filter(year<YearProj)
@@ -354,8 +367,7 @@ stopifnot(length(NAA_logmean)==length(NAA_logsd))
 
 # Simulate NAA
 NAA<-list()
-byhand<-list()
-byhand2<-list()
+
 
 for (ageclass in 1:length(NAA_logmean)){
   NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass])
