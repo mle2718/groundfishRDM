@@ -810,11 +810,7 @@ renvarlab `r(varlist)', postfix(_mrip)
 save "$input_data_cd\mrip_dtrip_by_mode_month.dta", replace 
 
 
-
-
-
-
-* estimates by mode and open season
+* estimates by mode and summer/winter season
 cd $input_data_cd
 
 clear
@@ -930,8 +926,8 @@ replace area_s=nmfs_stock_area if st2=="25"
 
 replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
-gen season= "open" if inlist(month1, "09", "10")
-replace season="closed" if !inlist(month1, "09", "10")
+gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
+replace season="summer" if inlist(month, "05", "06", "07", "08")
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
 gen my_dom_id_string=season+"_"+mode1+"_"+ dom_id

@@ -359,7 +359,6 @@ save `props', replace
 * Now create baseline catch at lengths by pulling in the simulated harvest and release data 
 u "$input_data_cd\simulated_catch_totals_for_catch_length.dta", clear 
 keep tot_cod_keep_sim tot_cod_rel_sim tot_hadd_keep_sim tot_hadd_rel_sim  draw season
-keep if draw<=$ndraws
 
 preserve 
 keep draw season tot_cod_keep_sim tot_cod_rel_sim

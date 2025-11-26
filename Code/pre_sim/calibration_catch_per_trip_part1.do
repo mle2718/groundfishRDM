@@ -948,8 +948,8 @@ replace area_s=nmfs_stock_area if st2=="25"
 
 replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
-gen season= "open" if inlist(month, "09", "10")
-replace season="closed" if !inlist(month, "09", "10")
+gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
+replace season="summer" if inlist(month, "05", "06", "07", "08")
 
 gen my_dom_id_string=season+"_"+mode1+"_"+common_dom
 

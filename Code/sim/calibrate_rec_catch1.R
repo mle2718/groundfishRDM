@@ -29,7 +29,7 @@ dtripz<-read_csv(file.path(iterative_input_data_cd,"directed_trip_draws.csv"), s
   dplyr::select(mode, day, cod_bag, cod_min, hadd_bag,hadd_min, dtrip) %>%
   dplyr::filter(mode == md) %>%
   dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10), "open", "closed"))
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer"))
 
 cod_min_size_FY<-min(dtripz$cod_min)
 hadd_min_size_FY<-min(dtripz$hadd_min)
@@ -39,7 +39,7 @@ dtripz<-dtripz %>%
 
 catch_data <- haven::read_dta(file.path(iterative_input_data_cd, paste0("calib_catch_draws_", i,".dta"))) %>%
   dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10), "open", "closed")) %>%
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
   dplyr::filter(mode==md) %>%
   dplyr::filter(season==s) %>%
   dplyr::select(-season, -day) %>%

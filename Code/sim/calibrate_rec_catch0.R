@@ -7,8 +7,8 @@
 # i<-3
 
 mode_draw <- c("pr", "fh")
-draws <- 1:10
-season_draw <- c("open", "closed")
+draws <- 1:15
+season_draw <- c("summer", "winter")
 
 # mode_draw <- c("pr")
 # draws <- 1:n_simulations
@@ -32,12 +32,12 @@ for (s in season_draw) {
         dplyr::select(mode, day, cod_bag, cod_min, hadd_bag,hadd_min, dtrip) %>%
         dplyr::filter(mode == md) %>%
         dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                      season = ifelse(lubridate::month(date) %in% c(9, 10), "open", "closed")) %>%
+                      season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
         dplyr::filter(season == s)
 
       catch_data <- haven::read_dta(file.path(iterative_input_data_cd, paste0("calib_catch_draws_", i,".dta"))) %>%
         dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                      season = ifelse(lubridate::month(date) %in% c(9, 10), "open", "closed")) %>%
+                      season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
         dplyr::filter(mode==md) %>%
         dplyr::filter(season==s) %>%
         dplyr::select(-season, -day) %>%
@@ -507,7 +507,7 @@ calib_comparison_combined <- do.call(rbind, calib_comparison)
 calib_comparison_combined<-calib_comparison_combined %>%
   dplyr::select(season, mode, species, draw, everything())
 
-write_csv(calib_comparison_combined, file.path(iterative_input_data_cd, "calibration_comparison.csv"))
+write_fst(calib_comparison_combined, file.path(iterative_input_data_cd, "calibration_comparison.fst"))
 
 
 

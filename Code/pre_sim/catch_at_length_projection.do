@@ -3,15 +3,16 @@
 
  
 * A) First generate 2024 catch-at-lengths. I do this by:
-	* 1) Pull in simulated total catch by species and state
+	* 1) Pull in simulated total catch by domain
 	* 2) pull in the fitted catch-at-length probabilities. 
-	* 3) multiply 2)  by each state's total catch
+	* 3) multiply 2)  by each domain's total catch
 
-* A1) 
-* Simulated total catch by state and species 	
+* a1) 
+* Import simulated total catch by season and species 	
 set seed $seed
 
 use "$input_data_cd\simulated_catch_totals.dta", clear 
+keep if draw<= $ndraws
 
 collapse (sum)  tot_cod_cat_sim tot_hadd_cat_sim, by(season draw)
 
@@ -29,14 +30,15 @@ sort draw species season
 tempfile catch2024
 save `catch2024', replace 
 
-*A2) 
+*a2) 
 import delimited using "$input_data_cd/baseline_catch_at_length.csv", clear  
+keep if draw<= $ndraws
 sort draw season species length
 
 merge m:1 species season draw using `catch2024'
 drop _merge
 
-*A3) 
+*a3) 
 gen cal=tot*fitted
 sort draw season species length
 
@@ -46,155 +48,16 @@ tempfile cal
 save `cal', replace 
 
 
-* B) Compute population numbers-at-length in the calibration year (2024)
-	* 1) Pull in pop dy.'s Jan 1. 2024 numbers-at-age for the three species. Fluke and scup are one stock, black sea bass split between North and South
-	* 2) Randomly sample 110 draws from these distributions
-	* 3) Duplicate these distributions by state such that they can be merged to the catch-at-length distributions by state
+*B) Create age-length keys from NEFSC trawl survey data
+	*b1) Pull in NEFSC trawl survey data from the last three years of data available
+	*b2) Smooth counts across age classes over the range of observed catch-at-lengths for a given state-species using a LOWESS bandwidth=0.3
+	*b3) Compute the proportion of fish of age a that are length l
 
 
-	
-* B1) and B2) 
-* Import baseline year population numbers-at-age data, randomly select NAA draws
+* Cod 
+* for cod, there are few obs for age 7+, combine these into 6+ category
 
-import delimited using "$input_data_cd/length_data/J1_2024Summer_Flounder.csv", clear
-gen species="sf"
-gen region="all"
-duplicates drop 
-drop year
-sample $ndraws, count
-gen draw=_n
-tempfile sf
-save `sf', replace 
-
-import delimited using "$input_data_cd/length_data/J1_2024Scup.csv", clear
-gen species="scup"
-gen region="all"
-duplicates drop 
-drop year
-sample $ndraws, count
-gen draw=_n
-tempfile scup
-save `scup', replace 
-
-import delimited using "$input_data_cd/length_data/fit_NAA_NORTH_2024.csv", clear
-gen species="bsb"
-gen region="north"
-duplicates drop 
-sample $ndraws, count
-replace draw=_n
-forv i=0(1)7{
-	local v = `i'+1
-	rename v`v' a`i'
-		
-}
-
-tempfile bsbN
-save `bsbN', replace 
-
-import delimited using "$input_data_cd/length_data/fit_NAA_SOUTH_2024.csv", clear
-gen species="bsb"
-gen region="south"
-duplicates drop 
-sample $ndraws, count
-replace draw=_n
-
-forv i=0(1)7{
-	local v = `i'+1
-	rename v`v' a`i'
-		
-}
-egen rowtotal=rowtotal(a0-a7)
-tempfile bsbS
-save `bsbS', replace 
-
-append using `bsbN'
-append using `scup'
-append using `sf'
-order species region draw
-
-reshape long a, i(species region draw) j(age) string
-destring age, replace
-rename a pop_naa
-
-preserve
-rename pop_naa pop_naa_2024
-replace pop_naa_2024=pop_naa_2024*1000
-tempfile pop2024
-save `pop2024', replace
-restore
-
-
-*B3) 
-expand 4 if species=="bsb" & region=="north"
-bysort draw species region age: gen n=_n 
-gen  state="MA" if species=="bsb" & region=="north" & n==1
-replace state="RI" if species=="bsb" & region=="north" & n==2
-replace state="CT" if species=="bsb" & region=="north" & n==3
-replace state="NY" if species=="bsb" & region=="north" & n==4
-drop n
-
-expand 5 if species=="bsb" & region=="south"
-bysort draw species region age: gen n=_n 
-replace  state="NJ" if species=="bsb" & region=="south" & n==1
-replace state="DE" if species=="bsb" & region=="south" & n==2
-replace state="VA" if species=="bsb" & region=="south" & n==3
-replace state="MD" if species=="bsb" & region=="south" & n==4
-replace state="NC" if species=="bsb" & region=="south" & n==5
-drop n
-
-expand 9 if species=="sf"
-bysort draw species region age: gen n=_n 
-replace  state="MA" if species=="sf" & n==1
-replace state="RI" if species=="sf" & n==2
-replace state="CT" if species=="sf" & n==3
-replace state="NY" if species=="sf" & n==4
-replace state="NC" if species=="sf" & n==5
-replace  state="NJ" if species=="sf"& n==6
-replace state="DE" if species=="sf" & n==7
-replace state="VA" if species=="sf" & n==8
-replace state="MD" if species=="sf" & n==9
-drop n
-
-expand 9 if species=="scup"
-bysort draw species region age: gen n=_n 
-replace  state="MA" if species=="scup" & n==1
-replace state="RI" if species=="scup" & n==2
-replace state="CT" if species=="scup" & n==3
-replace state="NY" if species=="scup" & n==4
-replace state="NC" if species=="scup" & n==5
-replace  state="NJ" if species=="scup"& n==6
-replace state="DE" if species=="scup" & n==7
-replace state="VA" if species=="scup" & n==8
-replace state="MD" if species=="scup" & n==9
-
-tempfile pop_naa_calibration
-save `pop_naa_calibration', replace 
-
-
-*C) Create age-length keys from NEFSC trawl survey data
-	*1) Pull in NEFSC trawl survey data
-	*2) Smooth counts across age classes over the range of observed catch-at-lengths for a given state-species using a LOWESS bandwidth=0.3
-	*3) Compute the proportion of fish of age a that are length l
-	*4) Expand to the number of draws used in the simulation 
-	*5) Merge the age-length keys to the population numbers-at-age, compute population numbers-at-length
-
-*C1) 
-* cod 
-*****Now obtain draws of population numbers at length from AGEPRO/WHAM and translate these to numbers at length 
-*1) pull raw trawl survey data and create age-length key. M-Y has not been smoothing these data 
-		* use the last three years of data available. 
-		* by the time we update the data (~Nov. 15), there will only be spring trawl survey data from the most recent year 
-		* for now I will use the datas M-Y has pulled, but will have to pull new data for final model estimation
-
-		
-* for cod, there are few obs for age 7+
-* combine these into 6+ category
-**M-Y 2023 model:
-	*Bottomtrawl survey data from 2021-2023 to form the age-length keys.
-
-	
-* Cod ALK
-
+*b1) 
 import delimited using "$input_data_cd/NEFSC_cruises.csv", clear 
 renvarlab, lower
 tempfile cruises
@@ -205,8 +68,6 @@ import delimited using "$input_data_cd/NEFSC_trawl_cod.csv", clear
 renvarlab, lower
 rename count count 
 merge m:1 cruise6 using `cruises'
-*drop if age==0
-*replace age=6 if age>=6
 collapse (sum) count, by(year season svspp age length)
 tostring year, gen(year2)
 gen yr_season=year2+"_"+season
@@ -229,6 +90,7 @@ tsfill, full
 sort age length 
 mvencode count, mv(0) override 
 
+*b2) 
 levelsof age, local(ages)
 foreach a of local ages{
 	lowess count length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
@@ -241,10 +103,11 @@ drop s0-s6
 egen sum=sum(smoothed), by(age)	
 gen prop_smoothed=smoothed/sum	
 
+*b3) 
 egen sum_raw=sum(count), by(age)	
 gen prop_raw=count/sum_raw	
 
-
+/*
 levelsof age, local(ages)
 foreach a of local ages{
 twoway(scatter prop_raw length if age==`a',   connect(direct) lcol(red)   lpat(solid) msymbol(i) ) ///
@@ -256,15 +119,16 @@ twoway(scatter prop_raw length if age==`a',   connect(direct) lcol(red)   lpat(s
 
 grc1leg `graphnames' 
 graph export "$figure_cd/cod_prop_length_at_age.png", as(png) replace
+*/
 
+drop if age==0
 drop sum sum_raw
 tempfile al_cod
 save `al_cod', replace 
 
 
-
-* Haddock ALK
-
+* Haddock ALK - age 1 through 9 
+*b1) 
 import delimited using "$input_data_cd/NEFSC_cruises.csv", clear 
 renvarlab, lower
 tempfile cruises
@@ -275,8 +139,6 @@ import delimited using "$input_data_cd/NEFSC_trawl_hadd.csv", clear
 renvarlab, lower
 rename count count 
 merge m:1 cruise6 using `cruises'
-*drop if age==0
-*replace age=6 if age>=6
 collapse (sum) count, by(year season svspp age length)
 tostring year, gen(year2)
 gen yr_season=year2+"_"+season
@@ -299,6 +161,7 @@ tsfill, full
 sort age length 
 mvencode count, mv(0) override 
 
+*b2) 
 levelsof age, local(ages)
 foreach a of local ages{
 	lowess count length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
@@ -308,13 +171,14 @@ foreach a of local ages{
 egen smoothed=rowtotal(s0-s9)
 drop s0-s9
 
+*b3) 
 egen sum=sum(smoothed), by(age)	
 gen prop_smoothed=smoothed/sum	
 
 egen sum_raw=sum(count), by(age)	
 gen prop_raw=count/sum_raw	
 
-
+/*
 levelsof age, local(ages)
 foreach a of local ages{
 twoway(scatter prop_raw length if age==`a',   connect(direct) lcol(red)   lpat(solid) msymbol(i) ) ///
@@ -326,90 +190,105 @@ twoway(scatter prop_raw length if age==`a',   connect(direct) lcol(red)   lpat(s
 
 grc1leg `graphnames' 
 graph export "$figure_cd/hadd_prop_length_at_age.png", as(png) replace
+*/
 
+drop if age==0
 drop sum sum_raw
 tempfile al_hadd
 save `al_hadd', replace 
 
 
-*C3)  
-egen sum_smooth=sum(smoothed_naa), by(age species state)	
-gen prop_smoothed=smoothed/sum	
+*C) compute rec selectivity
+	* c1) pull in historcial NAA
+	* c2) translate ages to lengths using the age-length keys
+	* c3) merge numbers-at-length to catch-at-length
+	* c4) apply adjusmtnet code when catch-at-length is greater than numbers-at-length 
+	* c5) compute rec selectivity ql=CAL/NAL
+	
+* c1) cod
+use "$input_data_cd/WGOM_Cod_historical_NAA_from_2024Assessment.dta", clear 
 
-egen sum_raw=sum(naa), by(age species state)	
-gen prop_raw=naa/sum_raw	
-drop sum*		
+egen age6_plus=rowtotal(age6-age9)
+drop age6 age7 age8 age9
+rename age6 age6
+keep if year==2025
+reshape long age, i(year) j(new)
+rename age nfish
+rename new age 
+drop year 
 
-*C4) 
-expand $ndraws
-bysort length age species state: gen draw=_n
+* c2) cod
+merge 1:m age using `al_cod', keep(3) nogen 
+sort  age length
 
-tempfile age_length
-save `age_length', replace
+gen NaL_from_raw_trawl = prop_raw*nfish
+gen NaL_from_smooth_trawl = prop_smoothed*nfish
 
-*C5)  
-merge m:1 species state age draw using `pop_naa_calibration'
-replace pop_naa=pop_naa*1000
+drop count  prop* nfish smoothed
+collapse (sum) NaL*, by(length)
 
-sort draw species state age length   
+sort length 
+gen species="cod"
+expand 2, gen(dup)
+gen season="winter" if dup==0
+replace season="summer" if dup==1
+drop dup
 
-gen nal=pop_naa*prop_smoothed
+tempfile naa_cod
+save `naa_cod', replace 
 
-collapse (sum) nal, by(draw species state length)
+* c1) haddock 
+use "$input_data_cd/GOM_Haddock_historical_NAA_2024Assessment.dta", clear 
 
-preserve
-*collapse (mean) nal, by(state species length)
-rename length length3 
-tempfile nal_2024
-save `nal_2024', replace
-restore
+keep if year==2025
+reshape long age, i(year) j(new)
+rename age nfish
+rename new age 
+drop year 
 
-/*
-gen nal_1000=nal/1000
-graph box nal_1000 if species=="bsb" & state=="CT", over(length, label(labsize(vsmall))) title("2024 numbers-at-length, BSB North") 
-graph export "$figure_cd/bsb_north_nal_2024.png", as(png) replace
+* c2) haddock
+merge 1:m age using `al_hadd', keep(3) nogen 
+sort  age length
 
-graph box nal_1000 if species=="bsb" & state=="MD", over(length, label(labsize(vsmall))) title("2024 numbers-at-length, BSB South") 
-graph export "$figure_cd/bsb_south_nal_2024.png", as(png) replace
+gen NaL_from_raw_trawl = prop_raw*nfish
+gen NaL_from_smooth_trawl = prop_smoothed*nfish
 
-graph box nal_1000 if species=="scup" & state=="NY", over(length, label(labsize(vsmall))) title("2024 numbers-at-length, Scup") 
-graph export "$figure_cd/scup_nal_2024.png", as(png) replace
+drop count  prop* nfish smoothed
+collapse (sum) NaL*, by(length)
 
-graph box nal_1000 if species=="sf" & state=="NY", over(length, label(labsize(vsmall))) title("2024 numbers-at-length, SF") 
-graph export "$figure_cd/sf_nal_2024.png", as(png) replace
-drop nal_1000
-*/
+sort length 
+gen species="hadd"
+expand 2, gen(dup)
+gen season="winter" if dup==0
+replace season="summer" if dup==1
+drop dup
 
-order draw state species length nal
-sort draw state species length nal
+append using  `naa_cod'
+replace NaL_from_raw_trawl=NaL_from_raw_trawl*1000
+replace NaL_from_smooth_trawl=NaL_from_smooth_trawl*1000
 
-tempfile nal
-save `nal', replace 
+* c3) both species
+merge 1:m species season length using `cal', keep(2 3)
+drop if draw==.
 
-
-*D) Compute recreational selectivity 
-	*1) Adjust the catch-at-length and population numbers-at-length data such that for a given length, 
-	*    catch is not greater than the population number. I do this by essentially creating plus groups of lengths until NaL>CaL. 
+*c4)  Adjust the catch-at-length and population numbers-at-length data such that for a given length, 
+	*    catch is not greater than the population number. I do this by creating plus groups of lengths until NaL>CaL. 
     *    For these plus groups, I retain the original proportion of fish caught by length and will merge this back into the project CaL. 
 
-
-*Merge back to catch-at-lengths
-merge 1:1 species state draw length using `cal'
-
 tostring draw, gen(draw2)
-gen domain2=state+"_"+species+"_"+draw2
+gen domain2=season+"_"+species+"_"+draw2
 drop if length==.
 
-mvencode nal cal, mv(0) override
-gen tab=1 if cal>nal & cal!=0
+mvencode NaL* cal, mv(0) override
+gen tab=1 if cal>NaL_from_smooth_trawl & cal!=0
 egen sumtab=sum(tab), by(domain2)
-
+sort species season draw length 
 
 gen length2=length 
 levelsof domain2 if sumtab>0, local(domz)
 foreach d of local domz{
 	
-	su length if domain2=="`d'" & nal!=0
+	su length if domain2=="`d'" & NaL_from_smooth_trawl!=0
 	local max=`r(max)'
 	local min=`r(min)'
 
@@ -417,16 +296,22 @@ foreach d of local domz{
 	replace length2=`min' if length<`min' & domain2=="`d'" 
 	
 }
-sort draw state species length 
+sort draw season species length 
 egen cal2=sum(cal), by(domain2 length2)
-egen nal2=sum(nal), by(domain2 length2)
+egen nal2=sum(NaL_from_smooth_trawl), by(domain2 length2)
 *drop tab sumtab
 
 gen tab2=1 if cal2>nal2 & cal2!=0
 egen sumtab2=sum(tab2), by(domain2)
+drop if cal==0
+gen cal_proportion=cal/cal2
 
-gen length3 =length2
-levelsof domain2 if sumtab2>0, local(domz)
+preserve
+keep domain2 length2 length cal_proportion
+rename length length 
+tempfile cal_proportion
+save `cal_proportion', replace
+restore
 
 preserve
 keep if sumtab2==0
@@ -435,55 +320,21 @@ save `okay', replace
 restore 
 
 drop if sumtab2==0
+append using `okay'	 
 
-tempfile base 
-save `base', replace
+* c5)
+collapse (sum) cal NaL_from_smooth_trawl, by(draw draw2 season species length2 domain2)
+gen ql=cal/NaL_from_smooth_trawl
 
-clear 
-tempfile master
-save `master', emptyok
-
-foreach d of local domz{
-	
-	u `base', clear 
-	keep if domain2=="`d'"
-	*keep if domain2=="MA_bsb_31"
-
-	gsort domain2 -length2
-	bysort domain2: gen cum_nal = sum(nal2)
-	bysort domain2: gen cum_cal = sum(cal2)
-	su length3 if tab2==1
-	gen tab3=1 if cum_nal>cum_cal & length3<=`r(min)'
-	su length3 if tab3==1
-	replace length3=`r(max)' if length3>=`r(max)'
-	
-	
-	append using `master'
-	save `master', replace
-	clear        
-}
- use `master', clear
- append using `okay'	 
- 
-egen cal3=sum(cal), by(domain2 length3)
-egen nal3=sum(nal), by(domain2 length3)
-
-gen tab4=1 if cal3>nal3 & cal3!=0
-egen sumtab4=sum(tab4), by(domain2)
-
-gen cal_proportion=cal/cal3
-
-preserve
-keep domain2 length length3 cal_proportion
-tempfile cal_proportion
-save `cal_proportion', replace
-restore
-
-collapse (sum) cal nal, by(draw draw2 state species length3 domain2)
-gen ql=cal/nal
+sort species season draw length
+rename NaL_from_smooth_trawl naa_2025
+drop  draw2 domain2
+rename cal cal_2025
 
 tempfile ql
-save `ql', replace 
+save `ql', replace
+
+
 
 *E) compute projected catch-at-length 
 * 	1) Pull in the projected population numbers-at-age data
@@ -491,244 +342,168 @@ save `ql', replace
 *	3) merge to the 2024 selectivities
 * 	4) adjust for plus groups necessarily made when computing 2024 selectivities. 
 *	5) compute 2026 catch-at-length numbers and probability distribution
-		
-*1) 
-import delimited using "$input_data_cd/length_data/J1_2026Summer_Flounder.csv", clear
-gen species="sf"
-gen region="all"
-duplicates drop 
-drop year
-sample $ndraws, count
+	
+* E1) cod
+use "$input_data_cd/WGOM_Cod_projected_NAA_from_2024Assessment.dta", clear 
+
+egen age6_plus=rowtotal(age6-age9)
+drop age6 age7 age8 age9
+rename age6 age6
+sample $ndraws, count 
 gen draw=_n
-tempfile sf
-save `sf', replace 
+reshape long age, i(year draw replicate) j(new)
+rename age nfish
+rename new age 
+drop year 
+rename replicate cod_replicate
 
-import delimited using "$input_data_cd/length_data/J1_2026Scup.csv", clear
-gen species="scup"
-gen region="all"
-duplicates drop 
-drop year
-sample $ndraws, count
+* e2) cod
+preserve 
+u `al_cod', clear 
+expand $ndraws
+bysort length age: gen draw=_n
+tempfile al_cod_expand
+save `al_cod_expand', replace
+restore 
+
+merge 1:m age draw using `al_cod_expand', keep(3) nogen 
+sort  age length
+
+gen NaL_from_raw_trawl = prop_raw*nfish
+gen NaL_from_smooth_trawl = prop_smoothed*nfish
+
+drop count  prop* nfish smoothed
+collapse (sum) NaL*, by(length draw cod_replicate)
+
+sort length 
+gen species="cod"
+expand 2, gen(dup)
+gen season="winter" if dup==0
+replace season="summer" if dup==1
+drop dup
+
+tempfile proj_naa_cod
+save `proj_naa_cod', replace 
+
+* e1) haddock 
+use "$input_data_cd/GOM_Haddock_projected_NAA_2024Assessment.dta", clear 
+
+sample $ndraws, count 
 gen draw=_n
-tempfile scup
-save `scup', replace 
+reshape long age, i(year draw replicate) j(new)
+rename age nfish
+rename new age 
+drop year 
+rename replicate hadd_replicate
 
-import delimited using "$input_data_cd/length_data/fit_proj_NAA_NORTH_2026.csv", clear
-gen species="bsb"
-gen region="north"
-duplicates drop 
-sample $ndraws, count
-replace draw=_n
-forv i=0(1)7{
-	local v = `i'+1
-	rename v`v' a`i'
-	replace a`i'=a`i'*1000
-}
+preserve 
+u `al_hadd', clear 
+expand $ndraws
+bysort length age: gen draw=_n
+tempfile al_hadd_expand
+save `al_hadd_expand', replace
+restore 
 
-tempfile bsbN
-save `bsbN', replace 
+* c2) haddock
+merge 1:m age draw using `al_hadd_expand', keep(3) nogen 
+sort  age length
 
-import delimited using "$input_data_cd/length_data/fit_proj_NAA_SOUTH_2026.csv", clear
-gen species="bsb"
-gen region="south"
-duplicates drop 
-sample $ndraws, count
-replace draw=_n
+gen NaL_from_raw_trawl = prop_raw*nfish
+gen NaL_from_smooth_trawl = prop_smoothed*nfish
 
-forv i=0(1)7{
-	local v = `i'+1
-	rename v`v' a`i'
-	replace a`i'=a`i'*1000
+drop count  prop* nfish smoothed
+collapse (sum) NaL*, by( length draw hadd_replicate)
+
+sort length 
+gen species="hadd"
+expand 2, gen(dup)
+gen season="winter" if dup==0
+replace season="summer" if dup==1
+drop dup
+
+
+append using  `proj_naa_cod' 
+rename length length2
+
+replace NaL_from_raw_trawl=NaL_from_raw_trawl*1000
+replace NaL_from_smooth_trawl=NaL_from_smooth_trawl*1000
+
+
+merge 1:1 species season length2 draw using `ql', keep(3) nogen 
+
+sort species season draw length 
+order species season draw length 
+
+rename NaL_from_smooth_trawl naa_2026
+drop  NaL_from_raw_trawl
+
+gen cal_2026= ql*naa_2026
+
+tostring draw, gen(draw2)
+gen domain2=season+"_"+species+"_"+draw2	
 	
-}
-tempfile bsbS
-save `bsbS', replace 
-
-append using `bsbN'
-append using `scup'
-append using `sf'
-order species region draw
-
-reshape long a, i(species region draw) j(age) string
-destring age, replace
-rename a pop_naa
-
-
-*To compare population NAA 2024/2026
-/*
-preserve
-rename pop_naa pop_naa_2026
-merge 1:1 species region draw age using `pop2024'
-drop row
-drop _merge
-reshape long pop_naa_, i(age draw region species) j(year) string
-destring year, replace
-sort species region age year
-egen sumpop=sum(pop), by(year region species draw)
-sort species region age draw year
-gen prop_naa=pop/sum
-
-gen domain=region+"_"+species
-
-levelsof domain, local(doms)
-foreach d of local doms{
-
-levelsof species if dom=="`d'"
-if `r(levels)'=="bsb"{
-	local sp="Black sea bass"
-}
-if `r(levels)'=="sf"{
-	local sp="Summer flounder"
-}
-if `r(levels)'=="scup"{
-	local sp="Scup"
-}
-
-levelsof region if dom=="`d'"
-if `r(levels)'=="north"{
-	local reg="north"
-}
-if `r(levels)'=="south"{
-	local reg="south"
-}
-
-if `r(levels)'=="all"{
-	local reg="north/south"
-}
-
-
- gr box prop_naa if domain=="`d'", title("`sp' `reg' proportion numbers-at-age", size(medium)) over(age, label(labsize(small))) over(year, gap(500) label(labsize(small)))    ///
-	  box(1, color(navy)) box(2, color(maroon)) ytitle("Proportion", size(small)) ylab(, labsize(small))  ///
-    legend(position(6) rows(1))  name(`d', replace)
-	gr play plus_group
-	gr play jan1
-	graph export "C:\Users\andrew.carr-harris\Desktop\MRIP_data_2025\rdm testing data\SQ_runs_10_20\pop_naa_`d'.jpg", width(1024) height(768) replace
-
- }
-restore
-*/
-expand 4 if species=="bsb" & region=="north"
-bysort draw species region age: gen n=_n 
-gen  state="MA" if species=="bsb" & region=="north" & n==1
-replace state="RI" if species=="bsb" & region=="north" & n==2
-replace state="CT" if species=="bsb" & region=="north" & n==3
-replace state="NY" if species=="bsb" & region=="north" & n==4
-drop n
-
-expand 5 if species=="bsb" & region=="south"
-bysort draw species region age: gen n=_n 
-replace  state="NJ" if species=="bsb" & region=="south" & n==1
-replace state="DE" if species=="bsb" & region=="south" & n==2
-replace state="VA" if species=="bsb" & region=="south" & n==3
-replace state="MD" if species=="bsb" & region=="south" & n==4
-replace state="NC" if species=="bsb" & region=="south" & n==5
-drop n
-
-expand 9 if species=="sf"
-bysort draw species region age: gen n=_n 
-replace  state="MA" if species=="sf" & n==1
-replace state="RI" if species=="sf" & n==2
-replace state="CT" if species=="sf" & n==3
-replace state="NY" if species=="sf" & n==4
-replace state="NC" if species=="sf" & n==5
-replace  state="NJ" if species=="sf"& n==6
-replace state="DE" if species=="sf" & n==7
-replace state="VA" if species=="sf" & n==8
-replace state="MD" if species=="sf" & n==9
-drop n
-
-expand 9 if species=="scup"
-bysort draw species region age: gen n=_n 
-replace  state="MA" if species=="scup" & n==1
-replace state="RI" if species=="scup" & n==2
-replace state="CT" if species=="scup" & n==3
-replace state="NY" if species=="scup" & n==4
-replace state="NC" if species=="scup" & n==5
-replace  state="NJ" if species=="scup"& n==6
-replace state="DE" if species=="scup" & n==7
-replace state="VA" if species=="scup" & n==8
-replace state="MD" if species=="scup" & n==9
-
-*2) 
-merge 1:m age state draw species using `age_length'
-sort draw state species age length 
-
-gen nal=pop_naa*prop_smoothed
-
-collapse (sum) nal, by(draw species state length)
-
-order draw state species length nal
-sort draw state species length nal
-rename nal nal_2026
-rename length length3 
-
-/*
-gen nal_1000=nal_2026/1000
-graph box nal_1000 if species=="bsb" & state=="CT", over(length, label(labsize(vsmall))) title("2026 numbers-at-length, BSB North") 
-graph export "$figure_cd/bsb_north_nal_2024.png", as(png) replace
-
-graph box nal_1000 if species=="bsb" & state=="MD", over(length, label(labsize(vsmall))) title("2026 numbers-at-length, BSB South") 
-graph export "$figure_cd/bsb_south_nal_2024.png", as(png) replace
-
-graph box nal_1000 if species=="scup" & state=="NY", over(length, label(labsize(vsmall))) title("2026 numbers-at-length, Scup") 
-graph export "$figure_cd/scup_nal_2024.png", as(png) replace
-
-graph box nal_1000 if species=="sf" & state=="NY", over(length, label(labsize(vsmall))) title("2026 numbers-at-length, SF") 
-graph export "$figure_cd/sf_nal_2026.png", as(png) replace
-drop nal_1000
-*/
-
-/*
-* to create figures comparing number-at-length for 2024 vs 2026:
-*collapse (mean) nal, by(state species length)
-merge 1:1 state species length draw using `nal_2024'
-rename nal nal_2024
-
-reshape long nal_, i(length draw state species) j(year) string
-destring year, replace
-
-graph box nal_ if species=="bsb" & state=="VA", over(year, label(labsize(vsmall))) over(length, label(labsize(vsmall)))  ///
-asyvars  box(1, color(navy)) box(2, color(maroon)) title("numbers-at-length, BSB North") ///
-    legend(position(bottom) rows(1))
-	
-	
-graph export "$figure_cd/bsb_north_nal_2024_2026.png", as(png) replace
-
-graph box nal_ if species=="bsb" & state=="MD", over(year, label(labsize(vsmall))) over(length_bin, label(labsize(vsmall)))  ///
-asyvars  box(1, color(navy)) box(2, color(maroon)) title("numbers-at-length, BSB South") ///
-    legend(position(bottom) rows(1))
-graph export "$figure_cd/bsb_south_nal_2024_2026.png", as(png) replace
-
-graph box nal_ if species=="scup" & state=="NY", over(year, label(labsize(vsmall))) over(length_bin, label(labsize(vsmall)))  ///
-asyvars  box(1, color(navy)) box(2, color(maroon)) title("numbers-at-length, Scup") ///
-    legend(position(bottom) rows(1))
-graph export "$figure_cd/scup_nal_2024_2026.png", as(png) replace
-
-graph box nal_ if species=="sf" & state=="NY", over(year, label(labsize(vsmall))) over(length_bin, label(labsize(vsmall)))  ///
-asyvars  box(1, color(navy)) box(2, color(maroon)) title("numbers-at-length, SF") ///
-    legend(position(bottom) rows(1))
-graph export "$figure_cd/sf_nal_2024_2026.png", as(png) replace
-*/
-
-
-*3) 
-merge 1:1 draw state species length3 using `ql', keep(3) nogen
-gen cal_2026=ql*nal_2026
-
-*4) 
-merge 1:m domain2 length3 using `cal_proportion'
-sort draw state species length
+merge 1:m domain2 length2 using `cal_proportion'
+sort draw species season length
+browse
 replace cal_2026=cal_2026*cal_proportion
 drop if cal_2026==. | cal_2026==0
-
-*5) 
-keep draw state species length cal_2026
-egen sum_cal=sum(cal_2026), by(draw state species)
+	
+keep draw season species length cal_* *replicate
+egen sum_cal=sum(cal_2026), by(draw season species)
 gen fitted_prob=cal_2026/sum_cal
-drop sum
+drop sum	
+	
+egen sum_cal=sum(cal_2025), by(draw season species)
+gen fitted_prob_2025=cal_2025/sum_cal
+drop sum	
 
-export delimited using "$iterative_input_data_cd/projected_catch_at_length.csv", replace 
 
-import delimited using "$iterative_input_data_cd/projected_catch_at_length.csv", clear 
-collapse (mean) fitted_prob, by(state species length)
-twoway (scatter fitted_prob length if  state=="VA" & species=="bsb" ,   cmissing(no) connect(direct) lcol(gray) lwidth(med)  lpat(solid) msymbol(o) mcol(gray) ) 
+
+* Plot catch-at-length probability distributions 2025 versus 2026
+* 5cm length bins 
+preserve
+drop fitted_prob_2025
+gen year=2026
+tempfile base
+save `base'
+restore
+
+drop fitted_prob
+rename  fitted_prob_2025 fitted_prob
+gen year=2025
+append using `base'
+
+
+gen length5_lo = floor(length/5)*5
+gen length5_hi = length5_lo + 4
+
+* String label: "20-24", "25-29", etc.
+gen str20 length5_bin = string(length5_lo) + "-" + string(length5_hi)
+label var length5_bin "Length bin (cm)"
+
+levelsof species, local(splist)
+levelsof season,  local(seaslist)
+
+foreach sp of local splist {
+    foreach se of local seaslist {
+
+        graph box fitted_prob if species=="`sp'" & season=="`se'", ///
+            over(length5_bin, sort(length5_lo)) ///
+            by(year, col(1) ///
+                title("Catch-at-length probabilities: `sp', `se'") ///
+                note("Boxplots of replicate probabilities by 5-cm length bin")) ///
+            ytitle("Probability") ///
+            name(box_`sp'_`se', replace)
+
+        graph export "CAL_`sp'_`se'_byyear.png", replace
+    }
+}
+
+drop length5_lo length5_hi length5_bin	
+drop cal*
+keep if year==2026
+egen replicate=rowtotal(hadd_replicate - cod_replicate)
+drop hadd_replicate cod_replicate
+drop year 
+export delimited using "$input_data_cd/projected_catch_at_length.csv", replace 
+

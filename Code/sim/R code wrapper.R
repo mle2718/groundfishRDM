@@ -56,7 +56,7 @@ final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscella
 #options("RStata.StataVersion" = 17)
 
 #Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-125
+n_simulations<-15
 
 n_draws<-50 #Number of simulated trips per day
 
@@ -168,7 +168,7 @@ source(file.path(code_cd,"calibration_routine.R"))
 
 
 # Filter out model iterations that did not converge on harvest for both species
-converged<-read_rds(file = file.path(iterative_input_data_cd, "calibrated_model_stats_raw.rds")) %>%
+converged<-fst::read_fst(file.path(iterative_input_data_cd, "calibrated_model_stats_raw.fst")) %>%
   dplyr::mutate(abs_pct_diff_keep=abs(pct_diff_keep),
                 abs_diff_keep=abs(diff_keep)) %>%
   dplyr::filter(abs_pct_diff_keep<5 | abs_diff_keep<500) %>%
@@ -197,15 +197,17 @@ directed_trips<-read_csv(file.path(iterative_input_data_cd,"directed_trip_draws.
   dplyr::filter(!is.na(good_draw)) %>%
   dplyr::select(-draw) %>%
   dplyr::rename(draw=draw2)
-write_csv(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")))
+#write_csv(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")))
+fst::write_fst(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst")))
 
 # calibration model stats
-calib_stats<-read_rds(file.path(iterative_input_data_cd,"calibrated_model_stats_raw.rds")) %>%
+calib_stats<-read_fst(file.path(iterative_input_data_cd,"calibrated_model_stats_raw.fst")) %>%
   dplyr::left_join(converged, by="draw") %>%
   dplyr::filter(!is.na(good_draw)) %>%
   dplyr::select(-draw) %>%
   dplyr::rename(draw=draw2)
-write_csv(calib_stats, file.path(final_process_misc_cd, paste0("calibrated_model_stats_final.csv")))
+#write_csv(calib_stats, file.path(final_process_misc_cd, paste0("calibrated_model_stats_final.csv")))
+fst::write_fst(calib_stats, file.path(final_process_misc_cd, paste0("calibrated_model_stats_final.fst")))
 
 # calibration model stats
 calendar_adj<-read_csv(file.path(input_data_cd,"next year calendar adjustments.csv"), show_col_types = FALSE) %>%
@@ -213,13 +215,13 @@ calendar_adj<-read_csv(file.path(input_data_cd,"next year calendar adjustments.c
   dplyr::filter(!is.na(good_draw)) %>%
   dplyr::select(-draw) %>%
   dplyr::rename(draw=draw2)
-write_csv(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_final.csv")))
-
+#write_csv(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_final.csv")))
+fst::write_fst(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_final.fst")))
 
 # Baseline year outcomes and number of choice occasions
 mode_draw <- c("pr", "fh")
-season_draw <- c("open", "closed")
-for(dr in 1:5){
+season_draw <- c("summer", "winter")
+for(dr in 1:15){
   for (md in mode_draw) {
     for(s in season_draw) {
 
@@ -244,41 +246,45 @@ for(dr in 1:5){
 
 }
 
+# catch at length - save as .csv to pull back into stata for computing projected catch at length
+catch_at_length<-read_csv(file.path(input_data_cd,"baseline_catch_at_length.csv"), show_col_types = FALSE) %>%
+  dplyr::left_join(converged, by="draw") %>%
+  dplyr::filter(!is.na(good_draw)) %>%
+  dplyr::select(-draw) %>%
+  dplyr::rename(draw=draw2)
+write_csv(catch_at_length, file.path(final_process_misc_cd, paste0("baseline_catch_at_length.csv")))
+fst::write_fst(catch_at_length, file.path(final_process_misc_cd, paste0("baseline_catch_at_length.fst")))
+
+
+#re-save other input files as .fst
+# discard mortality
+disc_mort<- readr::read_csv(file.path(input_data_cd, "Discard_Mortality.csv"), show_col_types = FALSE)
+write_fst(disc_mort, file.path(final_process_misc_cd, paste0("Discard_Mortality.fst")))
 
 # Projected catch-at-length *note for Kim that this file now contains distn's by mode
-statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-modez <- c("sh", "pr", "fh")
-length_draw_list<-list()
-length_draws_st_list<-list()
-for(st in statez){
-  for(md in modez){
+# statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
+# modez <- c("sh", "pr", "fh")
+# length_draw_list<-list()
+# length_draws_st_list<-list()
+# for(st in statez){
+#   for(md in modez){
+#
+#     good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx")) %>%
+#       dplyr::filter(state==st & mode==md)
+#
+#     length_draw_list[[md]][[st]]<-read_csv(file.path(iterative_input_data_cd, "projected_catch_at_length.csv"), show_col_types = FALSE) %>%
+#       dplyr::filter(state==st) %>%
+#       dplyr::left_join(good_draws, by=c("state", "draw")) %>%
+#       dplyr::filter(!is.na(draw2)) %>%
+#       dplyr::select(-draw) %>%
+#       dplyr::rename(draw=draw2) %>%
+#       dplyr::mutate(mode=md)
+#   }
+#
+# }
+# length_draws <- dplyr::bind_rows(purrr::flatten(length_draw_list))
+# write_csv(length_draws, file.path(iterative_input_data_cd, paste0("projected_catch_at_length_new.csv")))
 
-    good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx")) %>%
-      dplyr::filter(state==st & mode==md)
-
-    length_draw_list[[md]][[st]]<-read_csv(file.path(iterative_input_data_cd, "projected_catch_at_length.csv"), show_col_types = FALSE) %>%
-      dplyr::filter(state==st) %>%
-      dplyr::left_join(good_draws, by=c("state", "draw")) %>%
-      dplyr::filter(!is.na(draw2)) %>%
-      dplyr::select(-draw) %>%
-      dplyr::rename(draw=draw2) %>%
-      dplyr::mutate(mode=md)
-  }
-
-}
-length_draws <- dplyr::bind_rows(purrr::flatten(length_draw_list))
-write_csv(length_draws, file.path(iterative_input_data_cd, paste0("projected_catch_at_length_new.csv")))
-
-
-# Transfer projected catch draw files from .dta to .feather
-statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-for(s in statez) {
-  for(i in 1:100) {
-    catch<-read_dta(file.path(iterative_input_data_cd, paste0("proj_catch_draws_",s, "_", i,".dta")))
-    write_feather(catch, file.path(iterative_input_data_cd, paste0("proj_catch_draws_",s, "_", i,".feather")))
-
-  }
-}
 
 ##################### STEP 3 #####################
 #Run the projection algorithm. This algorithm pulls in population-adjusted catch-at-length distributions and allocates

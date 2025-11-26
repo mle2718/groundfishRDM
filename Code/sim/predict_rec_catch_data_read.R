@@ -44,16 +44,15 @@ final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscella
 
 ############# To Run Individual
 # Variables to change
-s<-"closed"
-md<-"pr"
-dr<-1
-
-mode_draw <- c("pr", "fh")
-draws <- 1:10
-season_draw <- c("open", "closed")
+# s<-"summer"
+# md<-"pr"
+# dr<-1
+#
+# mode_draw <- c("pr", "fh")
+# draws <- 1:15
+# season_draw <- c("summer", "winter")
 
 ndraws=50 #number of choice occasions to simulate per strata
-
 
 #l_w_conversion parameters =
 cod_lw_a = 0.000005132
@@ -61,23 +60,19 @@ cod_lw_b = 3.1625
 had_lw_a = 0.000009298
 had_lw_b = 3.0205
 
-disc_mort<- readr::read_csv(file.path(final_process_misc_cd, "Discard_Mortality.csv"), show_col_types = FALSE)
+disc_mort<- fst::read_fst(file.path(final_process_misc_cd, "Discard_Mortality.fst")) %>%
+  dplyr::rename(month=Month)
 
-library(magrittr)
-
-# import data
-
-directed_trips<-read_csv(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")), show_col_types = FALSE) %>%
+directed_trips<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
   tibble::tibble() %>%
   dplyr::select(mode, day,  dtrip, draw,
                 starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
   dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10), "open", "closed")) %>%
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
   dplyr::filter(draw == dr) %>%
   as.data.table()
 
-
-get_lowest_min_size<-read_csv(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")), show_col_types = FALSE) %>%
+get_lowest_min_size<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
   tibble::tibble() %>%
   dplyr::select(mode, day,  dtrip, draw,
                 starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
@@ -85,19 +80,17 @@ get_lowest_min_size<-read_csv(file.path(final_process_misc_cd, paste0("directed_
 cod_min_size_FY<-min(get_lowest_min_size$cod_min_y2_same)
 hadd_min_size_FY<-min(get_lowest_min_size$hadd_min_y2_same)
 
-
 catch_data0 <- list()
 base_outcomes_angler_dems0 <- list()
 n_choice_occasions0 <- list()
 
 mode_draw <- c("pr", "fh")
-season_draw <- c("open", "closed")
+season_draw <- c("summer", "winter")
 
 k<-1
 
 for (md in mode_draw) {
   for (s in season_draw){
-
 
    catch_data0[[k]] <- fst::read_fst(file.path(final_process_outcomes_cd, paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
       dplyr::left_join(directed_trips, by=c("mode", "date")) %>%
@@ -116,9 +109,12 @@ for (md in mode_draw) {
                     tot_keep_hadd_base, tot_rel_hadd_base,
                     starts_with("beta"),
                     total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost) %>%
+    dplyr::rename(date_parsed=date) %>%
     as.data.table()
 
-  n_choice_occasions0[[k]] <- fst::read_fst(file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_",s, "_", md, "_", dr,".fst")))%>%
+
+  n_choice_occasions0[[k]] <- fst::read_fst(file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_",s, "_", md, "_", dr,".fst"))) %>%
+    dplyr::rename(date_parsed=date)  %>%
     as.data.table()
 
   k<-k+1
@@ -132,25 +128,25 @@ n_choice_occasions <- bind_rows(n_choice_occasions0)
 
 rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
 
-cod_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE)  %>%
+cod_size_data <- read_fst(file.path(final_process_misc_cd, "baseline_catch_at_length.fst"))  %>%
   dplyr::filter(species=="cod", draw==dr) %>%
   dplyr::filter(!is.na(fitted_prob)) %>%
   dplyr::select(fitted_prob, length, season) %>%
   as.data.table()
 
-hadd_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE)  %>%
+hadd_size_data <- read_fst(file.path(final_process_misc_cd, "baseline_catch_at_length.fst"))  %>%
   dplyr::filter(species=="hadd", draw==dr) %>%
   dplyr::filter(!is.na(fitted_prob)) %>%
   dplyr::select(fitted_prob, length, season) %>%
   as.data.table()
 
-calendar_adjustments <- readr::read_csv(file.path(final_process_misc_cd, paste0("calendar_adj_final.csv")), show_col_types = FALSE) %>%
+calendar_adjustments <- read_fst(file.path(final_process_misc_cd, paste0("calendar_adj_final.fst"))) %>%
   dplyr::filter(draw==dr) %>%
   dplyr::select(-dtrip, -dtrip_y2, -draw, -good_draw) %>%
   as.data.table()
 
 # Pull in calibration comparison information about trip-level harvest/discard re-allocations
-calib_comparison<-read_csv(file.path(final_process_misc_cd, "calibrated_model_stats_final.csv"), show_col_types = FALSE) %>%
+calib_comparison<-read_fst(file.path(final_process_misc_cd, "calibrated_model_stats_final.fst")) %>%
   dplyr::filter(draw==dr) %>%
   as.data.table()
 

@@ -4,7 +4,7 @@
 #outcomes until simulated harvest in numbers of fish is within 5% or 500 fish of the MRIP estimate.
 
 #Set number of original draws. We use 125 for the final run. Choose a lot fewer for test runs
-n_simulations<-125
+n_simulations<-15
 
 n_draws<-50 #Number of simulated trips per day
 
@@ -18,7 +18,7 @@ MRIP_comparison = read_dta(file.path(input_data_cd,"simulated_catch_totals.dta")
                 hadd_rel=tot_hadd_rel_sim)
 
 
-baseline_output0<-read_csv(file.path(iterative_input_data_cd, "calibration_comparison.csv"), show_col_types = FALSE)
+baseline_output0<-fst::read_fst(file.path(iterative_input_data_cd, "calibration_comparison.fst"))
 
 
 # mode_draw <- c("pr", "fh")
@@ -26,8 +26,8 @@ baseline_output0<-read_csv(file.path(iterative_input_data_cd, "calibration_compa
 # season_draw <- c("open", "closed")
 
 mode_draw <- c("pr", "fh")
-draws <- 1:5
-season_draw <- c("open", "closed")
+draws <- 1:15
+season_draw <- c("summer", "winter")
 
  # s<-"open"
  # md<-"pr"
@@ -45,7 +45,7 @@ for (s in season_draw) {
   for (md in mode_draw) {
     for (i in draws) {
 
-      calib_comparison<-read_csv(file.path(iterative_input_data_cd, "calibration_comparison.csv"), show_col_types = FALSE) %>%
+      calib_comparison<-fst::read_fst(file.path(iterative_input_data_cd, "calibration_comparison.fst")) %>%
         dplyr::filter(season==s & draw==i & mode==md)
 
       for (p in 1:nrow(calib_comparison)) {
@@ -272,7 +272,7 @@ for (s in season_draw) {
 
 
 calibrated_combined <- do.call(rbind, calibrated)
-saveRDS(calibrated_combined, file = file.path(iterative_input_data_cd, "calibrated_model_stats_raw.rds"))
+fst::write_fst(calibrated_combined, file.path(iterative_input_data_cd,"calibrated_model_stats_raw.fst"))
 
 
 

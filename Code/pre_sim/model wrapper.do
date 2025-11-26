@@ -89,7 +89,7 @@ global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026)
 global leap_yr_days "td(29feb2024)" 
 
 *Choose how many draws you want to create. Will create 150 for final version, from which 100 will be selected
-global ndraws 125
+global ndraws 15
 
 *set the year to use for historical numbers at age 
 *global calibration_year_NAA 2024

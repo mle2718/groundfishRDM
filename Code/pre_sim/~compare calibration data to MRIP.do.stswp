@@ -819,9 +819,8 @@ collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
 						  tot_dtrip_sim , by( season draw)				  
 save "$input_data_cd\simulated_catch_totals_for_catch_length_wave.dta", replace 
 restore 
-
-gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
-replace season="summer" if inlist(month, "05", "06", "07", "08")
+gen season= "win" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
+replace season="sum" if inlist(month, "05", "06", "07", "08")
 
 
 collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
