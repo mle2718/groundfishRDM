@@ -495,7 +495,7 @@ foreach sp of local splist {
             ytitle("Probability") ///
             name(box_`sp'_`se', replace)
 
-        graph export "CAL_`sp'_`se'_byyear.png", replace
+        graph export "$figure_cd/CAL_`sp'_`se'_byyear.png", replace
     }
 }
 

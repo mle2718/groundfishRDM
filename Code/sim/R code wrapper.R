@@ -256,34 +256,20 @@ write_csv(catch_at_length, file.path(final_process_misc_cd, paste0("baseline_cat
 fst::write_fst(catch_at_length, file.path(final_process_misc_cd, paste0("baseline_catch_at_length.fst")))
 
 
+# projected catch at length - save as .fst as well as .csv to pull back into stata for computing projected catch at length
+proj_catch_at_length<-read_csv(file.path(input_data_cd,"projected_catch_at_length.csv"), show_col_types = FALSE) %>%
+  dplyr::left_join(converged, by="draw") %>%
+  dplyr::filter(!is.na(good_draw)) %>%
+  dplyr::select(-draw) %>%
+  dplyr::rename(draw=draw2)
+fst::write_fst(proj_catch_at_length, file.path(final_process_misc_cd, paste0("proj_catch_at_length.fst")))
+
+
 #re-save other input files as .fst
 # discard mortality
 disc_mort<- readr::read_csv(file.path(input_data_cd, "Discard_Mortality.csv"), show_col_types = FALSE)
 write_fst(disc_mort, file.path(final_process_misc_cd, paste0("Discard_Mortality.fst")))
 
-# Projected catch-at-length *note for Kim that this file now contains distn's by mode
-# statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-# modez <- c("sh", "pr", "fh")
-# length_draw_list<-list()
-# length_draws_st_list<-list()
-# for(st in statez){
-#   for(md in modez){
-#
-#     good_draws<-read_excel(file.path(iterative_input_data_cd, "calibration_good_draws.xlsx")) %>%
-#       dplyr::filter(state==st & mode==md)
-#
-#     length_draw_list[[md]][[st]]<-read_csv(file.path(iterative_input_data_cd, "projected_catch_at_length.csv"), show_col_types = FALSE) %>%
-#       dplyr::filter(state==st) %>%
-#       dplyr::left_join(good_draws, by=c("state", "draw")) %>%
-#       dplyr::filter(!is.na(draw2)) %>%
-#       dplyr::select(-draw) %>%
-#       dplyr::rename(draw=draw2) %>%
-#       dplyr::mutate(mode=md)
-#   }
-#
-# }
-# length_draws <- dplyr::bind_rows(purrr::flatten(length_draw_list))
-# write_csv(length_draws, file.path(iterative_input_data_cd, paste0("projected_catch_at_length_new.csv")))
 
 
 ##################### STEP 3 #####################

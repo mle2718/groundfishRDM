@@ -141,6 +141,8 @@ n_choice_occasions_draw <- bind_rows(n_choice_occasions0)
 
 rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
 
+# Size data used in projections is "baseline"proj_catch_at_length.fst"
+# For testing, change the size data file to "baseline_catch_at_length.fst"
 cod_size_data_draw <- read_fst(file.path(final_process_misc_cd, "baseline_catch_at_length.fst"))  %>%
   dplyr::filter(species=="cod", draw==dr) %>%
   dplyr::filter(!is.na(fitted_prob)) %>%
