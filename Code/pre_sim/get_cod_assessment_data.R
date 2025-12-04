@@ -9,6 +9,12 @@
 # for 2023 and 2024
 # I've modified it to pass in numbers for 2023 and 2024 based on recent data updates
 
+
+# Depends "wham_version_installer.R" will install the proper version of the WHAM
+# package that matches the WHAM model.
+
+
+
 # Some inputs to ASAP are scalars, some are vectors, and some are matrices.
 # I use tail(.x, 1) to pick the last "thing" of a vector or matrix, which is usually the final year of data.
 
@@ -53,6 +59,10 @@ library(TMB)
 library(haven)
 library(glue)
 
+cod_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "cod_wham_install")
+library(wham,lib.loc = cod_wham_lib)
+
+
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
@@ -71,6 +81,9 @@ HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_from_2024Assessment.dta"
 mod_accepted <-
   readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
 
+mod_accepted$model_name <- "Accepted"
+mod_list <- list(mod_accepted)
+
 ###################################################################################
 ###################################################################################
 #Make sure that the version of WHAM that was used to generate the model is installed
@@ -81,25 +94,6 @@ mod_accepted <-
 model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
 model_wham_commit<-gsub(")", "", model_wham_commit)
 
-mod_accepted$model_name <- "Accepted"
-mod_list <- list(mod_accepted)
-
-
-
-all_packages <- installed.packages()
-# No wham installed, install the one that matches the model_wham_commit
-if("wham" %in% all_packages[, "Package"]==FALSE){
-  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
-}
-
-# Check the commit of the current WHAM. Install a different version if needed
-if (model_wham_commit!=packageDescription("wham")$RemoteSha){
-  cat("Installed WHAM commit is", packageDescription("wham")$RemoteSha, "does not match the \n",
-      "WHAM commit from projection model.  Changing WHAM version \n",
-      "This may take a few minutes\n")
-  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
-} else{
-}
 stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
 # keep getting a warning message about magrittr, but things seem to work.
 
@@ -113,7 +107,6 @@ cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
 ###################################################################################
 ###################################################################################
 
-library(wham)
 
 
 ################################################################################

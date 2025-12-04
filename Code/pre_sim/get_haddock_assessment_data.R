@@ -4,6 +4,9 @@
 # Author: Charles Perretti (2024-NOV)
 # Mod : Min-Yang Lee (2025-Nov)
 
+# Depends "wham_version_installer.R" will install the proper version of the WHAM
+# package that matches the WHAM model.
+
 # This code does 2 projections, but uses the first projection
 # 1) Fmsy 2025-2027 (this is the projection in the MT report) which also produces the ofl in 2025
 # 2) 75%Fmsy 2025-2027 (potential ABCs)
@@ -37,6 +40,10 @@ library(TMB)
 library(haven)
 library(glue)
 
+#load the haddock specific version of WHAM.
+haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
+library(wham,lib.loc = haddock_wham_lib)
+
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
@@ -59,6 +66,9 @@ mod_accepted <-
 stock_name <- "GOM haddock"
 model_name <- "2024MT"
 
+mod_accepted$model_name <- "Accepted"
+mod_list <- list(mod_accepted)
+
 
 ###################################################################################
 ###################################################################################
@@ -71,26 +81,6 @@ model_name <- "2024MT"
 model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
 model_wham_commit<-gsub(")", "", model_wham_commit)
 
-mod_accepted$model_name <- "Accepted"
-mod_list <- list(mod_accepted)
-
-
-
-all_packages <- installed.packages()
-
-# No wham installed, install the one that matches the model_wham_commit
-if("wham" %in% all_packages[, "Package"]==FALSE){
-  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
-}
-
-# Check the commit of the current WHAM. Install a different version if needed
-if (model_wham_commit!=packageDescription("wham")$RemoteSha){
-  cat("Installed WHAM commit is", packageDescription("wham")$RemoteSha, "does not match the \n",
-      "WHAM commit from projection model.  Changing WHAM version \n",
-      "This may take a few minutes\n")
-  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), auth_token=NULL)
-} else{
-}
 stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
 # keep getting a warning message about magrittr, but things seem to work.
 
@@ -98,13 +88,11 @@ stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
 cat("Model Wham version is", model_wham_commit, "\n")
 cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
 
-																											###################################################################################
+###################################################################################
 ###################################################################################
 #End WHAM commit verification
 ###################################################################################
 ###################################################################################
-
-library(wham)
 
 # Placeholders and parameters
 periods<-12 # there are 12 months in a year
