@@ -56,7 +56,7 @@ final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscella
 #options("RStata.StataVersion" = 17)
 
 #Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-15
+n_simulations<-100
 
 n_draws<-50 #Number of simulated trips per day
 
@@ -221,7 +221,7 @@ fst::write_fst(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_a
 # Baseline year outcomes and number of choice occasions
 mode_draw <- c("pr", "fh")
 season_draw <- c("summer", "winter")
-for(dr in 1:15){
+for(dr in 1:n_simulations){
   for (md in mode_draw) {
     for(s in season_draw) {
 
@@ -246,7 +246,7 @@ for(dr in 1:15){
 
 }
 
-# catch at length - save as .csv to pull back into stata for computing projected catch at length
+# catch at length - save as .fst as well as .csv to pull back into stata for computing projected catch at length
 catch_at_length<-read_csv(file.path(input_data_cd,"baseline_catch_at_length.csv"), show_col_types = FALSE) %>%
   dplyr::left_join(converged, by="draw") %>%
   dplyr::filter(!is.na(good_draw)) %>%

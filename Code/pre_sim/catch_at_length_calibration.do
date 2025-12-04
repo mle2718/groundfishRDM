@@ -1,14 +1,13 @@
 
 
 
-* This file creates:
-	*1) Raw proportions harvest- and discards-at-length for each species for January-June and July-December to align with the 
-		 *length-weight equations that vary by season (for haddock)
-	*2) Raw proportions harvest- and discards-at-length for each species for the entire year
-	
 set seed $seed
 	
-*MRIP release data 
+	
+**************************
+* MRIP discard lengths  
+**************************
+
 cd $input_data_cd
 
 clear
@@ -24,7 +23,6 @@ drop if strat_id==""
 duplicates drop 
 save `tl1'
 clear
- 
 
 dsconcat $b2list
 sort year strat_id psu_id id_code
@@ -35,22 +33,15 @@ save `sl1', replace
 use `tl1'
 merge 1:m year strat_id psu_id id_code using `sl1', keep(1 3) nogen
 
-
-
- /* ensure only relevant states */
-keep if inlist(st,23, 33, 25)
-
-
-/*This is the "full" mrip data */
-tempfile tc1
-save `tc1'
- 
-keep if $calibration_year
+keep if inlist(st,23, 33, 25) //ensure relevent states 
+keep if $calibration_year //ensure relevent year
  
 gen st2 = string(st,"%02.0f")
 
 
-*New MRIP site allocations
+* delineate GoM versus non-GoM fishing
+
+* "new" MRIP site allocations:
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if state=="MA"
@@ -67,23 +58,21 @@ restore
 
 merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-/*classify into GOM or GBS */
 gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
 replace area_s=nmfs_stock_area if st2=="25"
 
 replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
-
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
 
-*drop shore trips
+* drop shore trips
 drop if mode1=="sh"
 
 
- /* classify catch into the things I care about (common==$mycommon) and things I don't care about "ZZZZZZZZ" use the id_code*/
+* classify catch into the things I care about (common=="c" | "h") and things I don't care about "z" 
 gen common_dom="z"
 replace common_dom="c" if strmatch(sp_code,"8791030402")
 replace common_dom="h" if strmatch(sp_code,"8791031301")
@@ -96,9 +85,8 @@ drop month
 tostring mymo, gen(month)
 drop mymo
 
-/* this might speed things up if I re-classify all length=0 for the species I don't care about */
+* this might speed things up if I re-classify all length=0 for the species I don't care about 
 replace l_cm_bin =0 if !inlist(common_dom, "c", "h")
-
 
 sort year w2 strat_id psu_id id_code
 
@@ -112,17 +100,17 @@ rename month month
 gen season= "win" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
 replace season="sum" if inlist(month, "05", "06", "07", "08")
 
-
 gen my_dom_id_string=season+"_"+common_dom
 
 replace my_dom_id_string=subinstr(ltrim(rtrim(my_dom_id_string))," ","",.)
 encode my_dom_id_string, gen(my_dom_id)
 
-
 svyset psu_id [pweight= wp_size], strata(var_id) singleunit(certainty)
 
-***for cod, use unweighted b2 data, weighted a+b1
-***for haddock, use weighted b2 data, weighted a+b1
+
+* discard and harvest lengths:
+	* for cod, use unweighted b2 data, weighted a+b1
+	* for haddock, use weighted b2 data, weighted a+b1
 
 preserve
 keep my_dom_id my_dom_id_string season common_dom l_cm_bin
@@ -136,7 +124,6 @@ save `codb2', replace
 restore
 
 svy: tab l_cm_bin my_dom_id_string, count
-/*save some stuff  -matrix of proportions, row names, column names, estimate of total population size*/
 mat eP=e(Prop)
 mat eR=e(Row)'
 mat eC=e(Col)
@@ -146,16 +133,13 @@ local mycolnames: colnames(eC)
 mat colnames eP=`mycolnames'
 	
 clear
-/*read the eP into a dataset and convert proportion of population into numbers*/
 svmat eP, names(col)
 	foreach var of varlist *{
 		replace `var'=`var'*`PopN'
 	}
-/*read in the "row" */
 svmat eR
 order eR
 rename eR l_cm_bin
-
 
 ds l_cm_bin, not
 renvarlab `r(varlist)', prefix(tab_)
@@ -172,12 +156,13 @@ drop if species=="cod"
 append using `codb2'
 sort  season species l_cm_bin
 
-
 tempfile b2
 save `b2', replace 
 
 
-*************Now pull keep lengths from MRIP
+**************************
+* MRIP harvest lengths  
+**************************
 cd $input_data_cd
 
 clear
@@ -205,20 +190,15 @@ use `tl1'
 merge 1:m year strat_id psu_id id_code using `sl1', keep(1 3) nogen
 
 
- /* ensure only relevant states */
-keep if inlist(st,23, 33, 25)
-
-
-/*This is the "full" mrip data */
-tempfile tc1
-save `tc1'
- 
-keep if $calibration_year
+keep if inlist(st,23, 33, 25) //ensure relevent states 
+keep if $calibration_year //ensure relevent year
  
 gen st2 = string(st,"%02.0f")
 
 
-*New MRIP site allocations
+* delineate GoM versus non-GoM fishing
+
+* "new" MRIP site allocations:
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if state=="MA"
@@ -235,7 +215,6 @@ restore
 
 merge m:1 intsite  using `mrip_sites',  keep(1 3)
 
-/*classify into GOM or GBS */
 gen str3 area_s="SNE"
 replace area_s="GOM" if st2=="23" | st2=="33"
 replace area_s=nmfs_stock_area if st2=="25"
@@ -246,11 +225,10 @@ gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
 
-*drop shore trips
+* drop shore trips
 drop if mode1=="sh"
 
-
- /* classify catch into the things I care about (common==$mycommon) and things I don't care about "ZZZZZZZZ" use the id_code*/
+* classify catch into the things I care about (common=="c" of "h") and things I don't care about "z" 
 gen common_dom="z"
 replace common_dom="c" if strmatch(sp_code,"8791030402")
 replace common_dom="h" if strmatch(sp_code,"8791031301")
@@ -263,9 +241,8 @@ drop month
 tostring mymo, gen(month)
 drop mymo
 
-/* this might speed things up if I re-classify all length=0 for the species I don't care about */
+* this might speed things up if I re-classify all length=0 for the species I don't care about 
 replace l_cm_bin =0 if !inlist(common_dom, "c", "h")
-
 
 sort year w2 strat_id psu_id id_code
 
@@ -279,16 +256,13 @@ rename month month
 gen season= "win" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
 replace season="sum" if inlist(month, "05", "06", "07", "08")
 
-
 gen my_dom_id_string=season+"_"+common_dom
 replace my_dom_id_string=subinstr(ltrim(rtrim(my_dom_id_string))," ","",.)
 encode my_dom_id_string, gen(my_dom_id)
 
-
 svyset psu_id [pweight= wp_size], strata(var_id) singleunit(certainty)
 
 svy: tab l_cm my_dom_id_string, count
-/*save some stuff  -matrix of proportions, row names, column names, estimate of total population size*/
 mat eP=e(Prop)
 mat eR=e(Row)'
 mat eC=e(Col)
@@ -298,16 +272,13 @@ local mycolnames: colnames(eC)
 mat colnames eP=`mycolnames'
 	
 clear
-/*read the eP into a dataset and convert proportion of population into numbers*/
 svmat eP, names(col)
 	foreach var of varlist *{
 		replace `var'=`var'*`PopN'
 	}
-/*read in the "row" */
 svmat eR
 order eR
 rename eR l_cm_bin
-
 
 ds l_cm_bin, not
 renvarlab `r(varlist)', prefix(tab_)
@@ -322,7 +293,7 @@ drop new
 rename tab nfish_ab1	
 sort  season species l_cm_bin
 
-
+* merge harvest lengths to discards lengths
 merge 1:1 l_cm_bin species season using `b2'
 
 sort species  season l
@@ -340,6 +311,7 @@ replace season=panel_var32
 keep l_cm_bin nfish* species season
 order species season  l_cm_bin nfish* 
 
+* create proportions of harvest/discards at length
 egen sum_ab1=sum(nfish_ab1), by(species season ) 
 egen sum_b2=sum(nfish_b2), by(species season ) 
 
@@ -356,7 +328,7 @@ bysort species season l_cm: gen draw=_n
 tempfile props
 save `props', replace
 
-* Now create baseline catch at lengths by pulling in the simulated harvest and release data 
+* multiply proportions by simulated total harvest and release  
 u "$input_data_cd\simulated_catch_totals_for_catch_length.dta", clear 
 keep tot_cod_keep_sim tot_cod_rel_sim tot_hadd_keep_sim tot_hadd_rel_sim  draw season
 keep if draw<=$ndraws
@@ -380,6 +352,7 @@ merge 1:m species season draw using `props'
 
 drop _merge
 
+* generate total catch, harvest, discards at length
 sort draw season species l
 gen n_ab1=ab1*prop_ab1
 gen n_b2=b2*prop_b2
@@ -387,9 +360,7 @@ gen n_fish=n_ab1+n_b2
 
 drop prop_ab1 prop_b2 n_ab1 n_b2
 
-
-
-*fit these counts to a gamma distribution 
+* fit catch-at-lengths to gamma distribution 
 egen sumfish=sum(n_fish), by(season species draw)
 gen observed_prob=n_fish/sum
 drop sumfish
@@ -407,9 +378,9 @@ tempfile observed_prob
 save `observed_prob', replace
 restore
 
-****estimate gamma parameters for each distirbution
 
-*note: I restrict the range of fitted values to within the min/max length of observed catch
+* Estimate gamma parameters for each distribution
+* note: I restrict the range of fitted values to within the min/max length of observed catch
 
 tempfile new
 save `new', replace
@@ -417,49 +388,49 @@ global fitted_sizes
 
 levelsof domain , local(regs)
 foreach r of local regs{
-u `new', clear
+		u `new', clear
 
-keep if domain=="`r'"
-keep length n_fish
-su length if n_fish!=0
-local minL=`r(min)'
-local maxL=`r(max)'
+		keep if domain=="`r'"
+		keep length n_fish
+		su length if n_fish!=0
+		local minL=`r(min)'
+		local maxL=`r(max)'
 
-su n_fish
-if `r(sum)'<100000{
-	egen sumfish=sum(n_fish)
-	gen expand=100000/sumfish
-	replace n_fish=n_fish*expand
-	drop sumfish expand
-}
+		su n_fish
+			if `r(sum)'<10000{
+				egen sumfish=sum(n_fish)
+				gen expand=10000/sumfish
+				replace n_fish=n_fish*expand
+				drop sumfish expand
+			}
 
-else{
-}
+			else{
+				}
 
-replace n_fish=round(n_fish)
-expand n_fish
-drop if n_fish==0
-gammafit length
-local alpha=e(alpha)
-local beta=e(beta)
+		replace n_fish=round(n_fish)
+		expand n_fish
+		drop if n_fish==0
+		gammafit length
+		local alpha=e(alpha)
+		local beta=e(beta)
 
-gen gammafit=rgamma(`alpha', `beta')
-replace gammafit=round(gammafit)
+		gen gammafit=rgamma(`alpha', `beta')
+		replace gammafit=round(gammafit)
 
-gen nfish=1
+		gen nfish=1
 
-*restrict catch to within range of observed values
-keep if gammafit>=`minL' & gammafit<=`maxL'
+		*restrict catch to within range of observed values
+		keep if gammafit>=`minL' & gammafit<=`maxL'
 
-collapse (sum) nfish, by(gammafit)
-egen sumnfish=sum(nfish)
-gen fitted_prob=nfish/sumnfish
-gen domain="`r'"
+		collapse (sum) nfish, by(gammafit)
+		egen sumnfish=sum(nfish)
+		gen fitted_prob=nfish/sumnfish
+		gen domain="`r'"
 
-tempfile fitted_sizes`r'
-save `fitted_sizes`r'', replace
-global fitted_sizes "$fitted_sizes "`fitted_sizes`r''" " 
-}
+		tempfile fitted_sizes`r'
+		save `fitted_sizes`r'', replace
+		global fitted_sizes "$fitted_sizes "`fitted_sizes`r''" " 
+	}		
 clear
 dsconcat $fitted_sizes
 rename gammafit fitted_length		   
@@ -476,6 +447,7 @@ replace draw=domain3
 sort species season draw fitted_length
 
 drop _merge domain1 domain2 domain3
+
 
 /*
 * Graphs of the fitted observed/fitted probabilities

@@ -94,9 +94,8 @@ hadd_zero_catch <- dplyr::filter(catch_data, hadd_cat == 0)
 cod_catch_check<-base::sum(catch_data$cod_cat)
 hadd_catch_check<-base::sum(catch_data$hadd_cat)
 
-calib_comparison<-read_csv(file.path(iterative_input_data_cd, "calibration_comparison.csv"), show_col_types = FALSE) %>%
+calib_comparison<-fst::read_fst(file.path(iterative_input_data_cd, "calibration_comparison.fst")) %>%
   dplyr::filter(season==s & draw==i & mode==md)
-
 
 # cod trip simulation
 # keep trips with positive cod catch

@@ -33,7 +33,6 @@ mvencode afuelexp arentexp ptransexp lodgexp grocexp restexp baitexp iceexp park
 * Compute total trip expenditure
 egen total_exp=rowtotal(afuelexp arentexp ptransexp lodgexp grocexp restexp baitexp iceexp parkexp bfuelexp brentexp guideexp crewexp procexp feesexp giftsexp othexp) 
 
-
 svyset psu_id [pweight= sample_wt], strata(var_id) singleunit(certainty)
 
 gen st2 = string(st,"%02.0f")
@@ -82,8 +81,6 @@ replace st_error=sqrt(st_error)
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
 replace mode1="pr" if inlist(mode_fx,  "7")
-
-
 
 *Adjust for inflation
 replace total_exp = total_exp*$inflation_expansion

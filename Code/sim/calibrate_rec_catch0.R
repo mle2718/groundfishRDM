@@ -2,17 +2,13 @@
 
 #This is the calibration-year trip simulation WITHOUT any adjustments for illegal harvest or voluntary release
 
-# s<-"closed"
+# s<-"summer"
 # md<-"pr"
 # i<-3
 
 mode_draw <- c("pr", "fh")
-draws <- 1:15
+draws <- 1:n_simulations
 season_draw <- c("summer", "winter")
-
-# mode_draw <- c("pr")
-# draws <- 1:n_simulations
-# season_draw <- c( "closed")
 
 # Create an empty list to collect results
 calib_comparison <- list()

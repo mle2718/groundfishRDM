@@ -4,7 +4,7 @@
 #outcomes until simulated harvest in numbers of fish is within 5% or 500 fish of the MRIP estimate.
 
 #Set number of original draws. We use 125 for the final run. Choose a lot fewer for test runs
-n_simulations<-15
+n_simulations<-100
 
 n_draws<-50 #Number of simulated trips per day
 
@@ -21,17 +21,13 @@ MRIP_comparison = read_dta(file.path(input_data_cd,"simulated_catch_totals.dta")
 baseline_output0<-fst::read_fst(file.path(iterative_input_data_cd, "calibration_comparison.fst"))
 
 
-# mode_draw <- c("pr", "fh")
-# draws <- 1:n_simulations
-# season_draw <- c("open", "closed")
-
 mode_draw <- c("pr", "fh")
-draws <- 1:15
+draws <- 1:n_simulations
 season_draw <- c("summer", "winter")
 
- # s<-"open"
- # md<-"pr"
- # i<-1
+# s<-"open"
+# md<-"pr"
+# i<-1
 
 # Create an empty list to collect results
 calibrated <- list()

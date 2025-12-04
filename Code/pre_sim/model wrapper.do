@@ -34,10 +34,8 @@
 
 
 **************************************************ADJUST GLOBALS************************************************** 	
-*These need to be changed every year 
-
+* these need to be changed every year 
 global calibration_year "(year==2025 & inlist(wave, 1, 2, 3)) | (year==2024 & inlist(wave, 4, 5, 6))"  // last six waves of data 
-global rec_selectivity_year "(year==2024 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2023 & inlist(wave, 6))"
 
 global calibration_date_start td(01jul2024)
 global calibration_date_end td(30jun2025)
@@ -45,8 +43,7 @@ global calibration_date_end td(30jun2025)
 global projection_date_start td(01may2026)
 global projection_date_end td(30apr2027)
 
-
-*Add federal holidays, as these are considered "weekend" days by the MRIP and we estimate fishing effort at the month and kind-of-day level
+* add federal holidays, as these are considered "weekend" days by the MRIP and we need to account for this when estimating fishing effort at the month and kind-of-day level
 
 /*
 Federal Holidays Included:
@@ -63,62 +60,41 @@ Thanksgiving Day: Fourth Thursday in November.
 Christmas Day: December 25 (observed on December 26 if it falls on Sunday).
 */
 
-/*
-global fed_holidays "inlist(day, td(02jan2023), td(16jan2023), td(20feb2023), td(29may2023), td(19jun2023), td(04jul2023), td(04sep2023), td(09oct2023), td(10nov2023), td(23nov2023)," ///
- "td(25dec2023), td(01jan2024), td(15jan2024), td(19feb2024), td(27may2024), td(19jun2024), td(04jul2024), td(02sep2024), td(14oct2024), td(11nov2024), td(28nov2024), td(25dec2024)," ///
-" td(01jan2025), td(20jan2025), td(17feb2025), td(26may2025), td(19jun2025), td(04jul2025), td(01sep2025), td(13oct2025), td(11nov2025), td(27nov2025), td(25dec2025)," ///
-" td(01jan2026), td(19jan2026), td(16feb2026), td(25may2026))"
-*/
-
-*Fed holidays in the calibration year 
+* fed holidays in the calibration year 
 global fed_holidays "inlist(day, td(04jul2024), td(02sep2024), td(14oct2024), td(11nov2024), td(28nov2024), td(25dec2024), td(01jan2025), td(20jan2025), td(17feb2025), td(26may2025), td(19jun2025))" 
 
+* fed holidays in the projection year 
 global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026), td(07sep2026), td(12oct2026), td(11nov2026),  td(26nov2026),  td(25dec2026), td(01jan2027), td(18jan2027), td(15feb2027))"
 
-/*
-global fed_holidays "inlist(day, td(10nov2023), td(23nov2023), td(25dec2023), td(01jan2024), td(15jan2024), td(19feb2024), td(27may2024), td(19jun2024), td(04jul2024), td(02sep2024), td(14oct2024), td(11nov2024), td(28nov2024), td(25dec2024))" 
-
-global fed_holidays_y2 "inlist(day_y2,td(01jan2025), td(20jan2025), td(17feb2025), td(26may2025), td(19jun2025), td(04jul2025), td(01sep2025), td(13oct2025), td(11nov2025), td(27nov2025), td(25dec2025), td(01jan2026), td(19jan2026), td(16feb2026), td(25may2026))"
-
-global fed_holidays "inlist(day, td(27may2024), td(19jun2024), td(04jul2024), td(02sep2024), td(14oct2024), td(11nov2024), td(28nov2024), td(25dec2024), td(01jan2025), td(20jan2025),  td(17feb2025), td(26may2025))" 
-
-*Fed holidays in the projection year 
-global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026), td(07sep2026), td(12oct2026), td(11nov2026),  td(26nov2026),  td(25dec2026), td(01jan2027), td(18jan2027), td(15feb2027))"
-*/
-*Put leap-year days here
+* leap-year days here
 global leap_yr_days "td(29feb2024)" 
 
-*Choose how many draws you want to create. Will create 150 for final version, from which 100 will be selected
-global ndraws 15
+* choose number of draws to create. Will ultimately select ~100 for final model
+global ndraws 100
 
-*set the year to use for historical numbers at age 
-*global calibration_year_NAA 2024
+* adjust 2022 survey trip costs to account for inflation (January 2022 - January 2025)
+* source =https://www.bls.gov/data/inflation_calculator.htm
+global inflation_expansion=1.13
 
-*set the year to use for projected numbers at age 
-*global projection_year_NAA 2025
-
-*set years of which to pull the NEFSC trawl survey data
-global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
-
-*Adjustment to 2017 survey trip costs to account for inflation
-*https://www.bls.gov/data/inflation_calculator.htm, January 2017 - January 2025 **CHECK
-global inflation_expansion=1.21 
-
-*Adjust project paths based on user
+* adjust project paths based on user
 global project_path "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM" /* Lou's project path */
 global input_data_cd "E:\Lou_projects\groundfishRDM\input_data" /* Lou's local data path */
 global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
 global iterative_input_data_cd "E:\Lou_projects\groundfishRDM\process_data"
 global figure_cd  "E:\Lou_projects\groundfishRDM\figures"
 
-*Years/waves of MRIP data. 
+* set a global seed #
+global seed 03211990
+
+* years/waves of MRIP data. 
 global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 					 20241 20242 20243 20244 20245 20246  ///
 					 20251 20252 20253 20254 20255 20256
+					 
 global yearlist 2023 2024 2025
 global wavelist 1 2 3 4 5 6
 
-global seed 03211990
+
 **************************************************Model calibration ************************************************** 
 // 1) Pull the MRIP data
 do "$input_code_cd\MRIP data wrapper.do"
@@ -136,17 +112,17 @@ do "$input_code_cd\survey trip costs.do"
 
 // 4) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
-		do "$input_code_cd\catch_per_trip_calibration_part1.do"
+		do "$input_code_cd\calibration_catch_per_trip_part1.do"
 
 		//b) use copula model (in R) to simulate harvest and discards per-trip
-		* run copula_model_loop.R
+		* run copula_modeling_calibration.R
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-		do "$input_code_cd\catch_per_trip_calibration_part2.do"
+		do "$input_code_cd\calibration_catch_per_trip_part2.do"
 
 
 // 5) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-		do "$input_code_cd\compare calibration output to MRIP.do" 
+		do "$input_code_cd\compare calibration data to MRIP.do" 
 
 // 6) add additonal angler demographics based on results of utilty model
 		do "$input_code_cd\additional_angler_dems.do" 
@@ -155,6 +131,11 @@ do "$input_code_cd\survey trip costs.do"
 // 7) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
 		do "$input_code_cd\catch_at_length_calibration.do"
 
+// At this point, the calibration routine can be run in R. 		
+
+
+**************************************************Model projection ************************************************** 
+		
 // 8) Generate projection-year catch-at-length, incorporating the stock assessment data
 		do "$input_code_cd\catch_at_length_projection.do"
 
