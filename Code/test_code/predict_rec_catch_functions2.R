@@ -1,19 +1,224 @@
-# Predict Rec Catch
-# This function predict recreational catch for cod and haddock
+
+#Local loop for prediction
+
+options(scipen = 999)
+
+packages <- c("tidyr",  "magrittr", "tidyverse", "reshape2", "splitstackshape","doBy","WriteXLS","Rcpp",
+              "ggplot2","rlist","fitdistrplus","MASS","psych","rgl","copula","VineCopula","scales",
+              "univariateML","logspline","readr","data.table","conflicted", "readxl", "writexl", "fs", "fst",
+              "purrr", "readr", "here", "furrr", "profvis", "future", "magrittr", "feather", "RStata", "haven")
+
+#Install only those not already installed
+# installed <- packages %in% rownames(installed.packages())
+# if (any(!installed)) {
+#   install.packages(packages[!installed])
+# }
+
+lapply(packages, library, character.only = TRUE)
+
+library(plyr)
+library(dplyr)
+
+conflicts_prefer(here::here)
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::mutate)
+conflicts_prefer(dplyr::rename)
+conflicts_prefer(dplyr::summarize)
+conflicts_prefer(dplyr::summarise)
+conflicts_prefer(dplyr::count)
+
+n_draws<-50
+
+# Data read for non-shiny run of predict_rec_catch.R
+## Run this script prior to predict rec catch
+
+#Lou's repos
+#test_code_cd="C:/Users/andrew.carr-harris/Desktop/Git/groundfishRDM/Code/test_code"
+input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
+iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+
+final_process_data_cd="E:/Lou_projects/groundfishRDM/final_process_data"
+final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/final_process_data/base_outcomes"
+final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/final_process_data/n_choice_occasions"
+final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscellaneous"
+
+############# To Run Individual
+# Variables to change
+# s<-"summer"
+# md<-"pr"
+# dr<-1
+#
+# mode_draw <- c("pr", "fh")
+# draws <- 1:15
+# season_draw <- c("summer", "winter")
 
 
-future::plan(multisession, workers = 2)
-
-# Run for all modes and seasons + aggregate
-#system.time({
 mode_draw   <- c("pr", "fh")
 season_draw <- c("summer", "winter")
 
 param_grid <- expand.grid(
-  md     = mode_draw,
-  s = season_draw,
+  md = mode_draw,
+  s  = season_draw,
   stringsAsFactors = FALSE
 )
+
+run_one_draw <- function(dr) {
+  message("Running draw ", dr)
+
+ndraws=50 #number of choice occasions to simulate per strata
+
+#l_w_conversion parameters =
+cod_lw_a = 0.000005132
+cod_lw_b = 3.1625
+had_lw_a = 0.000009298
+had_lw_b = 3.0205
+
+disc_mort<- fst::read_fst(file.path(final_process_misc_cd, "Discard_Mortality.fst")) %>%
+  dplyr::rename(month=Month)
+
+directed_trips_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
+  tibble::tibble() %>%
+  dplyr::select(mode, day,  dtrip, draw,
+                starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+  dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
+  dplyr::filter(draw == dr) %>%
+  as.data.table()
+
+get_lowest_min_size_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
+  tibble::tibble() %>%
+  dplyr::select(mode, day,  dtrip, draw,
+                starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
+
+cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_same)
+hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_same)
+
+catch_data0 <- list()
+base_outcomes_angler_dems0 <- list()
+n_choice_occasions0 <- list()
+
+mode_draw <- c("pr", "fh")
+season_draw <- c("summer", "winter")
+
+k<-1
+
+for (md in mode_draw) {
+  for (s in season_draw){
+
+    catch_data0[[k]] <- fst::read_fst(file.path(final_process_outcomes_cd, paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
+      dplyr::left_join(directed_trips_draw, by=c("mode", "date")) %>%
+      dplyr::rename(tot_cod_catch_base = tot_cod_catch,
+                    tot_hadd_catch_base = tot_hadd_catch) %>%
+      dplyr::mutate(cod_cat=tot_cod_catch_base,
+                    hadd_cat=tot_hadd_catch_base) %>%
+      dplyr::select(date, mode, draw,  tripid, catch_draw, season,
+                    cod_cat, hadd_cat, starts_with("cod_bag"), starts_with("cod_min"),
+                    starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+      as.data.table()
+
+    base_outcomes_angler_dems0[[k]] <- fst::read_fst(file.path(final_process_outcomes_cd, paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
+      dplyr::select(date, mode,  tripid, catch_draw,
+                    tot_keep_cod_base, tot_rel_cod_base,
+                    tot_keep_hadd_base, tot_rel_hadd_base,
+                    starts_with("beta"),
+                    total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost) %>%
+      dplyr::rename(date_parsed=date) %>%
+      as.data.table()
+
+    n_choice_occasions0[[k]] <- fst::read_fst(file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_",s, "_", md, "_", dr,".fst"))) %>%
+      dplyr::rename(date_parsed=date)  %>%
+      as.data.table()
+
+    k<-k+1
+
+  }
+}
+
+catch_data_draw <- bind_rows(catch_data0)
+base_outcomes_angler_dems_draw <- bind_rows(base_outcomes_angler_dems0)
+n_choice_occasions_draw <- bind_rows(n_choice_occasions0)
+
+rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
+
+# Size data used in projections is "baseline"proj_catch_at_length.fst"
+# For testing, change the size data file to "baseline_catch_at_length.fst"
+cod_size_data_draw <- read_fst(file.path(final_process_misc_cd, "baseline_catch_at_length.fst"))  %>%
+  dplyr::filter(species=="cod", draw==dr) %>%
+  dplyr::filter(!is.na(fitted_prob)) %>%
+  dplyr::select(fitted_prob, length, season) %>%
+  as.data.table()
+
+hadd_size_data_draw <- read_fst(file.path(final_process_misc_cd, "baseline_catch_at_length.fst"))  %>%
+  dplyr::filter(species=="hadd", draw==dr) %>%
+  dplyr::filter(!is.na(fitted_prob)) %>%
+  dplyr::select(fitted_prob, length, season) %>%
+  as.data.table()
+
+calendar_adjustments_draw <- read_fst(file.path(final_process_misc_cd, paste0("calendar_adj_final.fst"))) %>%
+  dplyr::filter(draw==dr) %>%
+  dplyr::select(-dtrip, -dtrip_y2, -draw, -good_draw) %>%
+  as.data.table()
+
+# Pull in calibration comparison information about trip-level harvest/discard re-allocations
+calib_comparison_draw<-read_fst(file.path(final_process_misc_cd, "calibrated_model_stats_final.fst")) %>%
+  dplyr::filter(draw==dr) %>%
+  as.data.table()
+
+calib_comparison_draw<-calib_comparison_draw %>%
+  dplyr::rename(n_legal_rel_hadd=n_legal_hadd_rel,
+                n_legal_rel_cod=n_legal_cod_rel,
+                n_sub_kept_hadd=n_sub_hadd_kept,
+                n_sub_kept_cod=n_sub_cod_kept,
+                prop_legal_rel_hadd=prop_legal_hadd_rel,
+                prop_legal_rel_cod=prop_legal_cod_rel,
+                prop_sub_kept_hadd=prop_sub_hadd_kept,
+                prop_sub_kept_cod=prop_sub_cod_kept,
+                convergence_cod=cod_convergence,
+                convergence_hadd=hadd_convergence)
+
+##########
+# List of species suffixes
+species_suffixes <- c("cod", "hadd")
+
+# Get all variable names
+all_vars <- names(calib_comparison_draw)
+
+# Identify columns that are species-specific (contain _cod or _hadd)
+species_specific_vars <- all_vars[
+  str_detect(all_vars, paste0("(_", species_suffixes, ")$", collapse = "|"))
+]
+
+id_vars <- setdiff(all_vars, species_specific_vars)
+
+## --- build draw-specific inputs ---
+calib_comparison_draw<-calib_comparison_draw %>%
+  dplyr::select(mode, season, all_of(species_specific_vars))
+
+# Extract base variable names (without __cod or _hadd)
+base_names <- unique(str_replace(species_specific_vars, "_(cod|hadd)$", ""))
+
+# Pivot the data longer on the species-specific columns
+calib_comparison_draw <- calib_comparison_draw %>%
+  pivot_longer(
+    cols = all_of(species_specific_vars),
+    names_to = c(".value", "species"),
+    names_pattern = "(.*)_(cod|hadd)"
+  ) %>%
+  dplyr::distinct()
+
+## --- make draw-specific inputs visible to simulate_cod/hadd by assigning to global names ---
+
+cod_size_data           <<- cod_size_data_draw
+hadd_size_data          <<- hadd_size_data_draw
+calendar_adjustments    <<- calendar_adjustments_draw
+calib_comparison        <<- calib_comparison_draw
+directed_trips          <<- directed_trips_draw
+catch_data              <<- catch_data_draw
+base_outcomes_angler_dems <<- base_outcomes_angler_dems_draw
+n_choice_occasions      <<- n_choice_occasions_draw
+cod_min_size_FY         <<- cod_min_size_FY_draw
+hadd_min_size_FY        <<- hadd_min_size_FY_draw
 
 # Cod trip simulation
 #furrr
@@ -32,7 +237,6 @@ zero_catch_cod <- rbindlist(lapply(results_list, `[[`, "zero_catch"))
 
 size_data_cod <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
-
 
 
 # Haddock trip simulation
@@ -55,7 +259,6 @@ zero_catch_hadd <- rbindlist(lapply(results_list, `[[`, "zero_catch"))
 size_data_hadd <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
-
 # merge the trip data
 trip_data <- merge(trip_data_cod, trip_data_hadd, by = "domain2", all = TRUE)
 
@@ -68,15 +271,14 @@ length_data <- merge(size_data_cod, size_data_hadd,
                      by = c("date", "mode", "tripid", "catch_draw"),
                      all = TRUE)
 
-
 #First merge cod and hadd zero catches
 zero_catch_check<- merge(zero_catch_cod, zero_catch_hadd,
-                        by = c("date", "mode", "tripid", "catch_draw"),
-                        all = TRUE)[
-                            tot_keep_cod_new == 0 & tot_rel_cod_new == 0 &
-                            tot_keep_hadd_new == 0 & tot_rel_hadd_new == 0,
-                            .(date, mode, tripid, catch_draw)
-                          ]
+                         by = c("date", "mode", "tripid", "catch_draw"),
+                         all = TRUE)[
+                           tot_keep_cod_new == 0 & tot_rel_cod_new == 0 &
+                             tot_keep_hadd_new == 0 & tot_rel_hadd_new == 0,
+                           .(date, mode, tripid, catch_draw)
+                         ]
 
 
 # Bind rows (rbindlist is faster and more memory-efficient)
@@ -90,7 +292,6 @@ data.table::setnafill(length_data, cols = num_cols_len, fill = 0)
 rm(zero_catch_cod,zero_catch_hadd,zero_catch_check)
 
 
-# Mutate efficiently
 trip_data[, date_parsed := lubridate::ymd(date)]
 trip_data[, `:=`(
   tot_cat_cod_new  = tot_keep_cod_new + tot_rel_cod_new,
@@ -98,22 +299,16 @@ trip_data[, `:=`(
   date = NULL
 )]
 
-
 length_data[, date_parsed := lubridate::ymd(date)][, date := NULL]
-
 
 trip_data <- trip_data[base_outcomes_angler_dems, on = .(date_parsed, mode, tripid, catch_draw), nomatch = 0L]
 trip_data[, domain2 := NULL]
 
-print("before remove catch_data")
-# rm(trip_data_cod,trip_data_hadd ,
-#    size_data_cod, size_data_hadd,
-#    results_list, catch_data)
-print("after remove catch_data")
-
+rm(trip_data_cod,trip_data_hadd ,
+   size_data_cod, size_data_hadd,
+   results_list, catch_data)
 
 # compute utility/choice probabilites/welfare
-
 # Precompute square roots once
 trip_data[, `:=`(
   sqrt_keep_cod_new = sqrt(tot_keep_cod_new),
@@ -207,7 +402,6 @@ mean_trip_data <- mean_trip_data %>%
 all_vars<-c()
 all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c("date_parsed","mode", "tripid")]
 
-#all_vars
 # average outcomes across draws
 mean_trip_data<-mean_trip_data  %>%
   .[,lapply(.SD, mean), by = c("date_parsed","mode", "tripid"), .SDcols = all_vars]
@@ -227,6 +421,7 @@ mean_trip_data <- mean_trip_data %>%
 # We will multiply each simulated choice equation by an appropriate expansion factor,
 # then multiply this expansion factor by the projection-year calendar adjustment to account for
 # different numbers of weekend vs. weekday in the projection year versus the calibration
+
 setDT(n_choice_occasions)
 setDT(calendar_adjustments)
 
@@ -241,26 +436,16 @@ mean_trip_data[, `:=`(
   n_choice_occasions0 = n_choice_occasions,
   estimated_trips0    = estimated_trips
 )]
+
 mean_trip_data[, `:=`(
   n_choice_occasions = n_choice_occasions0 * expansion_factor,
   expand = n_choice_occasions / ndraws
 )]
 
-# mean_trip_data<-mean_trip_data %>%
-#   dplyr::left_join(n_choice_occasions, by = c("mode", "date_parsed")) %>%
-#   dplyr::mutate(month = lubridate::month(date_parsed))  %>%
-#   dplyr::mutate(dplyr::across(where(is.numeric), ~tidyr::replace_na(., 0))) %>%  #replace NAs for n_choice_occasions and estimated trips
-#   dplyr::left_join(calendar_adjustments, by = c("mode", "month")) %>%
-#   dplyr::rename(n_choice_occasions0=n_choice_occasions,
-#                 estimated_trips0=estimated_trips) %>%
-#   dplyr::mutate(n_choice_occasions=n_choice_occasions0*expansion_factor,
-#                 expand=n_choice_occasions/ndraws)
-
 
 #retain expansion factors by strata to multiply with length data
 expansion_factors<-mean_trip_data %>%
   dplyr::select("date_parsed","mode", "tripid", "expand", "probA")
-
 
 # Expand outcomes for projection year
 list_names <- c("tot_keep_cod_new",   "tot_rel_cod_new",  "tot_cat_cod_new",
@@ -272,7 +457,6 @@ all_vars <- c(list_names)
 mean_trip_data <- mean_trip_data %>%
   .[,as.vector(all_vars) := lapply(.SD, function(x) x * expand), .SDcols = all_vars] %>%
   .[]
-
 
 #process length data
 pattern_vars <- grep("^keep_(cod_|hadd_)[0-9.]*$|^release_(cod_|hadd_)[0-9.]*$",
@@ -288,13 +472,6 @@ length_data <- length_data[
 ]
 
 length_data <- expansion_factors[length_data, on = .(date_parsed, mode, tripid)]
-
-
-# length_data<-length_data  %>% data.table::as.data.table() %>%
-#   .[,lapply(.SD, mean), by = c("date_parsed","mode", "tripid"), .SDcols = pattern_vars]
-#
-# length_data<-length_data %>%
-#   dplyr::right_join(expansion_factors, b=c("date_parsed","mode", "tripid"))
 
 # mulitply length data first by the average probability, then by the expansion factor
 length_data[
@@ -349,21 +526,21 @@ model_output1_long <- model_output1_long %>%
   dplyr::bind_rows(model_output1_long_new)
 
 
-## Compute catch weight estimates
+# Compute catch weight estimates
 # Process length-frequency data
 
-## Select needed columns and add month
+# Select needed columns and add month
 length_data1 <- length_data[, c("date_parsed", "mode", pattern_vars), with = FALSE]
 length_data1[, month := lubridate::month(date_parsed)]
 
-## Aggregate sums by mode + month
+# Aggregate sums by mode + month
 length_data1 <- length_data1[
   , lapply(.SD, sum),
   by = .(mode, month),
   .SDcols = pattern_vars
 ]
 
-## MELT to long
+# MELT to long
 length_data1 <- data.table::melt(
   length_data1,
   id.vars = c("month", "mode"),
@@ -371,12 +548,12 @@ length_data1 <- data.table::melt(
   value.name = "number_at_length"
 )
 
-## Split Var into keep_release, species, length
+# Split Var into keep_release, species, length
 length_data1[, c("keep_release", "species", "length") :=
                data.table::tstrsplit(Var, "_", fixed = TRUE)]
 length_data1[, length := as.numeric(length)]
 
-## Define spp2
+# Define spp2
 length_data1[
   , spp2 := data.table::fifelse(
     species == "hadd" & length > 50, "had_lg",
@@ -387,11 +564,11 @@ length_data1[
   )
 ]
 
-## Join disc_mort
+# Join disc_mort
 disc_mort <- data.table::as.data.table(disc_mort)
 length_data1 <- disc_mort[length_data1, on = .(month, spp2)]
 
-## Compute weight
+# Compute weight
 length_data1[
   , weight := data.table::fcase(
     species == "cod",  cod_lw_a*length^cod_lw_b,
@@ -399,10 +576,10 @@ length_data1[
     default = NA_real_
   )
 ]
-## Convert to lbs
+# Convert to lbs
 length_data1[, weight := weight * 2.20462262185]
 
-## Totals
+# Totals
 length_data1[, keep_weight := data.table::fifelse(keep_release == "keep",
                                                   number_at_length * weight,
                                                   0)]
@@ -419,14 +596,14 @@ length_data1[, release_numbers := data.table::fifelse(keep_release == "release",
                                                       number_at_length,
                                                       0)]
 
-## Discard mortality weight
+# Discard mortality weight
 length_data1[, discmort_weight := data.table::fcase(
   keep_release == "release" & species == "cod", Discard_mortality * number_at_length * weight,
   keep_release == "release" & species == "hadd", Discard_mortality * number_at_length * weight,
   default = 0
 )]
 
-## Discard mortality numbers
+# Discard mortality numbers
 length_data1[, discmort_number := data.table::fcase(
   keep_release == "release" & species == "cod", Discard_mortality * number_at_length,
   keep_release == "release" & species == "hadd", Discard_mortality * number_at_length,
@@ -434,7 +611,7 @@ length_data1[, discmort_number := data.table::fcase(
 )]
 
 
-## Summarise by species, mode
+# Summarise by species, mode
 length_data1 <- length_data1[, .(
   keep_numbers = sum(keep_numbers),
   release_numbers = sum(release_numbers),
@@ -445,7 +622,7 @@ length_data1 <- length_data1[, .(
 ), by = .(species, mode)]
 
 
-## total removals numbers and weights
+# total removals numbers and weights
 length_data1[, removals_weight :=  keep_weight + discmort_weight]
 length_data1[, removals_number :=  keep_numbers + discmort_number]
 
@@ -474,18 +651,28 @@ length_output <- data.table::rbindlist(list(length_data_long_all, length_data_lo
                                        use.names = TRUE,
                                        fill = TRUE)
 
-
 predictions <- data.table::rbindlist(
   list(length_output, model_output1_long),
   use.names = TRUE,
-  fill = TRUE) %>%
-  dplyr::mutate(draw=dr)
+  fill = TRUE)
+
+predictions[, draw := dr]
+
 #})
 
-print("Finished predict_rec_catch")
+return(predictions)
+}
 
-#return(predictions)
-#}
+
+
+
+
+
+
+
+
+
+
 
 
 
