@@ -5,9 +5,16 @@
 # It also needs some parameters that come out of the stock assessment.
 # This code does just 1 projection.
 # 2) 75%Fmsy 2025-2027 (potential ABCs)
-# Bridging is done by picking the last row of "agg_catch" from the projection
+# Bridging was originally done by picking the last row of "agg_catch" from the projection
 # for 2023 and 2024
-# This is pretty standard.
+# I've modified it to pass in numbers for 2023 and 2024 based on recent data updates
+
+
+# Depends "wham_version_installer.R" will install the proper version of the WHAM
+# package that matches the WHAM model.
+
+
+
 # Some inputs to ASAP are scalars, some are vectors, and some are matrices.
 # I use tail(.x, 1) to pick the last "thing" of a vector or matrix, which is usually the final year of data.
 
@@ -47,34 +54,58 @@
 
 ############ End description###################################################
 
+library(tidyverse)
+library(TMB)
+library(haven)
+library(glue)
+
+cod_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "cod_wham_install")
+library(wham,lib.loc = cod_wham_lib)
 
 
 ###########Begin Housekeeping##################################################
-# Install wham if needed, load libraries
+#Set paths, input names, and savefile names.
 
-# Install the version of wham that corresponds to the version used to do the stock assessment.
-packageDescription("wham")$RemoteSha
-# If the result of the previous command is not "cc1264219b07dbaf07ff07e6e6d549b44addab28", you will need to
-# install the version of wham that was used to do the initial estimation.
-# pak::pak("timjmiller/wham@cc1264219b07dbaf07ff07e6e6d549b44addab28", ask=FALSE)
-# You should also probably restart R before running the rest of the code.
-library(tidyverse)
-library(wham)
-library(haven)
-
-#Set paths, input names, and savefile names. Load in data
-
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST","cod_haddock_fy2025")
-
-input_folder<-file.path(BLAST_root,"source_data","cod","input")
-output_folder<-file.path(BLAST_root,"source_data","cod","output",Sys.Date())
+BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
+input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
+output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
 dir.create(file.path(output_folder), showWarnings = FALSE)
 
 
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-"WGOMCod_Projections.rds"
-ProjectedNAASaveFile<-"WGOM_Cod_projected_NAA_2024Assessment.dta"
-HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_2024Assessment.dta"
+ProjectedNAASaveFile<-"WGOM_Cod_projected_NAA_from_2024Assessment.dta"
+HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_from_2024Assessment.dta"
+
+# Read in accepted model
+mod_accepted <-
+  readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
+
+mod_accepted$model_name <- "Accepted"
+mod_list <- list(mod_accepted)
+
+###################################################################################
+###################################################################################
+#Make sure that the version of WHAM that was used to generate the model is installed
+###################################################################################
+###################################################################################
+
+# take a look at the version of WHAM used to generate the model.
+model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
+model_wham_commit<-gsub(")", "", model_wham_commit)
+
+stopifnot(model_wham_commit==packageDescription("wham")$RemoteSha)
+# keep getting a warning message about magrittr, but things seem to work.
+
+cat("Model Wham version is", model_wham_commit, "\n")
+cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
+
+
+###################################################################################
+###################################################################################
+#End WHAM commit verification
+###################################################################################
+###################################################################################
 
 
 
@@ -89,8 +120,8 @@ asap3 <- read_asap3_dat(file.path(input_folder,ASAP_file_in))
 # Placeholders and parameters
 periods<-12 # there are 12 months in a year
 # Which year do you want a projection for, How many projections? Set a seed.
-YearProj<-2025
-num_NAA_draws<-10000
+YearProj<-2026
+num_NAA_draws<-500
 set.seed(6)
 
 # I use tail(.x, 1) to pick the last "thing" out of the ASAP input file
@@ -149,34 +180,32 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 ################################################################################
 ################################################################################
 
-mod_accepted <-
-  readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
-# take a look at the version of WHAM used to generate the model. Throw an error it does not match the currently installed WHAM
-wham_commit<-strsplit(mod$wham_commit,split="@")[[1]][2]
-wham_commit<-gsub(")", "", wham_commit)
-stopifnot(wham_commit==packageDescription("wham")$RemoteSha)
 
-mod_accepted$model_name <- "Accepted"
+# Define catch in previous years######################################################
+# I use GARFOs quota monitoring page for Rec, since the FY catch is equal to the CY catch.
+# Doesn't quite work for commercial
 
-mod_list <- list(mod_accepted)
+actual_2023_commercial_catch_mt<-438
+actual_2024_commercial_catch_mt<-550
+actual_2025_commercial_catch_mt<-NA
+
+actual_2023_rec_catch_mt<-192 # From GARFO quota monitoring report
+actual_2024_rec_catch_mt<-72
+actual_2025_rec_catch_mt<-NA
+
+
+actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
+actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
+# 2025 not used (yet)
+# actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
+
 
 
 ###################################PROJECTIONS #################################
 # Set specs ####################################################################
 set_specs <- function(mod) {
-  bridge <- sum(tail(mod$env$data$agg_catch,1)) #Catch in the last year of the assessment
+  #bridge <- sum(tail(mod$env$data$agg_catch,1)) #Catch in the last year of the assessment
   Fmsy <- exp(mod$rep$log_FXSPR_static)         #FMSY
-
-  # This is a mini-projection done if you wanted to get the catch in 2025 that
-  # results from 75%FMSY and then apply that constant amount in the future.
-  # catch2025 <-
-  #   project_wham(model = mod,
-  #                proj.opts = list(n.yrs = 2,
-  #                                 proj_F_opt = c(5, 4),
-  #                                 proj_Fcatch = c(bridge, 0.75 * Fmsy)),
-  #                do.sdrep = F, MakeADFun.silent = T)$rep$
-  #   pred_catch[mod$env$data$n_years_model + 2, ] %>%
-  #   sum()
 
 
   proj.opts_list <-
@@ -184,7 +213,7 @@ set_specs <- function(mod) {
          scenario    = c("0.75Fmsy (2025-2027)"), #Scenario 2 from the original projections. This is just a string.
          n.yrs       = rep(list(4), times = 1),   # Number of years is set in in (list(numyears)). Number of scenarios is set with times
          proj_F_opt  = list(c(5, 5, 4, 4)),  # length=numyears.  stack on different things to make different projections. 5=metric tons, 4=an instantanous fishing mortality rate (F)
-         proj_Fcatch = list(c(bridge, bridge, rep(0.75 * Fmsy, 2))) #2 # length=numyears
+         proj_Fcatch = list(c(actual_2023_catch_mt, actual_2024_catch_mt, rep(0.75 * Fmsy, 2))) #2 # length=numyears
     )
 }
 
@@ -261,7 +290,7 @@ saveRDS(proj_list, file = file.path(output_folder,FullProjectionsSaveFile))
 # Get historical and projected NAA
 ################################################################################
 ################################################################################
-#This pulls objects out of the sdreport.
+#This pulls objects out of the sdreport. Models are stacked into the proj_list object
 std1 <- list(TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Est", report = TRUE),
              TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Std", report = TRUE))
 
@@ -284,8 +313,8 @@ historical_NAA<-exp(NAA_logmean)
 colnames(historical_NAA)<-names
 historical_NAA<-as.data.frame(cbind(year,historical_NAA))
 
-#historical_NAA <- historical_NAA %>%
-#  dplyr::filter(year<YearProj)
+historical_NAA <- historical_NAA %>%
+  dplyr::filter(year<YearProj)
 
 write_dta(historical_NAA, path=file.path(output_folder,HistoricalNAASaveFile))
 
@@ -305,15 +334,13 @@ NAA_logsd<-NAA_logsd[RowPick,]
 stopifnot(length(NAA_logmean)==length(NAA_logsd))
 
 
-# Simulate NAA
+#To "bias-correct" the lognormal you would change the SIM_NAA[[ageclass]] line to:
 NAA<-list()
 for (ageclass in 1:length(NAA_logmean)){
-  NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass],NAA_logsd[ageclass])
+  NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass]) # Feed it straight into rlnorm
 }
 
 
-#To "bias-correct" the lognormal you would change the SIM_NAA[[ageclass]] line to:
-#SIM_NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass]) # Feed it straight into rlnorm
 
 
 
