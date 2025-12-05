@@ -6,6 +6,18 @@ library(dplyr)
 #library(tidyverse)
 #devtools::install_github("NEFSC/READ.SSB.groundfishRecDST")
 
+Run_Name <- args[1]
+
+saved_regs<- read.csv(here::here(paste0("saved_regs/regs_", Run_Name, ".csv")))
+
+for (a in seq_len(nrow(saved_regs))) {
+  # Extract name and value
+  obj_name <- saved_regs$input[a]
+  obj_value <- saved_regs$value[a]
+
+  # Assign to object in the environment
+  assign(obj_name, obj_value)
+}
 
 
 predictions_all = list()
@@ -32,36 +44,6 @@ had_lw_b = 3.0205
 disc_mort<- fst::read_fst(file.path(here::here("Data/miscellaneous"), "Discard_Mortality.fst")) %>%
   dplyr::rename(month=Month)
 
-adjust_doy <- function(date) {
-  doy <- lubridate::yday(date)
-  if (doy >= 121) doy - 120 else doy + 245
-}
-
-## CORRECT DOY
-##### Cod #########
-CodFH_seas1_1 <- adjust_doy(lubridate::yday(input$CodFH_seas1[1]))
-CodFH_seas1_2 <- adjust_doy(lubridate::yday(input$CodFH_seas1[2]))
-CodFH_seas2_1 <- adjust_doy(lubridate::yday(input$CodFH_seas2[1]))
-CodFH_seas2_2 <- adjust_doy(lubridate::yday(input$CodFH_seas2[2]))
-CodPR_seas1_1 <- adjust_doy(lubridate::yday(input$CodPR_seas1[1]))
-CodPR_seas1_2 <- adjust_doy(lubridate::yday(input$CodPR_seas1[2]))
-CodPR_seas2_1 <- adjust_doy(lubridate::yday(input$CodPR_seas2[1]))
-CodPR_seas2_2 <- adjust_doy(lubridate::yday(input$CodPR_seas2[2]))
-###### haddock
-HadFH_seas1_1 <- adjust_doy(lubridate::yday(input$HadFH_seas1[1]))
-HadFH_seas1_2 <- adjust_doy(lubridate::yday(input$HadFH_seas1[2]))
-HadFH_seas2_1 <- adjust_doy(lubridate::yday(input$HadFH_seas2[1]))
-HadFH_seas2_2 <- adjust_doy(lubridate::yday(input$HadFH_seas2[2]))
-HadFH_seas3_1 <- adjust_doy(lubridate::yday(input$HadFH_seas3[1]))
-HadFH_seas3_2 <- adjust_doy(lubridate::yday(input$HadFH_seas3[2]))
-
-
-HadPR_seas1_1 <- adjust_doy(lubridate::yday(input$HadPR_seas1[1]))
-HadPR_seas1_2 <- adjust_doy(lubridate::yday(input$HadPR_seas1[2]))
-HadPR_seas2_1 <- adjust_doy(lubridate::yday(input$HadPR_seas2[1]))
-HadPR_seas2_2 <- adjust_doy(lubridate::yday(input$HadPR_seas2[2]))
-HadPR_seas3_1 <- adjust_doy(lubridate::yday(input$HadPR_seas3[1]))
-HadPR_seas3_2 <- adjust_doy(lubridate::yday(input$HadPR_seas3[2]))
 
 #print(directed_trips)
 directed_trips<-fst::read_fst(file.path(here::here("Data/miscellaneous"), paste0("directed_trip_draws_final.fst")))
