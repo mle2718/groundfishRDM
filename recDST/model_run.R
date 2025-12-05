@@ -1,15 +1,36 @@
 print("start model")
 library(magrittr)
+library(fst)
+library(plyr)
+library(dplyr)
 #library(tidyverse)
 #devtools::install_github("NEFSC/READ.SSB.groundfishRecDST")
 
-Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 400)
+
 
 predictions_all = list()
 
-size_data_read <- readr::read_csv(here::here("data-raw/projected_CaL_cod_hadd_cm.csv"), progress = FALSE)
-Disc_mort<- readr::read_csv(here::here("data-raw/Discard_Mortality.csv"), show_col_types = FALSE, progress = FALSE)
-directed_trips<-readr::read_csv(here::here("data-raw/directed_trips/directed_trips_doy_cm.csv"), progress = FALSE)
+n_draws<-50
+
+mode_draw   <- c("pr", "fh")
+season_draw <- c("summer", "winter")
+
+param_grid <- expand.grid(
+  md = mode_draw,
+  s  = season_draw,
+  stringsAsFactors = FALSE
+)
+
+ndraws=50 #number of choice occasions to simulate per strata
+
+#l_w_conversion parameters =
+cod_lw_a = 0.000005132
+cod_lw_b = 3.1625
+had_lw_a = 0.000009298
+had_lw_b = 3.0205
+
+disc_mort<- fst::read_fst(file.path(here::here("Data/miscellaneous"), "Discard_Mortality.fst")) %>%
+  dplyr::rename(month=Month)
 
 adjust_doy <- function(date) {
   doy <- lubridate::yday(date)
@@ -43,6 +64,7 @@ HadPR_seas3_1 <- adjust_doy(lubridate::yday(input$HadPR_seas3[1]))
 HadPR_seas3_2 <- adjust_doy(lubridate::yday(input$HadPR_seas3[2]))
 
 #print(directed_trips)
+directed_trips<-fst::read_fst(file.path(here::here("Data/miscellaneous"), paste0("directed_trip_draws_final.fst")))
 
 directed_trips <- directed_trips %>%
   dplyr::mutate(cod_min_SQ = cod_min_y2,  cod_bag_SQ = cod_bag_y2,
@@ -77,21 +99,6 @@ directed_trips <- directed_trips %>%
                  cod_bag_alt = cod_bag_y2,
                  cod_min_alt = cod_min_y2)
 
-# dtest<- directed_trips %>%
-#   dplyr::filter(draw == 1 & mode == "fh")
-# write.csv(dtest, file = "dtrips_before_select17.csv")
-
-baseline_comparison1<-readRDS(here::here("data-raw/calibration_comparison.rds")) %>%
-  dplyr::arrange(draw, mrip_index) %>%
-  dplyr::group_by(draw) %>%
-  dplyr::mutate(draw_id = dplyr::cur_group_id()) %>%
-  dplyr::filter(draw_id<=100)
-dplyr::n_distinct(baseline_comparison1$draw)
-
-calendar_adjust1 <- readr::read_csv(here::here("data-raw/next year calendar adjustments.csv"), show_col_types = FALSE, progress = FALSE)
-
-mrip_index <- c(unique(baseline_comparison1$mrip_index))
-
 #mrip_index  <- mrip_index[1:400]
 mrip_index  <- mrip_index[1:4]
 
@@ -99,47 +106,137 @@ future::plan(future::multisession, workers = 6)
 #future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
 
-  baseline_comparison<-baseline_comparison1 %>%
-    dplyr::filter(mrip_index==x) %>%
-    dplyr::mutate(all_cod_keep_2_release=ifelse(tot_keep_cod_model>0 & tot_cod_keep_mrip==0, 1, 0),
-                  all_hadd_keep_2_release=ifelse(tot_keep_hadd_model>0 & tot_hadd_keep_mrip==0, 1, 0))
+  directed_trips_draw<-directed_trips %>%
+    tibble::tibble() %>%
+    dplyr::select(mode, day,  dtrip, draw,
+                  starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+    dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
+                  season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
+    dplyr::filter(draw == dr) %>%
+    data.table::as.data.table()
 
-  k <- unique(baseline_comparison$draw)
-  select_mode = unique(baseline_comparison$mode)
-  select_season = unique(baseline_comparison$open)
+  get_lowest_min_size_draw<-directed_trips%>%
+    tibble::tibble() %>%
+    dplyr::select(mode, day,  dtrip, draw,
+                  starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
 
-  print(x)
+  cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_same)
+  hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_same)
 
-  calibration_data =  readr::read_csv(here::here(paste0("data-raw/calibration/pds_new_", select_mode,"_", select_season, "_",k, ".csv")), progress = FALSE)
+  catch_data0 <- list()
+  base_outcomes_angler_dems0 <- list()
+  n_choice_occasions0 <- list()
 
+  mode_draw <- c("pr", "fh")
+  season_draw <- c("summer", "winter")
 
-  #cost files
-  #costs =  arrow::read_feather(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".feather")))
-  costs =  readr::read_csv(here::here(paste0("data-raw/calibration/costs_", select_mode,"_", select_season, "_",k, ".csv")), progress = FALSE)
+  k<-1
 
-  costs<- costs %>%
-    dplyr::mutate(tot_cod_catch = as.numeric(costs$tot_keep_cod_base) + as.numeric(costs$tot_rel_cod_base),
-                  tot_had_catch = as.numeric(costs$tot_keep_had_base) + as.numeric(costs$tot_rel_had_base))
+  for (md in mode_draw) {
+    for (s in season_draw){
 
-  # calibration_data_table_base <- split(calibration_output_by_period, calibration_output_by_period$state)
-  # cost_files_all_base <- split(costs_new_all, costs_new_all$state)
+      catch_data0[[k]] <- fst::read_fst(file.path(here::here("Data/base_outcomes"), paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
+        dplyr::left_join(directed_trips_draw, by=c("mode", "date")) %>%
+        dplyr::rename(tot_cod_catch_base = tot_cod_catch,
+                      tot_hadd_catch_base = tot_hadd_catch) %>%
+        dplyr::mutate(cod_cat=tot_cod_catch_base,
+                      hadd_cat=tot_hadd_catch_base) %>%
+        dplyr::select(date, mode, draw,  tripid, catch_draw, season,
+                      cod_cat, hadd_cat, starts_with("cod_bag"), starts_with("cod_min"),
+                      starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+        data.table::as.data.table()
 
-  calendar_adjust<- calendar_adjust1 %>%
-    dplyr::filter(draw == k,
-                  mode == select_mode)
+      base_outcomes_angler_dems0[[k]] <- fst::read_fst(file.path(here::here("Data/base_outcomes"),  paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
+        dplyr::select(date, mode,  tripid, catch_draw,
+                      tot_keep_cod_base, tot_rel_cod_base,
+                      tot_keep_hadd_base, tot_rel_hadd_base,
+                      starts_with("beta"),
+                      total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost) %>%
+        dplyr::rename(date_parsed=date) %>%
+        data.table::as.data.table()
 
-  directed_trips2 <- directed_trips %>%
-    dplyr::filter(draw == k, mode == select_mode)
-  # print(unique(directed_trips2$cod_min_y2))
-  # print(unique(directed_trips2$cod_bag_y2))
-  # print(unique(directed_trips2$hadd_min_y2))
-  # print(unique(directed_trips2$hadd_bag_y2))
+      n_choice_occasions0[[k]] <- fst::read_fst(file.path(here::here("Data/n_choice_occasions"), paste0("n_choice_occasions_final_",s, "_", md, "_", dr,".fst"))) %>%
+        dplyr::rename(date_parsed=date)  %>%
+        data.table::as.data.table()
 
-  # print(directed_trips2)
-  #directed_trips2<- read.csv(here::here("dtrips_test_BASE.csv"))
-  #write.csv(directed_trips2, here::here("dtrips_test_AFTER.csv"))
+      k<-k+1
 
-  source(here::here("predict_rec_catch.R"))
+    }
+  }
+
+  catch_data_draw <- dplyr::bind_rows(catch_data0)
+  base_outcomes_angler_dems_draw <- dplyr::bind_rows(base_outcomes_angler_dems0)
+  n_choice_occasions_draw <- dplyr::bind_rows(n_choice_occasions0)
+
+  rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
+
+  # Size data used in projections is "baseline"proj_catch_at_length.fst"
+  # For testing, change the size data file to "baseline_catch_at_length.fst"
+  cod_size_data_draw <- fst::read_fst(file.path(here::here("Data/miscellaneous"), "baseline_catch_at_length.fst"))  %>%
+    dplyr::filter(species=="cod", draw==dr) %>%
+    dplyr::filter(!is.na(fitted_prob)) %>%
+    dplyr::select(fitted_prob, length, season) %>%
+    data.table::as.data.table()
+
+  hadd_size_data_draw <- fst::read_fst(file.path(here::here("Data/miscellaneous"), "baseline_catch_at_length.fst"))  %>%
+    dplyr::filter(species=="hadd", draw==dr) %>%
+    dplyr::filter(!is.na(fitted_prob)) %>%
+    dplyr::select(fitted_prob, length, season) %>%
+    data.table::as.data.table()
+
+  calendar_adjustments_draw <- fst::read_fst(file.path(here::here("Data/miscellaneous"), paste0("calendar_adj_final.fst"))) %>%
+    dplyr::filter(draw==dr) %>%
+    dplyr::select(-dtrip, -dtrip_y2, -draw, -good_draw) %>%
+    data.table::as.data.table()
+
+  # Pull in calibration comparison information about trip-level harvest/discard re-allocations
+  calib_comparison_draw<-fst::read_fst(file.path(here::here("Data/miscellaneous"), "calibrated_model_stats_final.fst")) %>%
+    dplyr::filter(draw==dr) %>%
+    data.table::as.data.table()
+
+  calib_comparison_draw<-calib_comparison_draw %>%
+    dplyr::rename(n_legal_rel_hadd=n_legal_hadd_rel,
+                  n_legal_rel_cod=n_legal_cod_rel,
+                  n_sub_kept_hadd=n_sub_hadd_kept,
+                  n_sub_kept_cod=n_sub_cod_kept,
+                  prop_legal_rel_hadd=prop_legal_hadd_rel,
+                  prop_legal_rel_cod=prop_legal_cod_rel,
+                  prop_sub_kept_hadd=prop_sub_hadd_kept,
+                  prop_sub_kept_cod=prop_sub_cod_kept,
+                  convergence_cod=cod_convergence,
+                  convergence_hadd=hadd_convergence)
+
+  ##########
+  # List of species suffixes
+  species_suffixes <- c("cod", "hadd")
+
+  # Get all variable names
+  all_vars <- names(calib_comparison_draw)
+
+  # Identify columns that are species-specific (contain _cod or _hadd)
+  species_specific_vars <- all_vars[
+    stringr::str_detect(all_vars, paste0("(_", species_suffixes, ")$", collapse = "|"))
+  ]
+
+  id_vars <- setdiff(all_vars, species_specific_vars)
+
+  ## --- build draw-specific inputs ---
+  calib_comparison_draw<-calib_comparison_draw %>%
+    dplyr::select(mode, season, all_of(species_specific_vars))
+
+  # Extract base variable names (without __cod or _hadd)
+  base_names <- unique(stringr::str_replace(species_specific_vars, "_(cod|hadd)$", ""))
+
+  # Pivot the data longer on the species-specific columns
+  calib_comparison_draw <- calib_comparison_draw %>%
+    tidyr::pivot_longer(
+      cols = all_of(species_specific_vars),
+      names_to = c(".value", "species"),
+      names_pattern = "(.*)_(cod|hadd)"
+    ) %>%
+    dplyr::distinct()
+
+  source(here::here("Code/sim/predict_rec_catch.R"))
   test<- predict_rec_catch(x = x, draw = k,
                            baseline_comparison1 = baseline_comparison,
                            select_season = select_season, select_mode = select_mode,
