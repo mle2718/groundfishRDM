@@ -843,7 +843,7 @@ server <- function(input, output, session){
     regulations <- NULL
     print("where am i")
     #if(any( )) will run all selected check boxes on UI-regulations selection tab
-      codregs <- data.frame(run_name = c("Run_Name()"),
+      codregs <- data.frame(run_name = c(Run_Name()),
                             input =  c("codFH_seas1_op", "codFH_seas1_cl", "codPR_seas1_op", "codPR_seas1_cl",
                                        "codFH_seas2_op", "codFH_seas2_cl", "codPR_seas2_op", "codPR_seas2_cl",
                                        "codFH_seas3_op", "codFH_seas3_cl", "codPR_seas3_op", "codPR_seas3_cl",
@@ -871,7 +871,7 @@ server <- function(input, output, session){
 
       print(codregs)
 
-      hadregs <- data.frame(run_name = c("Run_Name()"),
+      hadregs <- data.frame(run_name = c(Run_Name()),
                             input =  c("hadFH_seas1_op", "hadFH_seas1_cl", "hadPR_seas1_op", "hadPR_seas1_cl",
                                        "hadFH_seas2_op", "hadFH_seas2_cl", "hadPR_seas2_op", "hadPR_seas2_cl",
                                        "hadFH_seas3_op", "hadFH_seas3_cl", "hadPR_seas3_op", "hadPR_seas3_cl",
