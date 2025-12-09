@@ -4,4 +4,8 @@
 .Ruserdata
 .secrets
 
+/Data
+/data-raw
+/output
+
 **/.env

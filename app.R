@@ -180,38 +180,38 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadPR_3_len", label ="Min Length",
-                                                                 min = 15, max = 30, value = 18, step = 1)))))))),
+                                                                 min = 15, max = 30, value = 18, step = 1))))))))#,
 
 
-    #### Results ####
-    tabPanel("Results",
-             conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                              tags$div("Calculating...This will take ~50 min.",id="loadmessage")), #Warning for users
-
-             downloadButton(outputId = "downloadData", "Download"),
-             actionButton("bymode", "Results by Mode"),
-             # Add table outputs
-             ## KB - Make tables DTs - should fix RMD documentation issue
-             tableOutput(outputId = "regtableout"),
-
-             tableOutput(outputId = "catch_tableout"),
-             #tableOutput(outputId = "catchmode"),
-
-             tableOutput(outputId = "welfare_tableout"),
-             #tableOutput(outputId = "welfaremode"),
-
-             tableOutput(outputId = "keep_tableout")),
-             #tableOutput(outputId = "keepmode")),
-     #### By Mode ####
-     # tabPanel("Results - By Mode",
-     #          tableOutput(outputId = "regtableout"),
-     #          tableOutput(outputId = "catchmode"),
-     #          tableOutput(outputId = "welfaremode"),
-     #          tableOutput(outputId = "keepmode"))#,
-
-    ### Documentation ####
-    tabPanel("Documentation",
-             htmlOutput("documentation"))
+    # #### Results ####
+    # tabPanel("Results",
+    #          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+    #                           tags$div("Calculating...This will take ~50 min.",id="loadmessage")), #Warning for users
+    #
+    #          downloadButton(outputId = "downloadData", "Download"),
+    #          actionButton("bymode", "Results by Mode"),
+    #          # Add table outputs
+    #          ## KB - Make tables DTs - should fix RMD documentation issue
+    #          tableOutput(outputId = "regtableout"),
+    #
+    #          tableOutput(outputId = "catch_tableout"),
+    #          #tableOutput(outputId = "catchmode"),
+    #
+    #          tableOutput(outputId = "welfare_tableout"),
+    #          #tableOutput(outputId = "welfaremode"),
+    #
+    #          tableOutput(outputId = "keep_tableout")),
+    #          #tableOutput(outputId = "keepmode")),
+    #  #### By Mode ####
+    #  # tabPanel("Results - By Mode",
+    #  #          tableOutput(outputId = "regtableout"),
+    #  #          tableOutput(outputId = "catchmode"),
+    #  #          tableOutput(outputId = "welfaremode"),
+    #  #          tableOutput(outputId = "keepmode"))#,
+    #
+    # ### Documentation ####
+    # tabPanel("Documentation",
+    #          htmlOutput("documentation"))
 
   ))
 
@@ -253,12 +253,12 @@ server <- function(input, output, session){
   }
 
   cod_acl <- function(){
-    cod_acl = 99
+    cod_acl = 118
     return(cod_acl)
   }
 
   had_acl <- function(){
-    had_acl = 1075
+    had_acl = 1146
     return(had_acl)
   }
 
@@ -279,6 +279,19 @@ server <- function(input, output, session){
 
 
   output$DTout <- DT::renderDT({
+    catch_agg<- df2() %>%
+      #dat %>%
+      dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
+                    number_weight == "Weight") %>%
+      dplyr::group_by(run_number, Category,draw_out) %>%
+      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+      dplyr::mutate(Value = Value * lb_to_mt()) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(run_number, Category) %>%
+      dplyr::summarise(under_acl = sum(under_acl),
+                       Value = round(median(Value),0)) %>%
+      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl))
 
     SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>%
       dplyr::rename(Category = Var,
@@ -288,53 +301,31 @@ server <- function(input, output, session){
       dplyr::select(Category, Value, run_number) %>%
       dplyr::left_join(SQ_regulations, by = c("Category"))
 
-    seas<- df3 %>% dplyr::filter(stringr::str_detect(Category, "Season")) %>%
-      tidyr::separate(Value, into = c("Value1", "Value2"), sep = " - ") %>%
-      tidyr::separate(SQ, into = c("SQ1", "SQ2"), sep = " - ") %>%
-      dplyr::mutate(Value = as.integer(lubridate::ymd(Value2)-lubridate::ymd(Value1)),
-                    SQ = as.integer(lubridate::ymd(SQ2)-lubridate::ymd(SQ1))) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(Value < SQ ~ "Shorter Season", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(Value > SQ ~ "Longer Season", TRUE ~ Diff_from_SQ),
-                    Value = paste0(Value1, " - ", Value2)) %>%
-      dplyr::select(Category, Diff_from_SQ, run_number)
-
-    bag<- df3 %>% dplyr::filter(stringr::str_detect(Category, "bag")) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Bag", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Bag", TRUE ~ Diff_from_SQ)) %>%
-      dplyr::select(Category, Diff_from_SQ, run_number)
-
-    size<- df3 %>% dplyr::filter(stringr::str_detect(Category, "size")) %>%
-      dplyr::mutate(Diff_from_SQ = dplyr::case_when(as.numeric(Value) < as.numeric(SQ) ~ "Smaller Min Length", TRUE ~ ""),
-                    Diff_from_SQ = dplyr::case_when(as.numeric(Value) > as.numeric(SQ) ~ "Larger Min Length", TRUE ~ Diff_from_SQ)) %>%
-      dplyr::select(Category, Diff_from_SQ, run_number)
-
-    df4<- rbind(seas, bag, size) %>%
-      dplyr::ungroup()
 
     Regs_out <- df3 %>%
-      dplyr::left_join(df4, by = c("Category", "run_number")) %>%
+      dplyr::left_join(catch_agg, by = c("run_number")) %>%
       dplyr::select(!SQ) %>%
       dplyr::select(!Opt) %>%
       tidyr::separate(Category, into =c("Species", "mode", "Var"), sep = "_") %>%
       dplyr::ungroup() %>%
-      tidyr::pivot_wider(names_from = Var, values_from = c(Value, Diff_from_SQ)) %>%
-      dplyr::mutate(Value_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_Season),
-                    Value_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_size),
-                    Diff_from_SQ_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_bag),
-                    Diff_from_SQ_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_size),
-                    Diff_from_SQ_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_Season),
-                    Value_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Value_bag)) %>%
+      tidyr::pivot_wider(names_from = Var, values_from = c(Value)) %>%
+      dplyr::mutate(Season = dplyr::case_when(bag == 0 ~"NA", TRUE ~ Season),
+                    size = dplyr::case_when(bag == 0 ~"NA", TRUE ~ size),
+                    # Diff_from_SQ_bag = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_bag),
+                    # Diff_from_SQ_size = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_size),
+                    # Diff_from_SQ_Season = dplyr::case_when(Value_bag == 0 ~"NA", TRUE ~ Diff_from_SQ_Season),
+                    bag = dplyr::case_when(bag == 0 ~"NA", TRUE ~ bag)) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
-      dplyr::select(!c(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
-      tidyr::pivot_wider(names_from = Species, values_from = c(Diff_from_SQ, Value_bag, Value_size, Value_Season)) %>%
+      #dplyr::mutate(Diff_from_SQ = paste0(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
+      #dplyr::select(!c(Diff_from_SQ_bag,Diff_from_SQ_size,Diff_from_SQ_Season)) %>%
+      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate(cod_bag = paste0(Value_bag_Cod1, " , ", Value_bag_Cod2),
-                    cod_size = paste0(Value_size_Cod1, " , ", Value_size_Cod2),
-                    cod_season = paste0(Value_Season_Cod1, " , ", Value_Season_Cod2),
-                    had_bag = paste0(Value_bag_Had1, " , ", Value_bag_Had2, " , ", Value_bag_Had3),
-                    had_size = paste0(Value_size_Had1, " , ", Value_size_Had2, " , ", Value_size_Had3),
-                    had_season = paste0(Value_Season_Had1, " , ", Value_Season_Had2, " , ", Value_Season_Had3),
+      dplyr::mutate(cod_bag = paste0(bag_Cod1, " , ", bag_Cod2),
+                    cod_size = paste0(size_Cod1, " , ", size_Cod2),
+                    cod_season = paste0(Season_Cod1, " , ", Season_Cod2),
+                    had_bag = paste0(bag_Had1, " , ", bag_Had2, " , ", bag_Had3),
+                    had_size = paste0(size_Had1, " , ", size_Had2, " , ", size_Had3),
+                    had_season = paste0(Season_Had1, " , ", Season_Had2, " , ", Season_Had3),
                     cod_bag = stringr::str_remove(cod_bag, " , NA"),
                     cod_size = stringr::str_remove(cod_size, " , NA"),
                     cod_season = stringr::str_remove(cod_season, " , NA"),
@@ -346,23 +337,23 @@ server <- function(input, output, session){
                     cod_season = stringr::str_remove(cod_season, "NA ,"),
                     had_bag = stringr::str_remove(had_bag, "NA ,"),
                     had_size = stringr::str_remove(had_size, "NA ,"),
-                    had_season = stringr::str_remove(had_season, "NA ,"),
-                    Diff_from_SQ_cod = paste0(Diff_from_SQ_Cod1, " , ", Diff_from_SQ_Cod2),
-                    Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3),
-                    Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
-                    Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
-                    Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NA ,"),
-                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NA ,"),
-                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"),
-                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"),
-                    Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>%
-      dplyr::select(mode, run_number, Diff_from_SQ_cod, Diff_from_SQ_had, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
+                    had_season = stringr::str_remove(had_season, "NA ,")) %>%
+                    # Diff_from_SQ_cod = paste0(Diff_from_SQ_Cod1, " , ", Diff_from_SQ_Cod2),
+                    # Diff_from_SQ_had = paste0(Diff_from_SQ_Had1, " , ", Diff_from_SQ_Had2, " , ", Diff_from_SQ_Had3),
+                    # Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, " , NA"),
+                    # Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NANA"),
+                    # Diff_from_SQ_cod = stringr::str_remove(Diff_from_SQ_cod, "NA ,"),
+                    # Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NA ,"),
+                    # Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NA"),
+                    # Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, " , NANA"),
+                    # Diff_from_SQ_had = stringr::str_remove(Diff_from_SQ_had, "NANA")) %>%
+      dplyr::select(mode, run_number, cod_bag, cod_size, cod_season, had_bag, had_size, had_season, under_acl_cod, under_acl_had) %>%
       dplyr::mutate(cod_season = stringr::str_remove_all(cod_season, "202.-"),
                     had_season = stringr::str_remove_all(had_season, "202.-")) %>%
       dplyr::mutate(mode = dplyr::recode(mode, "FH" = "For Hire",
                     "PR" = "Private")) %>%
-      dplyr::select(run_number, mode, cod_bag, cod_size, cod_season, Diff_from_SQ_cod,
-                    had_bag, had_size, had_season, Diff_from_SQ_had) %>%
+      dplyr::select(run_number, mode, cod_bag, cod_size, cod_season,
+                    had_bag, had_size, had_season, under_acl_cod, under_acl_had) %>%
       dplyr::rename(Mode = mode,
                     `Run Identifier` = run_number,
                     `Cod Bag Limit` = cod_bag,
@@ -371,8 +362,8 @@ server <- function(input, output, session){
                     `Haddock Bag Limit` = had_bag,
                     `Haddock Minimum Size (in)` = had_size,
                     `Haddock Season(s)` = had_season,
-                    `Difference from Cod SQ` = Diff_from_SQ_cod,
-                    `Difference from haddock SQ` = Diff_from_SQ_had)
+                    `% under Cod ACL` = under_acl_cod,
+                    `% under Haddock ACL` = under_acl_had)
 
 
     DT::datatable(Regs_out)
@@ -481,7 +472,7 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::left_join(SQ) %>%
           dplyr::mutate(Value_diff = Value_SQ-Value) %>%
-          dplyr::summarise(median_cv = median(Value_diff))
+          dplyr::summarise(median_cv = median(Value_diff, na.rm = TRUE))
 
         catch<- df2() %>%
           dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
@@ -536,7 +527,7 @@ server <- function(input, output, session){
           dplyr::summarise(Value = sum(as.numeric(Value))) %>%
           dplyr::left_join(SQ) %>%
           dplyr::mutate(Value_diff = Value_SQ-Value) %>%
-          dplyr::summarise(median_cv = median(Value_diff))
+          dplyr::summarise(median_cv = median(Value_diff, na.rm = TRUE))
 
         catch<- df2() %>%
           dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
