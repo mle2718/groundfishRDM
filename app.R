@@ -56,7 +56,7 @@ ui <- fluidPage(
                        sliderInput(inputId = "CodFH_seas1", label ="For Hire Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2025-09-01","%Y-%m-%d"),as.Date("2025-10-31","%Y-%m-%d")),
+                                   value =c(as.Date("2025-05-01","%Y-%m-%d"),as.Date("2025-05-30","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -69,7 +69,7 @@ ui <- fluidPage(
                        sliderInput(inputId = "CodPR_seas1", label ="Private Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
-                                   value =c(as.Date("2025-09-01","%Y-%m-%d"),as.Date("2025-10-31","%Y-%m-%d")),
+                                   value =c(as.Date("2025-05-01","%Y-%m-%d"),as.Date("2025-05-30","%Y-%m-%d")),
                                    timeFormat = "%Y-%m-%d", ticks = FALSE),
                        fluidRow(
                          column(4,
@@ -868,9 +868,6 @@ server <- function(input, output, session){
                                        as.character(input$CodFH_3_len), as.character(input$CodPR_3_len)))
 
 
-
-      print(codregs)
-
       hadregs <- data.frame(run_name = c(Run_Name()),
                             input =  c("hadFH_seas1_op", "hadFH_seas1_cl", "hadPR_seas1_op", "hadPR_seas1_cl",
                                        "hadFH_seas2_op", "hadFH_seas2_cl", "hadPR_seas2_op", "hadPR_seas2_cl",
@@ -897,7 +894,7 @@ server <- function(input, output, session){
                                        as.character(input$HadFH_2_len), as.character(input$HadPR_2_len),
                                        as.character(input$HadFH_3_len), as.character(input$HadPR_3_len)))
 
-      print(hadregs)
+
     regulations <- regulations %>% rbind(codregs, hadregs)
     print("made regulations MA")
 
