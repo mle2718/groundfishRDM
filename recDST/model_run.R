@@ -101,7 +101,11 @@ directed_trips <- directed_trips %>%
     hadd_min_y2_alt=dplyr::case_when(mode == "fh" & date_adj >= lubridate::yday(hadFH_seas2_op) & date_adj <= lubridate::yday(hadFH_seas2_cl) ~ as.numeric(hadFH_2_len)*2.54, TRUE ~ hadd_min_y2_alt),
     hadd_min_y2_alt=dplyr::case_when(mode == "pr" & date_adj >= lubridate::yday(hadPR_seas2_op) & date_adj <= lubridate::yday(hadPR_seas2_cl) ~ as.numeric(hadPR_2_len)*2.54, TRUE ~ hadd_min_y2_alt),
     hadd_min_y2_alt=dplyr::case_when(mode == "fh" & date_adj >= lubridate::yday(hadFH_seas3_op) & date_adj <= lubridate::yday(hadFH_seas3_cl) ~ as.numeric(hadFH_3_len)*2.54, TRUE ~ hadd_min_y2_alt),
-    hadd_min_y2_alt=dplyr::case_when(mode == "pr" & date_adj >= lubridate::yday(hadPR_seas3_op) & date_adj <= lubridate::yday(hadPR_seas3_cl) ~ as.numeric(hadPR_3_len)*2.54, TRUE ~ hadd_min_y2_alt))
+    hadd_min_y2_alt=dplyr::case_when(mode == "pr" & date_adj >= lubridate::yday(hadPR_seas3_op) & date_adj <= lubridate::yday(hadPR_seas3_cl) ~ as.numeric(hadPR_3_len)*2.54, TRUE ~ hadd_min_y2_alt)) %>%
+  dplyr::rename(cod_min_y2 = cod_min_y2_alt,
+                cod_bag_y2 = cod_bag_y2_alt,
+                hadd_min_y2 = hadd_min_y2_alt,
+                hadd_bag_y2 = hadd_bag_y2_alt)
 
 
 future::plan(future::multisession, workers = 6)
@@ -219,14 +223,14 @@ for(x in 1:2){
   id_vars <- setdiff(all_vars, species_specific_vars)
 
   ## --- build draw-specific inputs ---
-  calib_comparison_draw<-calib_comparison2 %>%
+  calib_comparison2<-calib_comparison2 %>%
     dplyr::select(mode, season, all_of(species_specific_vars))
 
   # Extract base variable names (without __cod or _hadd)
   base_names <- unique(stringr::str_replace(species_specific_vars, "_(cod|hadd)$", ""))
 
   # Pivot the data longer on the species-specific columns
-  calib_comparison_draw <- calib_comparison2 %>%
+  calib_comparison2 <- calib_comparison2 %>%
     tidyr::pivot_longer(
       cols = all_of(species_specific_vars),
       names_to = c(".value", "species"),
@@ -234,21 +238,19 @@ for(x in 1:2){
     ) %>%
     dplyr::distinct()
 
-  source(here::here("Code/sim/predict_rec_catch_functions.R"))
+  source(here::here("Code/sim/predict_rec_catch_data_functions.R"))
   source(here::here("Code/sim/predict_rec_catch.R"))
 
-  test<- predict_rec_catch(x = x, draw = k,
+  test<- predict_rec_catch(dr = x,
                            directed_trips = directed_trips2,
                            catch_data = catch_data,
-                           sf_size_data = sf_size_data2,
-                           bsb_size_data = bsb_size_data2,
-                           scup_size_data = scup_size_data2,
-                           l_w_conversion = l_w_conversion,
+                           cod_size_data = cod_size_data2,
+                           had_size_data = hadd_size_data2,
                            calib_comparison = calib_comparison2,
-                           n_choice_occasions = n_choice_occasions2,
+                           n_choice_occasions = n_choice_occasions,
                            calendar_adjustments = calendar_adjustments2,
-                           base_outcomes = base_outcomes2,
-                           discard_mortality_dat = Disc_mort)
+                           base_outcomes = base_outcomes,
+                           discard_mortality_dat = disc_mort)
 
   #print("test")
   #print(test)

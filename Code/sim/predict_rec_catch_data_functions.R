@@ -16,7 +16,7 @@ simulate_cod <- function(md, s) {
       names_glue = "{.value}_{species}"
     )
 
-  setDT(calib_lookup)
+  data.table::setDT(calib_lookup)
   #setkey(calib_lookup, mode)
 
   # Extract calibration parameters
@@ -211,7 +211,7 @@ simulate_hadd <- function(md, s) {
       names_glue = "{.value}_{species}"
     )
 
-  setDT(calib_lookup)
+  data.table::setDT(calib_lookup)
   #setkey(calib_lookup, mode)
 
   # Extract calibration parameters
