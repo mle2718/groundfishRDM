@@ -91,8 +91,8 @@ param_grid <- expand.grid(
     dplyr::select(mode, day,  dtrip, draw,
                   starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
 
-  cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_same)
-  hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_same)
+  cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2)
+  hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2)
 
   catch_data0 <- list()
   base_outcomes_angler_dems0 <- list()
