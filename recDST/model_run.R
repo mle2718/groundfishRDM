@@ -110,9 +110,9 @@ directed_trips <- directed_trips %>%
 
 future::plan(future::multisession, workers = 6)
 #future::plan(future::multisession, workers = 124)
-#get_predictions_out<- function(x){
-pred <- data.frame()
-for(x in 1:2){
+get_predictions_out<- function(x){
+#pred <- data.frame()
+#for(x in 1:2){
 
   directed_trips2<-directed_trips %>%
     tibble::tibble() %>%
@@ -250,13 +250,8 @@ for(x in 1:2){
                            n_choice_occasions = n_choice_occasions,
                            calendar_adjustments = calendar_adjustments2,
                            base_outcomes = base_outcomes,
-                           discard_mortality_dat = disc_mort)
-
-  #print("test")
-  #print(test)
-  pred <- pred %>% rbind(test)
-
-
+                           discard_mortality_dat = disc_mort,
+                           param_grid = param_grid)
 
 }
 #})
@@ -265,4 +260,4 @@ for(x in 1:2){
 
 
 #write.csv(pred, file = here::here("SQ_predictions_cm.csv"))
-predictions_out10<- furrr::future_map_dfr(mrip_index, ~get_predictions_out(.))
+predictions_out10<- furrr::future_map_dfr(1:3, ~get_predictions_out(.))
