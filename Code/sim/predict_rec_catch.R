@@ -159,14 +159,15 @@ mean_trip_data[, `:=`(
 ), by = group_index]
 
 # Calculate consumer surplus
-mean_trip_data[, `:=`(
-  CS_base = log_sum_base / -beta_cost,
-  CS_alt = log_sum_alt / -beta_cost
-)]
+# mean_trip_data[, `:=`(
+#   CS_base = log_sum_base / -beta_cost,
+#   CS_alt = log_sum_alt / -beta_cost
+# )]
 
 # Calculate change consumer surplus
+# Here I take the negative of the CS formula for easeier interpretability of model output
 mean_trip_data[, `:=`(
-  CV = CS_alt - CS_base
+  CV = -(1/beta_cost)*(log_sum_alt - log_sum_base)
 )]
 
 # Get rid of things we don't need.
