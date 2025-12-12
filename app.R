@@ -32,6 +32,7 @@ ui <- fluidPage(
                choices = c( "Angler Satisfaction","Discards", "Trips"),
                inline = TRUE,
                status = "danger"),
+             uiOutput("summary_regs_table"),
              uiOutput("addCVCod"),
              uiOutput("addCVHad"),
              uiOutput("addReleaseCod"),
@@ -52,7 +53,7 @@ ui <- fluidPage(
               fluidRow(
                 column(6,
                        titlePanel("Cod"),
-                       sliderInput(inputId = "CodFH_seas1", label ="For Hire Open Season 1",
+                       sliderInput(inputId = "CodFH_seas1", label ="For Hire Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
                                    value =c(as.Date("2025-09-01","%Y-%m-%d"),as.Date("2025-10-31","%Y-%m-%d")),
@@ -64,7 +65,8 @@ ui <- fluidPage(
                          column(5,
                                 sliderInput(inputId = "CodFH_1_len", label = "Min Length",
                                             min = 15, max = 30, value = 23, step = 1))),
-                       sliderInput(inputId = "CodPR_seas1", label ="Private Open Season 1",
+
+                       sliderInput(inputId = "CodPR_seas1", label ="Private Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
                                    value =c(as.Date("2025-09-01","%Y-%m-%d"),as.Date("2025-10-31","%Y-%m-%d")),
@@ -77,35 +79,63 @@ ui <- fluidPage(
                                 sliderInput(inputId = "CodPR_1_len", label = "Min Length",
                                             min = 15, max = 30, value = 23, step = 1))),
 
+
+                       sliderInput(inputId = "CodFH_seas2", label ="For Hire Season 2",
+                                   min = as.Date("2025-05-01","%Y-%m-%d"),
+                                   max = as.Date("2026-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2025-09-01","%Y-%m-%d"),as.Date("2025-10-31","%Y-%m-%d")),
+                                   timeFormat = "%Y-%m-%d", ticks = FALSE),
+                       fluidRow(
+                         column(4,
+                                numericInput(inputId = "CodFH_2_bag", label = "Bag Limit",
+                                             min = 0, max = 100, value = 1)),
+                         column(5,
+                                sliderInput(inputId = "CodFH_2_len", label = "Min Length",
+                                            min = 15, max = 30, value = 23, step = 1))),
+                       sliderInput(inputId = "CodPR_seas2", label ="Private Open Season 2",
+                                   min = as.Date("2025-05-01","%Y-%m-%d"),
+                                   max = as.Date("2026-04-30","%Y-%m-%d"),
+                                   value =c(as.Date("2025-09-01","%Y-%m-%d"),as.Date("2025-10-31","%Y-%m-%d")),
+                                   timeFormat = "%Y-%m-%d", ticks = FALSE),
+                       fluidRow(
+                         column(4,
+                                numericInput(inputId = "CodPR_2_bag", label = "Bag Limit",
+                                             min = 0, max = 100, value = 1)),
+                         column(5,
+                                sliderInput(inputId = "CodPR_2_len", label = "Min Length",
+                                            min = 15, max = 30, value = 23, step = 1))),
+
+
+
                        actionButton("CODaddSeason", "Add Season"),
-                       shinyjs::hidden( div(ID = "CodSeason2",
-                                            sliderInput(inputId = "CodFH_seas2", label ="For Hire Open Season 2",
+                       shinyjs::hidden( div(ID = "CodSeason3",
+                                            sliderInput(inputId = "CodFH_seas3", label ="For Hire Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
                                                         value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
-                                                     numericInput(inputId = "CodFH_2_bag", label ="Bag Limit",
+                                                     numericInput(inputId = "CodFH_3_bag", label ="Bag Limit",
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
-                                                     sliderInput(inputId = "CodFH_2_len", label ="Min Length",
+                                                     sliderInput(inputId = "CodFH_3_len", label ="Min Length",
                                                                  min = 15, max = 25, value = 23, step = 1))),
-                                            sliderInput(inputId = "CodPR_seas2", label ="Private Open Season 2",
+                                            sliderInput(inputId = "CodPR_seas3", label ="Private Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
                                                         value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
                                                         timeFormat = "%Y-%m-%d", ticks = FALSE),
                                             fluidRow(
                                               column(4,
-                                                     numericInput(inputId = "CodPR_2_bag", label ="Bag Limit",
+                                                     numericInput(inputId = "CodPR_3_bag", label ="Bag Limit",
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
-                                                     sliderInput(inputId = "CodPR_2_len", label ="Min Length",
+                                                     sliderInput(inputId = "CodPR_3_len", label ="Min Length",
                                                                  min = 15, max = 25, value = 23, step = 1)))))),
                 column(6,
                        titlePanel("Haddock"),
-                       sliderInput(inputId = "HadFH_seas1", label ="For Hire Open Season 1",
+                       sliderInput(inputId = "HadFH_seas1", label ="For Hire Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
                                    value =c(as.Date("2025-05-01","%Y-%m-%d"),as.Date("2026-02-28","%Y-%m-%d")),
@@ -117,7 +147,7 @@ ui <- fluidPage(
                          column(5,
                                 sliderInput(inputId = "HadFH_1_len", label = "Min Length",
                                             min = 15, max = 30, value = 18, step = 1))),
-                       sliderInput(inputId = "HadPR_seas1", label ="Private Open Season 1",
+                       sliderInput(inputId = "HadPR_seas1", label ="Private Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
                                    value =c(as.Date("2025-05-01","%Y-%m-%d"),as.Date("2026-02-28","%Y-%m-%d")),
@@ -130,7 +160,7 @@ ui <- fluidPage(
                                 sliderInput(inputId = "HadPR_1_len", label = "Min Length",
                                             min = 15, max = 30, value = 18, step = 1))),
 
-                       sliderInput(inputId = "HadFH_seas2", label ="For Hire Open Season 2",
+                       sliderInput(inputId = "HadFH_seas2", label ="For Hire Season 2",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
                                    value =c(as.Date("2026-04-01","%Y-%m-%d"),as.Date("2026-04-30","%Y-%m-%d")),
@@ -142,7 +172,7 @@ ui <- fluidPage(
                          column(5,
                                 sliderInput(inputId = "HadFH_2_len", label = "Min Length",
                                             min = 15, max = 30, value = 18, step = 1))),
-                       sliderInput(inputId = "HadPR_seas2", label ="Private Open Season 2",
+                       sliderInput(inputId = "HadPR_seas2", label ="Private Season 2",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
                                    value =c(as.Date("2026-04-01","%Y-%m-%d"),as.Date("2026-04-30","%Y-%m-%d")),
@@ -157,7 +187,7 @@ ui <- fluidPage(
 
                        actionButton("HADaddSeason", "Add Season"),
                        shinyjs::hidden( div(ID = "HadSeason3",
-                                            sliderInput(inputId = "HadFH_seas3", label ="For Hire Open Season 3",
+                                            sliderInput(inputId = "HadFH_seas3", label ="For Hire Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
                                                         value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
@@ -169,7 +199,7 @@ ui <- fluidPage(
                                               column(6,
                                                      sliderInput(inputId = "HadFH_3_len", label ="Min Length",
                                                                  min = 15, max = 30, value = 18, step = 1))),
-                                            sliderInput(inputId = "HadPR_seas3", label ="Private Open Season 3",
+                                            sliderInput(inputId = "HadPR_seas3", label ="Private Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
                                                         value=c(as.Date("2026-01-01","%Y-%m-%d"),as.Date("2026-01-01","%Y-%m-%d")),
@@ -181,37 +211,6 @@ ui <- fluidPage(
                                               column(6,
                                                      sliderInput(inputId = "HadPR_3_len", label ="Min Length",
                                                                  min = 15, max = 30, value = 18, step = 1))))))))#,
-
-
-    # #### Results ####
-    # tabPanel("Results",
-    #          conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-    #                           tags$div("Calculating...This will take ~50 min.",id="loadmessage")), #Warning for users
-    #
-    #          downloadButton(outputId = "downloadData", "Download"),
-    #          actionButton("bymode", "Results by Mode"),
-    #          # Add table outputs
-    #          ## KB - Make tables DTs - should fix RMD documentation issue
-    #          tableOutput(outputId = "regtableout"),
-    #
-    #          tableOutput(outputId = "catch_tableout"),
-    #          #tableOutput(outputId = "catchmode"),
-    #
-    #          tableOutput(outputId = "welfare_tableout"),
-    #          #tableOutput(outputId = "welfaremode"),
-    #
-    #          tableOutput(outputId = "keep_tableout")),
-    #          #tableOutput(outputId = "keepmode")),
-    #  #### By Mode ####
-    #  # tabPanel("Results - By Mode",
-    #  #          tableOutput(outputId = "regtableout"),
-    #  #          tableOutput(outputId = "catchmode"),
-    #  #          tableOutput(outputId = "welfaremode"),
-    #  #          tableOutput(outputId = "keepmode"))#,
-    #
-    # ### Documentation ####
-    # tabPanel("Documentation",
-    #          htmlOutput("documentation"))
 
   ))
 
@@ -277,6 +276,12 @@ server <- function(input, output, session){
     return(Run_Name)
   }
 
+  regs<- function(){
+    flist <- list.files(path = here::here("saved_regs/"), pattern = "\\.csv$", full.names = TRUE)
+
+    regs_data <- flist %>%
+      purrr::map_dfr(readr::read_csv)
+  }
 
   output$DTout <- DT::renderDT({
     catch_agg<- df2() %>%
@@ -367,6 +372,27 @@ server <- function(input, output, session){
 
 
     DT::datatable(Regs_out)
+  })
+
+  output$summary_regs_table <- DT::renderDT({
+    Regs_out <-regs() %>%
+      tidyr::separate(input, into = c("species", "season", "measure"), sep = "_") %>%
+      dplyr::mutate(season = stringr::str_remove(season, "^seas")) %>%
+      tidyr::extract(species, into = c("species", "state2", "mode"), regex =  "([^a-z]+)([a-z]+)(.*)") %>%
+      dplyr::select(-state2) %>%
+      dplyr::group_by(run_name, state, species, mode, season) %>%
+      tidyr::pivot_wider(names_from = measure, values_from = value) %>%
+      dplyr::filter(!bag == 0) %>%
+      dplyr::mutate(season2 = paste0(op, " - ", cl)) %>%
+      dplyr::group_by(run_name, state, species, mode) %>%
+      dplyr::summarise(
+        bag = paste(bag, collapse = ","),
+        len = paste(len, collapse = ","),
+        season = paste(season2, collapse = ","),
+        .groups = "drop" ) %>%
+      dplyr::mutate(mode = if_else(mode == "", "All modes", mode)) %>%
+      dplyr::mutate(season = gsub("2025-", "", season))
+
   })
 
   output$totCatch <- plotly::renderPlotly({
@@ -762,14 +788,14 @@ server <- function(input, output, session){
   #### Toggle extra seasons on UI ####
   # Allows for extra seasons to show and hide based on click
   shinyjs::onclick("CODaddSeason",
-                   shinyjs::toggle(id = "CodSeason2", anim = TRUE))
+                   shinyjs::toggle(id = "CodSeason3", anim = TRUE))
   shinyjs::onclick("HADaddSeason",
                    shinyjs::toggle(id = "HadSeason3", anim = TRUE))
 
 
   pred <- eventReactive(input$runmeplease,{
     print("STarting this process")
-    source(here::here(paste0("model_run.R")), local = TRUE)
+    source(here::here(paste0("RecDST/model_run.R")), local = TRUE)
     return(predictions_out10)
     print("predicitions out")
   })
@@ -787,87 +813,205 @@ server <- function(input, output, session){
   })
 
   #### Regulations ####
-  regs_agg <- reactive({
+  regulations <- observeEvent(input$runmeplease,{
+    library(httr)
+    library(jsonlite)
+    library(openssl)
+    library(uuid)
 
-    Run_Name = if(Run_Name() != ""){
-      Run_Name = Run_Name()
-    }else {
-      Run_Name = "alt"
+    # enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("AZURE_STORAGE_QUEUE_URL")) {
+    #   stopifnot(nzchar(run_name), nzchar(queue_url_sas))
+    #   payload <- list(
+    #     runName = run_name,
+    #     submissionId = UUIDgenerate(),
+    #     submittedAt = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    #   )
+    #   msg_b64 <- base64_encode(charToRaw(toJSON(payload, auto_unbox = TRUE)))
+    #   xml_body <- sprintf("<QueueMessage><MessageText>%s</MessageText></QueueMessage>", msg_b64)
+    #
+    #   res <- POST(
+    #     url = queue_url_sas,
+    #     body = xml_body,
+    #     content_type_xml(),
+    #     add_headers(`x-ms-version` = "2020-10-02")
+    #   )
+    #   stop_for_status(res)
+    #   invisible(TRUE)
+    # }
+
+
+    regulations <- NULL
+    print("where am i")
+    #if(any( )) will run all selected check boxes on UI-regulations selection tab
+      codregs <- data.frame(run_name = c(Run_Name()),
+                            input =  c("codFH_seas1_op", "codFH_seas1_cl", "codPR_seas1_op", "codPR_seas1_cl",
+                                       "codFH_seas2_op", "codFH_seas2_cl", "codPR_seas2_op", "codPR_seas2_cl",
+                                       "codFH_seas3_op", "codFH_seas3_cl", "codPR_seas3_op", "codPR_seas3_cl",
+
+                                         "codFH_1_bag",   "codFH_1_len",    "codPR_1_bag",   "codPR_1_len",
+                                         "codFH_2_bag" ,  "codFH_2_len",    "codPR_2_bag",   "codPR_2_len",
+                                         "codFH_3_bag",   "codFH_3_len",    "codPR_3_bag",   "codPR_3_len"),
+                            value =  c(as.character(input$CodFH_seas1[1]), as.character(input$CodFH_seas1[2]),
+                                       as.character(input$CodFH_seas2[1]), as.character(input$CodFH_seas2[2]),
+                                       as.character(input$CodFH_seas3[1]), as.character(input$CodFH_seas3[2]),
+
+                                       as.character(input$CodPR_seas1[1]), as.character(input$CodPR_seas1[2]),
+                                       as.character(input$CodPR_seas2[1]), as.character(input$CodPR_seas2[2]),
+                                       as.character(input$CodPR_seas3[1]), as.character(input$CodPR_seas3[2]),
+
+                                       as.character(input$CodFH_1_bag), as.character(input$CodPR_1_bag),
+                                       as.character(input$CodFH_2_bag), as.character(input$CodPR_2_bag),
+                                       as.character(input$CodFH_3_bag), as.character(input$CodPR_3_bag),
+
+                                       as.character(input$CodFH_1_len), as.character(input$CodPR_1_len),
+                                       as.character(input$CodFH_2_len), as.character(input$CodPR_2_len),
+                                       as.character(input$CodFH_3_len), as.character(input$CodPR_3_len)))
+
+
+
+      print(codregs)
+
+      hadregs <- data.frame(run_name = c(Run_Name()),
+                            input =  c("hadFH_seas1_op", "hadFH_seas1_cl", "hadPR_seas1_op", "hadPR_seas1_cl",
+                                       "hadFH_seas2_op", "hadFH_seas2_cl", "hadPR_seas2_op", "hadPR_seas2_cl",
+                                       "hadFH_seas3_op", "hadFH_seas3_cl", "hadPR_seas3_op", "hadPR_seas3_cl",
+
+                                       "hadFH_1_bag",   "hadFH_1_len",    "hadPR_1_bag",   "hadPR_1_len",
+                                       "hadFH_2_bag" ,  "hadFH_2_len",    "hadPR_2_bag",   "hadPR_2_len",
+                                       "hadFH_3_bag",   "hadFH_3_len",    "hadPR_3_bag",   "hadPR_3_len"),
+
+
+                            value =  c(as.character(input$HadFH_seas1[1]), as.character(input$HadFH_seas1[2]),
+                                       as.character(input$HadFH_seas2[1]), as.character(input$HadFH_seas2[2]),
+                                       as.character(input$HadFH_seas3[1]), as.character(input$HadFH_seas3[2]),
+
+                                       as.character(input$HadPR_seas1[1]), as.character(input$HadPR_seas1[2]),
+                                       as.character(input$HadPR_seas2[1]), as.character(input$HadPR_seas2[2]),
+                                       as.character(input$HadPR_seas3[1]), as.character(input$HadPR_seas3[2]),
+
+                                       as.character(input$HadFH_1_bag), as.character(input$HadPR_1_bag),
+                                       as.character(input$HadFH_2_bag), as.character(input$HadPR_2_bag),
+                                       as.character(input$HadFH_3_bag), as.character(input$HadPR_3_bag),
+
+                                       as.character(input$HadFH_1_len), as.character(input$HadPR_1_len),
+                                       as.character(input$HadFH_2_len), as.character(input$HadPR_2_len),
+                                       as.character(input$HadFH_3_len), as.character(input$HadPR_3_len)))
+
+      print(hadregs)
+    regulations <- regulations %>% rbind(codregs, hadregs)
+    print("made regulations MA")
+
+
+    readr::write_csv(regulations, file = here::here(paste0("saved_regs/regs_", input$Run_Name, ".csv")))
+    print("saved_inputs")
+
+    enqueue_simple_sas(input$Run_Name)
+
+    return(regulations)
+
+})
+
+  observeEvent(input$runmeplease, {
+    output$message <- renderText("Regulations saved - we will run these soon be sure to change run name before clicking again.")
+  })
+
+  # Get list of files from the folder
+  available_files <- reactive({
+    folder_path <- here::here("output/")
+    if (dir.exists(folder_path)) {
+      files <- list.files(folder_path, full.names = FALSE)
+      if (length(files) > 0) {
+        return(files)
+      }
+    }
+    return(character(0))
+  })
+
+  file_mapping <- reactive({
+    files <- available_files()
+    if (length(files) > 0) {
+      # Remove file extensions for display names
+      display_names <- files %>%
+        stringr::str_remove("^output_") %>%         # remove prefix
+        stringr::str_remove("_[0-9]+")  %>%
+        stringr::str_remove("_[0-9]+") %>%
+        stringr::str_remove(".csv")
+      # Create named vector: display_name = full_filename
+      names(files) <- display_names
+      return(files)
+    }
+    return(character(0))
+  })
+
+  # Update dropdown choices when app starts
+  observe({
+    file_map <- file_mapping()
+    if (length(file_map) > 0) {
+      updateSelectInput(
+        session,
+        "file_choice",
+        choices = file_map,
+        selected = file_map[1]
+      )
+    } else {
+      updateSelectInput(
+        session,
+        "file_choice",
+        choices = "No files available",
+        selected = NULL
+      )
+    }
+  })
+
+  # Display file information
+  output$file_info <- renderText({
+    if (is.null(input$file_choice) || input$file_choice == "No files available") {
+      return("No file selected or no files available.")
     }
 
-    print("start regs")
-    SQ_regulations <- read.csv(here::here("data-raw/SQ_regulations.csv"))
-    #Regs <- read.csv(here::here("data-raw/SQ_regulations.csv")) %>%
-    #  mutate(Opt = c("alt"))
+    file_path <- file.path("output", input$file_choice)
 
-    Regs<- data.frame(Opt = c(Run_Name),
-                      Var = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",
-                              "Cod1_PR_bag", "Cod1_PR_size", "Cod1_PR_Season",
-                              "Had1_FH_bag", "Had1_FH_size", "Had1_FH_Season",
-                              "Had1_PR_bag", "Had1_PR_size", "Had1_PR_Season",
-                              "Had2_FH_bag", "Had2_FH_size", "Had2_FH_Season",
-                              "Had2_PR_bag", "Had2_PR_size", "Had2_PR_Season",
-                              "Cod2_FH_bag", "Cod2_FH_size", "Cod2_FH_Season",
-                              "Cod2_PR_bag", "Cod2_PR_size", "Cod2_PR_Season",
-                              "Had3_FH_bag", "Had3_FH_size", "Had3_FH_Season",
-                              "Had3_PR_bag", "Had3_PR_size", "Had3_PR_Season"),
-                      Val = c(input$CodFH_1_bag, input$CodFH_1_len, paste0(input$CodFH_seas1[1], " - ", input$CodFH_seas1[2]),
-                              input$CodPR_1_bag, input$CodPR_1_len, paste0(input$CodPR_seas1[1], " - ", input$CodPR_seas1[2]),
-                              input$HadFH_1_bag, input$HadFH_1_len, paste0(input$HadFH_seas1[1], " - ", input$HadFH_seas1[2]),
-                              input$HadPR_1_bag, input$HadPR_1_len, paste0(input$HadPR_seas1[1], " - ", input$HadPR_seas1[2]),
-                              input$HadFH_2_bag, input$HadFH_2_len, paste0(input$HadFH_seas2[1], " - ", input$HadFH_seas2[2]),
-                              input$HadPR_2_bag, input$HadPR_2_len, paste0(input$HadPR_seas2[1], " - ", input$HadPR_seas2[2]),
-                              input$CodFH_2_bag, input$CodFH_2_len, paste0(input$CodFH_seas2[1], " - ", input$CodFH_seas2[2]),
-                              input$CodPR_2_bag, input$CodPR_2_len, paste0(input$CodPR_seas2[1], " - ", input$CodPR_seas2[2]),
-                              input$HadFH_3_bag, input$HadFH_3_len, paste0(input$HadFH_seas3[1], " - ", input$HadFH_seas3[2]),
-                              input$HadPR_3_bag, input$HadPR_3_len, paste0(input$HadPR_seas3[1], " - ", input$HadPR_seas3[2])))
+    if (file.exists(file_path)) {
+      file_info <- file.info(file_path)
+      # Get the display name (without extension) for the selected file
+      display_name <- tools::file_path_sans_ext(input$file_choice)
+      paste(
+        "Display name:", display_name,
+        "\nFull filename:", input$file_choice,
+        "\nFile size:", round(file_info$size / 1024, 2), "KB",
+        "\nLast modified:", format(file_info$mtime, "%Y-%m-%d %H:%M:%S"),
+        sep = "\n"
+      )
+    } else {
+      "File not found."
+    }
+  })
 
-    Regs1<- Regs %>% rbind(SQ_regulations)
-
-    Regs_out <- Regs1 %>%
-      #SQ_regulations %>%
-      tidyr::separate(Var, into =c("Species", "mode", "Var"), sep = "_") %>%
-      tidyr::pivot_wider(names_from = Var, values_from = Val) %>%
-      dplyr::mutate(Season = dplyr::case_when(bag == 0 ~"NA", TRUE ~ Season),
-                    size = dplyr::case_when(bag == 0 ~"NA", TRUE ~ size),
-                    bag = dplyr::case_when(bag == 0 ~"NA", TRUE ~ bag)) %>%
-      #dplyr::filter(!bag == 0) %>%
-      tidyr::pivot_wider(names_from = Species, values_from = c(bag, size, Season)) %>%
-      dplyr::mutate(cod_bag = paste0(bag_Cod1, " , ", bag_Cod2),
-                    cod_size = paste0(size_Cod1, " , ", size_Cod2),
-                    cod_season = paste0(Season_Cod1, " , ", Season_Cod2),
-                    had_bag = paste0(bag_Had1, " , ", bag_Had2, " , ", bag_Had3),
-                    had_size = paste0(size_Had1, " , ", size_Had2, " , ", size_Had3),
-                    had_season = paste0(Season_Had1, " , ", Season_Had2, " , ", Season_Had3),
-                    cod_bag = stringr::str_remove(cod_bag, " , NA"),
-                    cod_size = stringr::str_remove(cod_size, " , NA"),
-                    cod_season = stringr::str_remove(cod_season, " , NA"),
-                    had_bag = stringr::str_remove(had_bag, " , NA"),
-                    had_size = stringr::str_remove(had_size, " , NA"),
-                    had_season = stringr::str_remove(had_season, " , NA"),
-                    cod_bag = stringr::str_remove(cod_bag, "NA ,"),
-                    cod_size = stringr::str_remove(cod_size, "NA ,"),
-                    cod_season = stringr::str_remove(cod_season, "NA ,"),
-                    had_bag = stringr::str_remove(had_bag, "NA ,"),
-                    had_size = stringr::str_remove(had_size, "NA ,"),
-                    had_season = stringr::str_remove(had_season, "NA ,")) %>%
-      dplyr::select(Opt, mode, cod_bag, cod_size, cod_season, had_bag, had_size, had_season) %>%
-      dplyr::mutate(cod_season = stringr::str_remove_all(cod_season, "202.-"),
-                    had_season = stringr::str_remove_all(had_season, "202.-")) %>%
-      dplyr::mutate(mode = dplyr::recode(mode, "FH" = "For Hire",
-                                         "PR" = "Private")) %>%
-      dplyr::rename(Mode = mode,
-                    `Option` = Opt,
-                    `Cod Bag Limit` = cod_bag,
-                    `Cod Minimum Size (in)` = cod_size,
-                    `Cod Season(s)` = cod_season,
-                    `Haddock Bag Limit` = had_bag,
-                    `Haddock Minimum Size (in)` = had_size,
-                    `Haddock Season(s)` = had_season)
-
-    print("regs out")
-    return(Regs_out)
-    })
+  # Handle file download
+  output$download_file <- downloadHandler(
+    filename = function() {
+      # Return the selected filename (full filename with extension)
+      if (!is.null(input$file_choice) && input$file_choice != "No files available") {
+        return(input$file_choice)
+      } else {
+        return("file.txt")  # Fallback filename
+      }
+    },
+    content = function(file) {
+      # Copy the selected file to the download location
+      if (!is.null(input$file_choice) && input$file_choice != "No files available") {
+        file_path <- file.path("output", input$file_choice)
+        if (file.exists(file_path)) {
+          file.copy(file_path, file)
+        } else {
+          # If file doesn't exist, create an error file
+          writeLines("Error: File not found.", file)
+        }
+      } else {
+        writeLines("Error: No file selected.", file)
+      }
+    }
+  )
 
   ##### Catch ###########
   which_catch_out<- reactiveVal(TRUE)
