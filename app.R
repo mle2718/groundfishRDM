@@ -146,7 +146,7 @@ ui <- fluidPage(
                                              min = 0, max = 100, value = 15)),
                          column(5,
                                 sliderInput(inputId = "HadFH_1_len", label = "Min Length",
-                                            min = 15, max = 30, value = 18, step = 1))),
+                                            min = 15, max = 30, value = 17, step = 1))),
                        sliderInput(inputId = "HadPR_seas1", label ="Private Season 1",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
@@ -158,7 +158,7 @@ ui <- fluidPage(
                                              min = 0, max = 100, value = 15)),
                          column(5,
                                 sliderInput(inputId = "HadPR_1_len", label = "Min Length",
-                                            min = 15, max = 30, value = 18, step = 1))),
+                                            min = 15, max = 30, value = 17, step = 1))),
 
                        sliderInput(inputId = "HadFH_seas2", label ="For Hire Season 2",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
@@ -171,7 +171,7 @@ ui <- fluidPage(
                                              min = 0, max = 100, value = 15)),
                          column(5,
                                 sliderInput(inputId = "HadFH_2_len", label = "Min Length",
-                                            min = 15, max = 30, value = 18, step = 1))),
+                                            min = 15, max = 30, value = 17, step = 1))),
                        sliderInput(inputId = "HadPR_seas2", label ="Private Season 2",
                                    min = as.Date("2025-05-01","%Y-%m-%d"),
                                    max = as.Date("2026-04-30","%Y-%m-%d"),
@@ -183,7 +183,7 @@ ui <- fluidPage(
                                              min = 0, max = 100, value = 15)),
                          column(5,
                                 sliderInput(inputId = "HadPR_2_len", label = "Min Length",
-                                            min = 15, max = 30, value = 18, step = 1))),
+                                            min = 15, max = 30, value = 17, step = 1))),
 
                        actionButton("HADaddSeason", "Add Season"),
                        shinyjs::hidden( div(ID = "HadSeason3",
@@ -198,7 +198,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadFH_3_len", label ="Min Length",
-                                                                 min = 15, max = 30, value = 18, step = 1))),
+                                                                 min = 15, max = 30, value = 17, step = 1))),
                                             sliderInput(inputId = "HadPR_seas3", label ="Private Season 3",
                                                         min = as.Date("2025-05-01","%Y-%m-%d"),
                                                         max = as.Date("2026-04-30","%Y-%m-%d"),
@@ -210,7 +210,7 @@ ui <- fluidPage(
                                                                   min = 0, max = 20, value = 0)),
                                               column(6,
                                                      sliderInput(inputId = "HadPR_3_len", label ="Min Length",
-                                                                 min = 15, max = 30, value = 18, step = 1))))))))#,
+                                                                 min = 15, max = 30, value = 17, step = 1))))))))#,
 
   ))
 
