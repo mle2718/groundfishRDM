@@ -34,13 +34,6 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-ndraws=50 #number of choice occasions to simulate per strata
-
-#l_w_conversion parameters =
-cod_lw_a = 0.000005132
-cod_lw_b = 3.1625
-had_lw_a = 0.000009298
-had_lw_b = 3.0205
 
 fst::threads_fst(1)
 
@@ -259,5 +252,5 @@ get_predictions_out<- function(x){
 # This will spit out a dataframe with 100 predictions
 
 
-#write.csv(pred, file = here::here("SQ_predictions_cm.csv"))
-predictions_out10<- furrr::future_map_dfr(1:3, ~get_predictions_out(.))
+#write.csv(predictions_out10, file = here::here("SQ_predictions_1_5.csv"))
+predictions_out10<- furrr::future_map_dfr(1:5, ~get_predictions_out(.))

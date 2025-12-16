@@ -9,7 +9,31 @@ predict_rec_catch <- function(dr, directed_trips, catch_data,
 # results_list <- furrr::future_pmap(param_grid, simulate_cod,
 #                                 .options = furrr::furrr_options(seed = TRUE))
 #purrr
-results_list <- purrr::pmap(param_grid, simulate_cod)
+
+ndraws=50 #number of choice occasions to simulate per strata
+
+#l_w_conversion parameters =
+cod_lw_a = 0.000005132
+cod_lw_b = 3.1625
+had_lw_a = 0.000009298
+had_lw_b = 3.0205
+
+#results_list <- purrr::pmap(param_grid, simulate_cod(calib_comparison = calib_comparison))
+results_list <- purrr::pmap(
+    param_grid,
+    function(md, s) {
+      simulate_cod(
+        md = md,
+        s  = s,
+        calib_comparison = calib_comparison,
+        directed_trips = directed_trips,
+        cod_size_data = cod_size_data,
+        catch_data = catch_data
+      )
+    }
+  )
+
+
 
 names(results_list) <- paste(param_grid$md, param_grid$s, sep = "_")
 
@@ -22,14 +46,26 @@ zero_catch_cod <- data.table::rbindlist(lapply(results_list, `[[`, "zero_catch")
 size_data_cod <- data.table::rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
-
+print("Out cod")
 # Haddock trip simulation
 # furrr
 # results_list <- furrr::future_pmap(param_grid, simulate_hadd,
 #                                      .options = furrr::furrr_options(seed = TRUE))
 
 #purrr
-results_list <- purrr::pmap(param_grid, simulate_hadd)
+results_list <- purrr::pmap(
+  param_grid,
+  function(md, s) {
+    simulate_hadd(
+      md = md,
+      s  = s,
+      calib_comparison = calib_comparison,
+      directed_trips = directed_trips,
+      hadd_size_data = hadd_size_data,
+      catch_data = catch_data
+    )
+  }
+)
 
 names(results_list) <- paste(param_grid$md, param_grid$s, sep = "_")
 

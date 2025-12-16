@@ -3,7 +3,7 @@
 
 
 ########## cod  ##############
-simulate_cod <- function(md, s) {
+simulate_cod <- function(md, s, calib_comparison, directed_trips, cod_size_data, catch_data) {
   data.table::setDTthreads(1)
   #Step 2: Reorganize calibration parameters#
   calib_lookup <- calib_comparison %>%
@@ -198,7 +198,7 @@ simulate_cod <- function(md, s) {
 }
 
 ########## haddock ##############
-simulate_hadd <- function(md, s) {
+simulate_hadd <- function(md, s, calib_comparison, directed_trips, hadd_size_data, catch_data) {
   data.table::setDTthreads(1)
   #Step 2: Reorganize calibration parameters#
   calib_lookup <- calib_comparison %>%
