@@ -785,25 +785,25 @@ server <- function(input, output, session){
     library(openssl)
     library(uuid)
 
-    # enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("AZURE_STORAGE_QUEUE_URL")) {
-    #   stopifnot(nzchar(run_name), nzchar(queue_url_sas))
-    #   payload <- list(
-    #     runName = run_name,
-    #     submissionId = UUIDgenerate(),
-    #     submittedAt = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-    #   )
-    #   msg_b64 <- base64_encode(charToRaw(toJSON(payload, auto_unbox = TRUE)))
-    #   xml_body <- sprintf("<QueueMessage><MessageText>%s</MessageText></QueueMessage>", msg_b64)
-    #
-    #   res <- POST(
-    #     url = queue_url_sas,
-    #     body = xml_body,
-    #     content_type_xml(),
-    #     add_headers(`x-ms-version` = "2020-10-02")
-    #   )
-    #   stop_for_status(res)
-    #   invisible(TRUE)
-    # }
+    enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("AZURE_STORAGE_QUEUE_URL")) {
+      stopifnot(nzchar(run_name), nzchar(queue_url_sas))
+      payload <- list(
+        runName = run_name,
+        submissionId = UUIDgenerate(),
+        submittedAt = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+      )
+      msg_b64 <- base64_encode(charToRaw(toJSON(payload, auto_unbox = TRUE)))
+      xml_body <- sprintf("<QueueMessage><MessageText>%s</MessageText></QueueMessage>", msg_b64)
+
+      res <- POST(
+        url = queue_url_sas,
+        body = xml_body,
+        content_type_xml(),
+        add_headers(`x-ms-version` = "2020-10-02")
+      )
+      stop_for_status(res)
+      invisible(TRUE)
+    }
 
 
     regulations <- NULL
