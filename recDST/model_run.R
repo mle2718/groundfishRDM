@@ -102,6 +102,7 @@ directed_trips <- directed_trips %>%
 
 
 future::plan(future::multisession, workers = 6)
+set.seed(915)
 #future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
 #pred <- data.frame()
