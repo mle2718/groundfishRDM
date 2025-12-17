@@ -8,7 +8,7 @@ library(dplyr)
 
 Run_Name <- args[1]
 
-Run_Name = "SQ"
+
 saved_regs<- read.csv(here::here(paste0("saved_regs/regs_", Run_Name, ".csv")))
 
 for (a in seq_len(nrow(saved_regs))) {
@@ -246,6 +246,11 @@ get_predictions_out<- function(x){
                            discard_mortality_dat = disc_mort,
                            param_grid = param_grid)
 
+  test <- test %>%
+    dplyr::mutate(draw = c(x),
+                  #model = c("Alt"))
+                  model = c(Run_Name))
+
 }
 #})
 # use furrr package to parallelize the get_predictions_out function 100 times
@@ -253,4 +258,14 @@ get_predictions_out<- function(x){
 
 
 #write.csv(predictions_out10, file = here::here("SQ_predictions_1_5.csv"))
-predictions_out10<- furrr::future_map_dfr(1:5, ~get_predictions_out(.))
+predictions_out10<- furrr::future_map_dfr(
+  1:5,
+  ~{
+    data.table::setDTthreads(1)
+    get_predictions_out(.x)
+  },
+  .id = "draw",
+  .options = furrr::furrr_options(seed = TRUE)
+)
+
+readr::write_csv(predictions_out10, file = here::here(paste0("output/output_", Run_Name, "_", format(Sys.time(), "%Y%m%d_%H%M%S"),  ".csv")))
