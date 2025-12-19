@@ -1,46 +1,82 @@
 
 
-predict_rec_catch <- function(st, dr, directed_trips, catch_data,
-                              sf_size_data, bsb_size_data, scup_size_data,
-                              l_w_conversion, calib_comparison, n_choice_occasions,
-                              calendar_adjustments, base_outcomes){
+predict_rec_catch <- function(dr, directed_trips, catch_data,
+                              cod_size_data, had_size_data,
+                              calib_comparison, n_choice_occasions,
+                              calendar_adjustments, base_outcomes, discard_mortality_dat, param_grid){
 # Cod trip simulation
 # furrr
 # results_list <- furrr::future_pmap(param_grid, simulate_cod,
 #                                 .options = furrr::furrr_options(seed = TRUE))
 #purrr
-results_list <- purrr::pmap(param_grid, simulate_cod)
+
+ndraws=50 #number of choice occasions to simulate per strata
+
+#l_w_conversion parameters =
+cod_lw_a = 0.000005132
+cod_lw_b = 3.1625
+had_lw_a = 0.000009298
+had_lw_b = 3.0205
+
+#results_list <- purrr::pmap(param_grid, simulate_cod(calib_comparison = calib_comparison))
+results_list <- purrr::pmap(
+    param_grid,
+    function(md, s) {
+      simulate_cod(
+        md = md,
+        s  = s,
+        calib_comparison = calib_comparison,
+        directed_trips = directed_trips,
+        cod_size_data = cod_size_data,
+        catch_data = catch_data
+      )
+    }
+  )
+
+
 
 names(results_list) <- paste(param_grid$md, param_grid$s, sep = "_")
 
-trip_data_cod <- rbindlist(lapply(results_list, `[[`, "trip_data"))
+trip_data_cod <- data.table::rbindlist(lapply(results_list, `[[`, "trip_data"))
 
 data.table::setkey(trip_data_cod, domain2)
 
-zero_catch_cod <- rbindlist(lapply(results_list, `[[`, "zero_catch"))
+zero_catch_cod <- data.table::rbindlist(lapply(results_list, `[[`, "zero_catch"))
 
-size_data_cod <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
+size_data_cod <- data.table::rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
-
+print("Out cod")
 # Haddock trip simulation
 # furrr
 # results_list <- furrr::future_pmap(param_grid, simulate_hadd,
 #                                      .options = furrr::furrr_options(seed = TRUE))
 
 #purrr
-results_list <- purrr::pmap(param_grid, simulate_hadd)
+results_list <- purrr::pmap(
+  param_grid,
+  function(md, s) {
+    simulate_hadd(
+      md = md,
+      s  = s,
+      calib_comparison = calib_comparison,
+      directed_trips = directed_trips,
+      hadd_size_data = hadd_size_data,
+      catch_data = catch_data
+    )
+  }
+)
 
 names(results_list) <- paste(param_grid$md, param_grid$s, sep = "_")
 
-trip_data_hadd <- rbindlist(lapply(results_list, `[[`, "trip_data")) %>%
+trip_data_hadd <- data.table::rbindlist(lapply(results_list, `[[`, "trip_data")) %>%
   dplyr::select(-date, -mode, -catch_draw, -tripid)
 
 data.table::setkey(trip_data_hadd, domain2)
 
-zero_catch_hadd <- rbindlist(lapply(results_list, `[[`, "zero_catch"))
+zero_catch_hadd <- data.table::rbindlist(lapply(results_list, `[[`, "zero_catch"))
 
-size_data_hadd <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
+size_data_hadd <- data.table::rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
 # merge the trip data
@@ -85,7 +121,7 @@ trip_data[, `:=`(
 
 length_data[, date_parsed := lubridate::ymd(date)][, date := NULL]
 
-trip_data <- trip_data[base_outcomes_angler_dems, on = .(date_parsed, mode, tripid, catch_draw), nomatch = 0L]
+trip_data <- trip_data[base_outcomes, on = .(date_parsed, mode, tripid, catch_draw), nomatch = 0L]
 trip_data[, domain2 := NULL]
 
 rm(trip_data_cod,trip_data_hadd ,
@@ -207,8 +243,8 @@ mean_trip_data <- mean_trip_data %>%
 # then multiply this expansion factor by the projection-year calendar adjustment to account for
 # different numbers of weekend vs. weekday in the projection year versus the calibration
 
-setDT(n_choice_occasions)
-setDT(calendar_adjustments)
+data.table::setDT(n_choice_occasions)
+data.table::setDT(calendar_adjustments)
 
 mean_trip_data <- n_choice_occasions[mean_trip_data, on = .(mode, date_parsed)]
 mean_trip_data[, month := lubridate::month(date_parsed)]
@@ -247,8 +283,8 @@ mean_trip_data <- mean_trip_data %>%
 pattern_vars <- grep("^keep_(cod_|hadd_)[0-9.]*$|^release_(cod_|hadd_)[0-9.]*$",
                      names(length_data), value = TRUE)
 
-setDT(length_data)
-setDT(expansion_factors)
+data.table::setDT(length_data)
+data.table::setDT(expansion_factors)
 
 length_data <- length_data[
   , lapply(.SD, mean),
