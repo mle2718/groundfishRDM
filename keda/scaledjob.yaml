@@ -27,7 +27,7 @@ spec:
             effect: "NoSchedule"
         containers:
           - name: runner
-            image: ${RUNNER_IMAGE}
+            image: ${GROUNDFISH_RUNNER_IMAGE}
             imagePullPolicy: Always
             env:
               - name: GROUNDFISH_QUEUE_NAME
@@ -71,9 +71,9 @@ spec:
   triggers:
     - type: azure-queue
       metadata:
-        queueName: ${QUEUE_NAME}
+        queueName: ${GROUNDFISH_QUEUE_NAME}
         queueLength: "1"          # scale one job per message
-        accountName: ${STORAGE_ACCOUNT_NAME}
+        accountName: ${GROUNDFISH_STORAGE_ACCOUNT_NAME}
       authenticationRef:
         name: r-model-queue-trigger-auth
 ---
@@ -83,9 +83,9 @@ metadata:
   name: r-model-queue
   namespace: shinyproxy
 stringData:
-  queueName: ${QUEUE_NAME}
-  connectionString: ${STORAGE_QUEUE_CONNECTION_STRING}
-  accountName: ${STORAGE_ACCOUNT_NAME}
+  queueName: ${GROUNDFISH_QUEUE_NAME}
+  connectionString: ${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING}
+  accountName: ${GROUNDFISH_STORAGE_ACCOUNT_NAME}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication

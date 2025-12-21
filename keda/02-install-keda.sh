@@ -81,19 +81,19 @@ if $APPLY_SCALEDJOB; then
   else
     echo "[INFO] Applying ScaledJob manifest: $SCALEDJOB_FILE"
     # Required substitution variables
-    : "${RUNNER_IMAGE:?Set RUNNER_IMAGE env var (e.g. yourregistry/model-runner:tag)}"
+    : "${GROUNDFISH_RUNNER_IMAGE:?Set GROUNDFISH_RUNNER_IMAGE env var (e.g. yourregistry/model-runner:tag)}"
     : "${QUEUE_NAME:?Set QUEUE_NAME env var}"; : "${STORAGE_QUEUE_CONNECTION_STRING:?Set STORAGE_QUEUE_CONNECTION_STRING env var}"; : "${STORAGE_ACCOUNT_NAME:?Set STORAGE_ACCOUNT_NAME env var}";
     if command -v envsubst >/dev/null 2>&1; then
       # Only substitute known placeholders
-      envsubst '${RUNNER_IMAGE} ${QUEUE_NAME} ${STORAGE_QUEUE_CONNECTION_STRING} ${STORAGE_ACCOUNT_NAME}' < "$SCALEDJOB_FILE" | kubectl apply -f -
+      envsubst '${GROUNDFISH_RUNNER_IMAGE} ${QUEUE_NAME} ${STORAGE_QUEUE_CONNECTION_STRING} ${STORAGE_ACCOUNT_NAME}' < "$SCALEDJOB_FILE" | kubectl apply -f -
     else
       echo "[WARN] envsubst not found; performing naive sed substitution."
       tmpfile=$(mktemp)
       cp "$SCALEDJOB_FILE" "$tmpfile"
-      sed -i "s#\${RUNNER_IMAGE}#${RUNNER_IMAGE}#g" "$tmpfile"
-      sed -i "s#\${QUEUE_NAME}#${QUEUE_NAME}#g" "$tmpfile"
-      sed -i "s#\${STORAGE_QUEUE_CONNECTION_STRING}#${STORAGE_QUEUE_CONNECTION_STRING}#g" "$tmpfile"
-      sed -i "s#\${STORAGE_ACCOUNT_NAME}#${STORAGE_ACCOUNT_NAME}#g" "$tmpfile"
+      sed -i "s#\${GROUNDFISH_RUNNER_IMAGE}#${GROUNDFISH_RUNNER_IMAGE}#g" "$tmpfile"
+      sed -i "s#\${GROUNDFISH_QUEUE_NAME}#${GROUNDFISH_QUEUE_NAME}#g" "$tmpfile"
+      sed -i "s#\${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING}#${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING}#g" "$tmpfile"
+      sed -i "s#\${GROUNDFISH_STORAGE_ACCOUNT_NAME}#${GROUNDFISH_STORAGE_ACCOUNT_NAME}#g" "$tmpfile"
       kubectl apply -f "$tmpfile"
       rm -f "$tmpfile"
     fi
