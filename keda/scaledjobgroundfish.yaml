@@ -33,17 +33,17 @@ spec:
               - name: GROUNDFISH_QUEUE_NAME
                 valueFrom:
                   secretKeyRef:
-                    name: r-model-queue
+                    name: r-model-queue-groundfish
                     key: queueName
               - name: GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING
                 valueFrom:
                   secretKeyRef:
-                    name: r-model-queue
+                    name: r-model-queue-groundfish
                     key: connectionString
               - name: GROUNDFISH_STORAGE_ACCOUNT_NAME
                 valueFrom:
                   secretKeyRef:
-                    name: r-model-queue
+                    name: r-model-queue-groundfish
                     key: accountName
             resources:
               requests:
@@ -67,7 +67,7 @@ spec:
         volumes:
           - name: app-share
             persistentVolumeClaim:
-              claimName: app-share-pvc
+              claimName: app-share-groundfish-pvc-3
   triggers:
     - type: azure-queue
       metadata:
