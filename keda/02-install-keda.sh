@@ -45,8 +45,13 @@ if kubectl get ns keda >/dev/null 2>&1; then
   echo "[WARN] Namespace 'keda' exists. If this is from a previous manual install, delete it before enabling the managed add-on to avoid conflicts." >&2
 fi
 
-echo "[INFO] Enabling AKS KEDA add-on on cluster: $CLUSTER"
-az aks update -g "$RG" -n "$CLUSTER" --enable-keda >/dev/null
+# Check if KEDA add-on is already enabled
+if az aks show -g "$RG" -n "$CLUSTER" --query "workloadAutoScalerProfile.keda.enabled" -o tsv 2>/dev/null | grep -q "true"; then
+  echo "[INFO] KEDA add-on is already enabled on $CLUSTER"
+else
+  echo "[INFO] Enabling AKS KEDA add-on on cluster: $CLUSTER"
+  az aks update -g "$RG" -n "$CLUSTER" --enable-keda >/dev/null
+fi
 
 echo "[INFO] Fetching credentials"
 az aks get-credentials -g "$RG" -n "$CLUSTER" --overwrite-existing >/dev/null
@@ -74,7 +79,7 @@ if $APPLY_SCALEDJOB; then
   # Determine ScaledJob manifest path
   if [[ -z "$SCALEDJOB_FILE" ]]; then
     SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-    SCALEDJOB_FILE="${SCRIPT_DIR}/scaledjob.yaml"
+    SCALEDJOB_FILE="${SCRIPT_DIR}/scaledjobgroundfish.yaml"
   fi
   if [[ ! -f "$SCALEDJOB_FILE" ]]; then
     echo "[WARN] ScaledJob file not found at $SCALEDJOB_FILE; skipping apply." >&2
@@ -82,10 +87,10 @@ if $APPLY_SCALEDJOB; then
     echo "[INFO] Applying ScaledJob manifest: $SCALEDJOB_FILE"
     # Required substitution variables
     : "${GROUNDFISH_RUNNER_IMAGE:?Set GROUNDFISH_RUNNER_IMAGE env var (e.g. yourregistry/model-runner:tag)}"
-    : "${QUEUE_NAME:?Set QUEUE_NAME env var}"; : "${STORAGE_QUEUE_CONNECTION_STRING:?Set STORAGE_QUEUE_CONNECTION_STRING env var}"; : "${STORAGE_ACCOUNT_NAME:?Set STORAGE_ACCOUNT_NAME env var}";
+    : "${GROUNDFISH_QUEUE_NAME:?Set GROUNDFISH_QUEUE_NAME env var}"; : "${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING:?Set GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING env var}"; : "${GROUNDFISH_STORAGE_ACCOUNT_NAME:?Set GROUNDFISH_STORAGE_ACCOUNT_NAME env var}";
     if command -v envsubst >/dev/null 2>&1; then
       # Only substitute known placeholders
-      envsubst '${GROUNDFISH_RUNNER_IMAGE} ${QUEUE_NAME} ${STORAGE_QUEUE_CONNECTION_STRING} ${STORAGE_ACCOUNT_NAME}' < "$SCALEDJOB_FILE" | kubectl apply -f -
+      envsubst '${GROUNDFISH_RUNNER_IMAGE} ${GROUNDFISH_QUEUE_NAME} ${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING} ${GROUNDFISH_STORAGE_ACCOUNT_NAME}' < "$SCALEDJOB_FILE" | kubectl apply -f -
     else
       echo "[WARN] envsubst not found; performing naive sed substitution."
       tmpfile=$(mktemp)

@@ -1,7 +1,7 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledJob
 metadata:
-  name: r-model-runner
+  name: r-model-runner-groundfish
   namespace: shinyproxy
 spec:
   pollingInterval: 30           # seconds between queue checks
@@ -16,7 +16,7 @@ spec:
     template:
       metadata:
         labels:
-          app: r-model-runner
+          app: r-model-runner-groundfish
       spec:
         restartPolicy: Never
         # Tolerations / node selection (adjust to your large node pool)
