@@ -767,22 +767,26 @@ server <- function(input, output, session){
                    shinyjs::toggle(id = "HadSeason3", anim = TRUE))
 
 
-  pred <- eventReactive(input$runmeplease,{
-    print("STarting this process")
-    source(here::here(paste0("RecDST/model_run.R")), local = TRUE)
-    return(predictions_out10)
-    print("predicitions out")
-  })
-
+  # predictions() now reads only from output/ files (queued job results)
+  # No longer runs model_run.R directly in the Shiny app
   predictions <- reactive({
-
-    #test<- read.csv(here::here("output/output_help_20250106_133859.csv"))
-    predictions_out <- read.csv(here::here("data-raw/SQ_predictions_cm.csv")) %>%
-      #dplyr::mutate(option = c("SQ")) %>%
-      #dplyr::select(!X) %>%
-      #rbind(predictions_out10) %>%
-      rbind(pred()) %>%
+    # Start with status quo predictions
+    predictions_out <- read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
+    
+    # Try to read outputs from queued jobs
+    tryCatch({
+      queued_results <- outputs()
+      if (!is.null(queued_results) && nrow(queued_results) > 0) {
+        predictions_out <- rbind(predictions_out, queued_results)
+      }
+    }, error = function(e) {
+      # If no outputs yet, just use status quo
+      message("No queued results available yet: ", e$message)
+    })
+    
+    predictions_out <- predictions_out %>%
       dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
+    
     return(predictions_out)
   })
 
@@ -793,7 +797,7 @@ server <- function(input, output, session){
     library(openssl)
     library(uuid)
 
-    enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("AZURE_STORAGE_QUEUE_URL")) {
+    enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL")) {
       stopifnot(nzchar(run_name), nzchar(queue_url_sas))
       payload <- list(
         runName = run_name,
@@ -883,7 +887,24 @@ server <- function(input, output, session){
   })
 
   observeEvent(input$runmeplease, {
-    output$message <- renderText("Regulations saved - we will run these soon be sure to change run name before clicking again.")
+    output$message <- renderText("Regulations saved - your model run has been queued. Results will appear in the output folder once processing completes. Be sure to change the run name before submitting another job.")
+  })
+  
+  # Auto-refresh available files every 30 seconds to detect new results from queued jobs
+  autoInvalidate <- reactiveTimer(30000)  # 30 seconds
+  
+  observe({
+    autoInvalidate()
+    # Trigger refresh of available_files() and file_mapping()
+    file_map <- file_mapping()
+    if (length(file_map) > 0) {
+      updateSelectInput(
+        session,
+        "file_choice",
+        choices = file_map,
+        selected = input$file_choice  # Keep current selection if it still exists
+      )
+    }
   })
 
   # Get list of files from the folder
