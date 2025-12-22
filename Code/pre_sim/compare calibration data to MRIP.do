@@ -311,7 +311,7 @@ qui twoway (rcap mrip_ul mrip_ll my_dom_id_mrip if domain=="`d'", color(blue)  )
 			legend(order(2 "MRIP estimate" 4 "Simulated estimate") size(small) rows(1)) ///
 			ytitle("") xtitle("") ylabel(#10,  angle(horizontal) ) ///
 			xlabel(`xlabels',  labsize(small) angle(45)) ///
-			title("`d'", size(medium)) name(`d'_new, replace) 
+			title("`d'", size(medium)) name(`d', replace) 
 		}
   
 u `new', clear 
@@ -319,7 +319,7 @@ u `new', clear
 sort  month mode 
 grc1leg  hadd_keep cod_keep hadd_rel cod_rel  , cols(2) title("Mean catch-per-trip, MRIP vs.simulated estimates", size(small))
 graph export "$figure_cd/mean_catch_MRIP_simulated.png", as(png) replace
-
+gr drop _all
 
 
 *B3 compare catch totals @ mode and month level
@@ -476,7 +476,7 @@ graph export "$figure_cd/monthly_catch_total_MRIP_simulated.png", as(png) replac
 
 grc1leg  dtrip_dtrip, cols(1)  title("Directed trip totals, MRIP vs. simulated estimates", size(small))
 graph export "$figure_cd/monthly_dtrip_total_MRIP_simulated.png", as(png) replace
-	
+gr drop _all	
 	
 	
 *B3 compare catch totals @ mode level
@@ -632,7 +632,7 @@ graph export "$figure_cd/catch_total_MRIP_simulated.png", as(png) replace
 
 grc1leg  dtrip_dtrip, cols(1)  title("Directed trip totals, MRIP vs. simulated estimates", size(small))
 graph export "$figure_cd/dtrip_total_MRIP_simulated.png", as(png) replace
-
+gr drop _all
 
 
 
@@ -793,7 +793,7 @@ graph export "$figure_cd/season_catch_total_MRIP_simulated.png", as(png) replace
 
 grc1leg  dtrip_dtrip, cols(1)  title("Directed trip totals, MRIP vs. simulated estimates", size(small))
 graph export "$figure_cd/season_dtrip_total_MRIP_simulated.png", as(png) replace
-
+gr drop _all
 
 ** FINAL STEP
 

@@ -45,7 +45,7 @@ keep if $calibration_year
 /* THIS IS THE END OF THE DATA MERGING CODE */
 
  /* ensure only relevant states */
-keep if inlist(st,23, 33, 25)
+keep if inlist(st, 23, 33, 25)
 
 
  /* classify trips into dom_id=1 (DOMAIN OF INTEREST) and dom_id=2 ('OTHER' DOMAIN). */
@@ -397,7 +397,7 @@ restore
 
 preserve
 keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 dtrip ///
-			cod_bag_y2_same cod_min_y2_same hadd_bag_y2_same hadd_min_y2_same ///
+			cod_bag_y2 cod_min_y2 hadd_bag_y2 hadd_min_y2 ///
 			cod_bag_y2_alt cod_min_y2_alt hadd_bag_y2_alt hadd_min_y2_alt
 compress
 export delimited using "$iterative_input_data_cd\directed_trip_draws.csv",  replace 
@@ -405,7 +405,7 @@ restore
 
 **Now adjust for the differences in directed trips due to changes in kod between calibration year y and  y+1 
 keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 kod kod_y2 dtrip ///
-			cod_bag_y2_same cod_min_y2_same hadd_bag_y2_same hadd_min_y2_same ///
+			cod_bag_y2 cod_min_y2 hadd_bag_y2 hadd_min_y2 ///
 			cod_bag_y2_alt cod_min_y2_alt hadd_bag_y2_alt hadd_min_y2_alt
 			
 gen month_y1=month(day)

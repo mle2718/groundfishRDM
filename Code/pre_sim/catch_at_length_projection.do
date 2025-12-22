@@ -448,7 +448,7 @@ browse
 replace cal_2026=cal_2026*cal_proportion
 drop if cal_2026==. | cal_2026==0
 	
-keep draw season species length cal_* *replicate
+keep draw season species length cal_* *replicate naa*
 egen sum_cal=sum(cal_2026), by(draw season species)
 gen fitted_prob=cal_2026/sum_cal
 drop sum	
@@ -458,18 +458,23 @@ gen fitted_prob_2025=cal_2025/sum_cal
 drop sum	
 
 
+rename fitted_prob fitted_prob_2026
 
 * Plot catch-at-length probability distributions 2025 versus 2026
 * 5cm length bins 
 preserve
-drop fitted_prob_2025
+drop fitted_prob_2025 naa_2025
+rename fitted_prob_2026 fitted_prob
+rename naa_2026 nal
 gen year=2026
 tempfile base
 save `base'
 restore
 
-drop fitted_prob
+drop fitted_prob_2026 naa_2026
 rename  fitted_prob_2025 fitted_prob
+rename  naa_2025 nal
+
 gen year=2025
 append using `base'
 
@@ -481,6 +486,45 @@ gen length5_hi = length5_lo + 4
 gen str20 length5_bin = string(length5_lo) + "-" + string(length5_hi)
 label var length5_bin "Length bin (cm)"
 
+preserve
+collapse (sum) fitted_prob nal, by(year season species draw length5_bin)
+egen sum_nal=sum(nal), by(year season species draw)
+gen prop_nal=nal/sum
+drop nal sum
+reshape wide fitted_prob prop_nal, i(species season draw length ) j(year)
+
+levelsof species, local(splist)
+levelsof season if season=="summer",  local(seaslist)
+
+graph box prop_nal2025 prop_nal2026 if species =="cod" & season=="summer", ///
+    over(length, label(labsize(small))) ///
+    title("cod", size(medium)) ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(, labsize(small)) ///
+    box(1, fcolor(navy)   lcolor(navy)) ///
+    box(2, fcolor(maroon) lcolor(maroon)) ///
+    marker(1, msymbol(O) msize(tiny) mcolor(navy)) ///
+    marker(2, msymbol(O) msize(tiny) mcolor(maroon)) ///
+    legend(order(1 "2025" 2 "2026") position(6) cols(2)) 
+
+*graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
+
+graph box prop_nal2025 prop_nal2026 if species =="hadd" & season=="summer", ///
+    over(length, label(labsize(small))) ///
+    title("haddock", size(medium)) ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(, labsize(small)) ///
+    box(1, fcolor(navy)   lcolor(navy)) ///
+    box(2, fcolor(maroon) lcolor(maroon)) ///
+    marker(1, msymbol(O) msize(tiny) mcolor(navy)) ///
+    marker(2, msymbol(O) msize(tiny) mcolor(maroon)) ///
+    legend(order(1 "2025" 2 "2026") position(6) cols(2)) 
+
+*graph export "$figure_cd/prop_nal_haddock_by_year.png", as(png) replace
+restore
+
+preserve
+collapse (sum) fitted_prob, by(year season species draw length5_bin)
 levelsof species, local(splist)
 levelsof season,  local(seaslist)
 
@@ -494,16 +538,19 @@ foreach sp of local splist {
                 note("Boxplots of replicate probabilities by 5-cm length bin")) ///
             ytitle("Probability") ///
             name(box_`sp'_`se', replace)
-
-        graph export "$figure_cd/CAL_`sp'_`se'_byyear.png", replace
+		
+        *graph export "$figure_cd/CAL_`sp'_`se'_byyear.png", replace
     }
 }
+restore 
 
-drop length5_lo length5_hi length5_bin	
+
+drop length5_lo length5_hi length5_bin 
 drop cal*
 keep if year==2026
 egen replicate=rowtotal(hadd_replicate - cod_replicate)
 drop hadd_replicate cod_replicate
 drop year 
+drop nal
 export delimited using "$input_data_cd/projected_catch_at_length.csv", replace 
 

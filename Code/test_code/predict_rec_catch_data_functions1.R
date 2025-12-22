@@ -1,7 +1,7 @@
 
 #Functions for the main loop of predict_rec_catch
 
-
+set.seed(915)
 ########## cod  ##############
 simulate_cod <- function(md, s) {
   data.table::setDTthreads(1)
@@ -46,9 +46,9 @@ simulate_cod <- function(md, s) {
 
   #
 
-  floor_subl_cod_harv<-min(directed_trips_sub$cod_min_y2_same)-3*2.54
+  floor_subl_cod_harv<-min(directed_trips_sub$cod_min_y2)-3*2.54
 
-  if (min(directed_trips_sub$cod_min_y2_same)==100){
+  if (min(directed_trips_sub$cod_min_y2)==100){
     floor_subl_cod_harv<-cod_min_size_FY-3*2.54
   }
 
@@ -91,9 +91,9 @@ simulate_cod <- function(md, s) {
                                             prob = cod_size_data_sub$fitted_prob, replace = TRUE)]
 
     # Identify keepable fish
-    cod_catch_data[, posskeep := as.integer(fitted_length >= cod_min_y2_same)]
+    cod_catch_data[, posskeep := as.integer(fitted_length >= cod_min_y2)]
     cod_catch_data[, csum_keep := ave(posskeep, tripid, date, mode, catch_draw, FUN = cumsum)]
-    cod_catch_data[, keep_adj := as.integer(posskeep == 1 & csum_keep <= cod_bag_y2_same)]
+    cod_catch_data[, keep_adj := as.integer(posskeep == 1 & csum_keep <= cod_bag_y2)]
     cod_catch_data[, `:=`(keep = keep_adj, release = 1L - keep_adj)]
     cod_catch_data[, subl_harv_indicator := as.integer(release == 1 & fitted_length >= floor_subl_cod_harv)]
 
@@ -239,9 +239,9 @@ simulate_hadd <- function(md, s) {
     #   lowest minimum size across the FY
     #3) I don't think there will be any cases where either species is closed the entire season
 
-    floor_subl_hadd_harv<-min(directed_trips_sub$hadd_min_y2_same)-3*2.54
+    floor_subl_hadd_harv<-min(directed_trips_sub$hadd_min_y2)-3*2.54
 
-    if (min(directed_trips_sub$hadd_min_y2_same)==100){
+    if (min(directed_trips_sub$hadd_min_y2)==100){
       floor_subl_hadd_harv<-hadd_min_size_FY-3*2.54
     }
 
@@ -284,9 +284,9 @@ simulate_hadd <- function(md, s) {
                                                prob = hadd_size_data_sub$fitted_prob, replace = TRUE)]
 
       # Identify keepable fish
-      hadd_catch_data[, posskeep := as.integer(fitted_length >= hadd_min_y2_same)]
+      hadd_catch_data[, posskeep := as.integer(fitted_length >= hadd_min_y2)]
       hadd_catch_data[, csum_keep := ave(posskeep, tripid, date, mode, catch_draw, FUN = cumsum)]
-      hadd_catch_data[, keep_adj := as.integer(posskeep == 1 & csum_keep <= hadd_bag_y2_same)]
+      hadd_catch_data[, keep_adj := as.integer(posskeep == 1 & csum_keep <= hadd_bag_y2)]
       hadd_catch_data[, `:=`(keep = keep_adj, release = 1L - keep_adj)]
       hadd_catch_data[, subl_harv_indicator := as.integer(release == 1 & fitted_length >= floor_subl_hadd_harv)]
 
