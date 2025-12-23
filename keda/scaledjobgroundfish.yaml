@@ -75,12 +75,12 @@ spec:
         queueLength: "1"          # scale one job per message
         accountName: ${GROUNDFISH_STORAGE_ACCOUNT_NAME}
       authenticationRef:
-        name: r-model-queue-trigger-auth
+        name: r-model-queue-trigger-auth-groundfish
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: r-model-queue
+  name: r-model-queue-groundfish
   namespace: shinyproxy
 stringData:
   queueName: ${GROUNDFISH_QUEUE_NAME}
@@ -90,10 +90,10 @@ stringData:
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: r-model-queue-trigger-auth
+  name: r-model-queue-trigger-auth-groundfish
   namespace: shinyproxy
 spec:
   secretTargetRef:
     - parameter: connection
-      name: r-model-queue
+      name: r-model-queue-groundfish
       key: connectionString
