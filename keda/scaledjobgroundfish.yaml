@@ -67,7 +67,7 @@ spec:
         volumes:
           - name: app-share
             persistentVolumeClaim:
-              claimName: app-share-git status-pvc-3
+              claimName: app-share-pvc-3
   triggers:
     - type: azure-queue
       metadata:
