@@ -73,7 +73,6 @@ spec:
       metadata:
         queueName: ${GROUNDFISH_QUEUE_NAME}
         queueLength: "1"          # scale one job per message
-        accountName: ${GROUNDFISH_STORAGE_ACCOUNT_NAME}
       authenticationRef:
         name: r-model-queue-trigger-auth-groundfish
 ---
