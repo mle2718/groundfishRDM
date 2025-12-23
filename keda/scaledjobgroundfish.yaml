@@ -83,7 +83,7 @@ metadata:
   namespace: shinyproxy
 stringData:
   queueName: ${GROUNDFISH_QUEUE_NAME}
-  connectionString: "${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING}"
+  connectionString: ${GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING}
   accountName: ${GROUNDFISH_STORAGE_ACCOUNT_NAME}
 ---
 apiVersion: keda.sh/v1alpha1
