@@ -30,4 +30,6 @@ RUN install2.r -e -s \
     DT \
     plotly \
     rlang \
+    openssl \
+    uuid
     && chown -R shiny:shiny /srv/app
