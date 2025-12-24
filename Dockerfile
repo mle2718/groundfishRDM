@@ -31,5 +31,5 @@ RUN install2.r -e -s \
     plotly \
     rlang \
     openssl \
-    uuid
+    uuid \
     && chown -R shiny:shiny /srv/app
