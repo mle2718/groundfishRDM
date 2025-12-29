@@ -27,12 +27,19 @@ do "$input_code_cd\MRIP data wrapper.do"
 * This file computes predictions of harvest in weight in 2026 under status quo regulations
 
 cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\test_code"
-import delimited using "cod_hadd_SQ_output.csv", clear
+import delimited using "cod_hadd_SQ_output_12_22.csv", clear
 
 
 *Coastwide predictions
 format value %12.02gc
 
+/*
+FY2026 sub-ACLs:
+
+GOM haddock – 1,146 mt
+
+WGOM cod – 118 mt
+*/
 
 * create a total catch statistic
 preserve
@@ -45,6 +52,17 @@ restore
 append using `catch'
 levelsof metric
 
+preserve
+keep if  metric=="removals_weight" & mode=="all modes"
+replace value=value/2205 if strmatch(metric, "*weight*")==1
+ vioplot value if metric=="removals_weight" & mode=="all modes", over(species) yline(118 1146) ylab(0(100)1200) ytitle("total removals (mt)")
+ 
+restore
+
+graph box prop_nal2025 prop_nal2026 if species =="cod" & season=="summer", ///
+    over(length, label(labsize(small))) 
+	
+	
 gen domain=species+"_"+metric+"_"+mode
 
 tempfile base
@@ -347,7 +365,7 @@ replace ul80=ul if source=="MRIP 2024"
 replace ll90=ll if source=="MRIP 2024" 
 replace ul90=ul if source=="MRIP 2024" 
 */
-replace source2=source2+1
+replace source2=source2+2
 
 generate source2_90 = source2 - 0.1
 generate source2_95 = source2 + 0.1
@@ -377,7 +395,15 @@ foreach v of local vars{
 *cd "C:\Users\andrew.carr-harris\Desktop\MRIP_data_2025\rdm testing data\SQ_runs_10_24"
 
 
+/*
+FY2026 sub-ACLs:
+GOM haddock – 1,146 mt
+WGOM cod – 118 mt
+*/
+
 *harvest based on age-length weights
+
+
 gr drop _all 
 levelsof domain if inlist(metric, "keep_weight") & mode!="all modes",  local(doms)
 foreach d of local doms{
