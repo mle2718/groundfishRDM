@@ -83,7 +83,7 @@ predictions_all <- purrr::map_dfr(
 
 })
 
-write_csv(predictions_all, file.path(code_cd, paste0("cod_hadd_SQ_output_12_22.csv")))
+write_csv(predictions_all, file.path(code_cd, paste0("cod_hadd_SQ_output_12_31.csv")))
 
 summary_predictions<-predictions_all %>%
   as.data.table() %>%

@@ -25,6 +25,7 @@ mode_draw <- c("pr", "fh")
 draws <- 1:n_simulations
 season_draw <- c("summer", "winter")
 
+
 # s<-"open"
 # md<-"pr"
 # i<-1
@@ -268,7 +269,23 @@ for (s in season_draw) {
 }
 
 
-calibrated_combined <- do.call(rbind, calibrated)
+file_list<-list()
+mode_draw <- c("pr", "fh")
+season_draw <- c("summer", "winter")
+k<-1
+for(i in 1:n_simulations){
+  for (md in mode_draw) {
+    for(s in season_draw) {
+
+      calib_metrics<-fst::read_fst(file.path(iterative_input_data_cd, paste0("calib_metrics_", s,"_", md, "_", i, ".fst")))
+      file_list[[k]]<-calib_metrics
+      k<-k+1
+    }
+  }
+}
+
+calibrated_combined <- do.call(rbind, file_list)
+
 fst::write_fst(calibrated_combined, file.path(iterative_input_data_cd,"calibrated_model_stats_raw.fst"))
 
 

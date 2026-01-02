@@ -89,11 +89,11 @@ do "$input_code_cd\directed_trips_calibration.do"
 		*This file calls "set regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
 		*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
-// 3) Create distributions of costs per trip across strata
-do "$input_code_cd\survey trip costs.do"
+// 3) Create distributions of costs per trip across strata - only needs to be run once
+*do "$input_code_cd\survey trip costs.do"
 
 // 4) Create draw of angler preference parameters 
-do "$input_code_cd\estimate angler preferences.do"
+*do "$input_code_cd\estimate angler preferences.do" - only needs to be run once
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 

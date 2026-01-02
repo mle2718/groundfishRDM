@@ -69,6 +69,8 @@ replace state="NJ" if st==34
 replace state="DE" if st==10
 replace state="VA" if st==51
 replace state="NC" if st==37
+replace state="ME" if st==23
+replace state="NH" if st==33
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -101,26 +103,24 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 *New MRIP site allocations
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
-keep if state=="MA"
+keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
-replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
-replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
-keep nmfs_stock_area intsite nmfs_stat_area 
+replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+keep nmfs_stock_area intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite  using `mrip_sites',  keep(1 3)
+merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into GOM or GBS */
-gen str3 area_s="SNE"
-replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s=nmfs_stock_area if st2=="25"
+/*classify into WGOM or not WGOM */
+gen str3 area_s="XX"
+replace area_s="WGOM" if st2=="33"
+replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
 gen my_dom_id_string=area_s+"_"+year2+"_"+month1+"_"+kod+"_"+mode1+"_"+ dom_id
@@ -175,7 +175,7 @@ drop my_dom_id_string
 rename b dtrip
 
 keep if dom_id=="1"
-keep if area_s=="GOM"
+keep if area_s=="WGOM"
 
 su dtrip
 return list
@@ -529,6 +529,8 @@ replace state="NJ" if st==34
 replace state="DE" if st==10
 replace state="VA" if st==51
 replace state="NC" if st==37
+replace state="ME" if st==23
+replace state="NH" if st==33
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -564,27 +566,23 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 *New MRIP site allocations
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
-keep if state=="MA"
+keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
-replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
-replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
-keep nmfs_stock_area intsite nmfs_stat_area 
+replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+keep nmfs_stock_area intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite  using `mrip_sites',  keep(1 3)
+merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into GOM or GBS */
-gen str3 area_s="SNE"
-replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s=nmfs_stock_area if st2=="25"
-
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
-
+/*classify into WGOM or not WGOM */
+gen str3 area_s="XX"
+replace area_s="WGOM" if st2=="33"
+replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
 gen my_dom_id_string=mode1+"_"+ dom_id
@@ -598,7 +596,7 @@ bysort year wave strat_id psu_id id_code (dom_id): gen count_obs1=_n
 keep if count_obs1==1
 
 keep if dom_id=="1"
-keep if area_s=="GOM"
+keep if area_s=="WGOM"
 
 replace wp_int=0 if wp_int<=0
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
@@ -700,6 +698,8 @@ replace state="NJ" if st==34
 replace state="DE" if st==10
 replace state="VA" if st==51
 replace state="NC" if st==37
+replace state="ME" if st==23
+replace state="NH" if st==33
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -735,26 +735,23 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 *New MRIP site allocations
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
-keep if state=="MA"
+keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
-replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
-replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
-keep nmfs_stock_area intsite nmfs_stat_area 
+replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+keep nmfs_stock_area intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite  using `mrip_sites',  keep(1 3)
+merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into GOM or GBS */
-gen str3 area_s="SNE"
-replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s=nmfs_stock_area if st2=="25"
-
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
+/*classify into WGOM or not WGOM */
+gen str3 area_s="XX"
+replace area_s="WGOM" if st2=="33"
+replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 /* generate the estimation strata - year, month, kind-of-day (weekend including fed holidays/weekday), mode (pr/fh)*/
 gen my_dom_id_string=month+"_"+mode1+"_"+ dom_id
@@ -768,7 +765,7 @@ bysort year wave strat_id psu_id id_code (dom_id): gen count_obs1=_n
 keep if count_obs1==1
 
 keep if dom_id=="1"
-keep if area_s=="GOM"
+keep if area_s=="WGOM"
 
 replace wp_int=0 if wp_int<=0
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
@@ -870,6 +867,8 @@ replace state="NJ" if st==34
 replace state="DE" if st==10
 replace state="VA" if st==51
 replace state="NC" if st==37
+replace state="ME" if st==23
+replace state="NH" if st==33
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -905,26 +904,23 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 *New MRIP site allocations
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
-keep if state=="MA"
+keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
-replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
-replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
-keep nmfs_stock_area intsite nmfs_stat_area 
+replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+keep nmfs_stock_area intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite  using `mrip_sites',  keep(1 3)
+merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into GOM or GBS */
-gen str3 area_s="SNE"
-replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s=nmfs_stock_area if st2=="25"
-
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
+/*classify into WGOM or not WGOM */
+gen str3 area_s="XX"
+replace area_s="WGOM" if st2=="33"
+replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
 replace season="summer" if inlist(month, "05", "06", "07", "08")
@@ -941,7 +937,7 @@ bysort year wave strat_id psu_id id_code (dom_id): gen count_obs1=_n
 keep if count_obs1==1
 
 keep if dom_id=="1"
-keep if area_s=="GOM"
+keep if area_s=="WGOM"
 
 replace wp_int=0 if wp_int<=0
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)

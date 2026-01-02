@@ -33,36 +33,46 @@ save `sl1', replace
 use `tl1'
 merge 1:m year strat_id psu_id id_code using `sl1', keep(1 3) nogen
 
+gen state="MA" if st==25
+replace state="MD" if st==24
+replace state="RI" if st==44
+replace state="CT" if st==9
+replace state="NY" if st==36
+replace state="NJ" if st==34
+replace state="DE" if st==10
+replace state="VA" if st==51
+replace state="NC" if st==37
+replace state="ME" if st==23
+replace state="NH" if st==33
+
 keep if inlist(st,23, 33, 25) //ensure relevent states 
 keep if $calibration_year //ensure relevent year
  
 gen st2 = string(st,"%02.0f")
 
 
-* delineate GoM versus non-GoM fishing
+* delineate WGOM versus non-WGOM fishing
 
-* "new" MRIP site allocations:
+*New MRIP site allocations
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
-keep if state=="MA"
+keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
-replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
-replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
-keep nmfs_stock_area intsite nmfs_stat_area 
+replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+keep nmfs_stock_area intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite  using `mrip_sites',  keep(1 3)
+merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-gen str3 area_s="SNE"
-replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s=nmfs_stock_area if st2=="25"
-
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
+/*classify into WGOM or not WGOM */
+gen str3 area_s="XX"
+replace area_s="WGOM" if st2=="33"
+replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -90,7 +100,7 @@ replace l_cm_bin =0 if !inlist(common_dom, "c", "h")
 
 sort year w2 strat_id psu_id id_code
 
-keep if area_s=="GOM"
+keep if area_s=="WGOM"
 drop if common_dom=="z"
 
 destring month, replace
@@ -190,36 +200,46 @@ use `tl1'
 merge 1:m year strat_id psu_id id_code using `sl1', keep(1 3) nogen
 
 
+gen state="MA" if st==25
+replace state="MD" if st==24
+replace state="RI" if st==44
+replace state="CT" if st==9
+replace state="NY" if st==36
+replace state="NJ" if st==34
+replace state="DE" if st==10
+replace state="VA" if st==51
+replace state="NC" if st==37
+replace state="ME" if st==23
+replace state="NH" if st==33
+
 keep if inlist(st,23, 33, 25) //ensure relevent states 
 keep if $calibration_year //ensure relevent year
  
 gen st2 = string(st,"%02.0f")
 
 
-* delineate GoM versus non-GoM fishing
+* delineate WGOM versus non-WGOM fishing
 
-* "new" MRIP site allocations:
+*New MRIP site allocations
 preserve 
 import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
-keep if state=="MA"
+keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="SNE" if inlist(nmfs_stat_area, 521, 526)
-replace nmfs_stock_area="GOM" if inlist(nmfs_stock_area, "GMSS", "EGM")
-replace nmfs_stock_area="GOM" if inlist(nmfs_stat_area, 514)
-keep nmfs_stock_area intsite nmfs_stat_area 
+replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
+keep nmfs_stock_area intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
 restore
 
-merge m:1 intsite  using `mrip_sites',  keep(1 3)
+merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-gen str3 area_s="SNE"
-replace area_s="GOM" if st2=="23" | st2=="33"
-replace area_s=nmfs_stock_area if st2=="25"
-
-replace area_s="GOM" if st2=="25" & inlist(nmfs_stat_area, 521, 526) & (strmatch(common, "atlanticcod") | strmatch(prim1_common, "atlanticcod") )
+/*classify into WGOM or not WGOM */
+gen str3 area_s="XX"
+replace area_s="WGOM" if st2=="33"
+replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
@@ -246,7 +266,7 @@ replace l_cm_bin =0 if !inlist(common_dom, "c", "h")
 
 sort year w2 strat_id psu_id id_code
 
-keep if area_s=="GOM"
+keep if area_s=="WGOM"
 drop if common_dom=="z"
 
 destring month, replace
