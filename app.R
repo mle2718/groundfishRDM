@@ -270,8 +270,10 @@ server <- function(input, output, session){
   regs<- function(){
     flist <- list.files(path = here::here("saved_regs/"), pattern = "\\.csv$", full.names = TRUE)
 
+    print("get regs1")
     regs_data <- flist %>%
       purrr::map_dfr(readr::read_csv)
+    print("get regs2")
     return(regs_data)
   }
 
@@ -438,7 +440,7 @@ server <- function(input, output, session){
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=1200) +
-      ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=80) +
+      ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=100) +
       ggplot2::guides(size = "none")+
       ggplot2::ggtitle("Cod and Haddock Mortality")+
       ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
@@ -487,7 +489,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=1000000)) +
+          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=0)) +
           ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
           ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
@@ -543,7 +545,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
           ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
           ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
-          ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1075)) +
+          ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1146)) +
           ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
@@ -596,7 +598,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=50)) +
+          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=35)) +
           ggplot2::xlab("Cod Discard Mortality (mt)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
           ggplot2::labs(title = "Total Cod Mortality (mt) compared to Discard Mortality(mt)",
@@ -646,7 +648,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =had_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=300)) +
+          ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=290)) +
           ggplot2::xlab("Haddock Discard Mortality (mt)")+
           ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
           ggplot2::labs(title = "Total Haddock Mortality (mt) compared to Discard Mortality (mt)",
@@ -695,7 +697,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept = cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=167000), angle=90) +
+          ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=220000), angle=90) +
           ggplot2::xlab("Number of Trips")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
           ggplot2::labs(title = "Cod Mortality (mt) compared to Total Number of Trips",
@@ -744,7 +746,7 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept = had_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
-          ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=167000)) +
+          ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=220000)) +
           ggplot2::xlab("Number of Trips")+
           ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
           ggplot2::labs(title = "Haddock Mortality (mt) compared to Total Number of Trips",
@@ -765,30 +767,6 @@ server <- function(input, output, session){
                    shinyjs::toggle(id = "CodSeason3", anim = TRUE))
   shinyjs::onclick("HADaddSeason",
                    shinyjs::toggle(id = "HadSeason3", anim = TRUE))
-
-
-  # predictions() now reads only from output/ files (queued job results)
-  # No longer runs model_run.R directly in the Shiny app
-  predictions <- reactive({
-    # Start with status quo predictions
-    predictions_out <- read.csv(here::here("data-raw/SQ_predictions_cm.csv"))
-    
-    # Try to read outputs from queued jobs
-    tryCatch({
-      queued_results <- outputs()
-      if (!is.null(queued_results) && nrow(queued_results) > 0) {
-        predictions_out <- rbind(predictions_out, queued_results)
-      }
-    }, error = function(e) {
-      # If no outputs yet, just use status quo
-      message("No queued results available yet: ", e$message)
-    })
-    
-    predictions_out <- predictions_out %>%
-      dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
-    
-    return(predictions_out)
-  })
 
   #### Regulations ####
   regulations <- observeEvent(input$runmeplease,{
@@ -874,8 +852,6 @@ server <- function(input, output, session){
 
 
     regulations <- regulations %>% rbind(codregs, hadregs)
-    print("made regulations MA")
-
 
     readr::write_csv(regulations, file = here::here(paste0("saved_regs/regs_", input$Run_Name, ".csv")))
     print("saved_inputs")
@@ -889,325 +865,11 @@ server <- function(input, output, session){
   observeEvent(input$runmeplease, {
     output$message <- renderText("Regulations saved - your model run has been queued. Results will appear in the output folder once processing completes. Be sure to change the run name before submitting another job.")
   })
-  
-  # Auto-refresh available files every 30 seconds to detect new results from queued jobs
-  autoInvalidate <- reactiveTimer(30000)  # 30 seconds
-  
-  observe({
-    autoInvalidate()
-    # Trigger refresh of available_files() and file_mapping()
-    file_map <- file_mapping()
-    if (length(file_map) > 0) {
-      updateSelectInput(
-        session,
-        "file_choice",
-        choices = file_map,
-        selected = input$file_choice  # Keep current selection if it still exists
-      )
-    }
-  })
 
-  # Get list of files from the folder
-  available_files <- reactive({
-    folder_path <- here::here("output/")
-    if (dir.exists(folder_path)) {
-      files <- list.files(folder_path, full.names = FALSE)
-      if (length(files) > 0) {
-        return(files)
-      }
-    }
-    return(character(0))
-  })
-
-  file_mapping <- reactive({
-    files <- available_files()
-    if (length(files) > 0) {
-      # Remove file extensions for display names
-      display_names <- files %>%
-        stringr::str_remove("^output_") %>%         # remove prefix
-        stringr::str_remove("_[0-9]+")  %>%
-        stringr::str_remove("_[0-9]+") %>%
-        stringr::str_remove(".csv")
-      # Create named vector: display_name = full_filename
-      names(files) <- display_names
-      return(files)
-    }
-    return(character(0))
-  })
-
-  # Update dropdown choices when app starts
-  observe({
-    file_map <- file_mapping()
-    if (length(file_map) > 0) {
-      updateSelectInput(
-        session,
-        "file_choice",
-        choices = file_map,
-        selected = file_map[1]
-      )
-    } else {
-      updateSelectInput(
-        session,
-        "file_choice",
-        choices = "No files available",
-        selected = NULL
-      )
-    }
-  })
-
-  # Display file information
-  output$file_info <- renderText({
-    if (is.null(input$file_choice) || input$file_choice == "No files available") {
-      return("No file selected or no files available.")
-    }
-
-    file_path <- file.path("output", input$file_choice)
-
-    if (file.exists(file_path)) {
-      file_info <- file.info(file_path)
-      # Get the display name (without extension) for the selected file
-      display_name <- tools::file_path_sans_ext(input$file_choice)
-      paste(
-        "Display name:", display_name,
-        "\nFull filename:", input$file_choice,
-        "\nFile size:", round(file_info$size / 1024, 2), "KB",
-        "\nLast modified:", format(file_info$mtime, "%Y-%m-%d %H:%M:%S"),
-        sep = "\n"
-      )
-    } else {
-      "File not found."
-    }
-  })
-
-  # Handle file download
-  output$download_file <- downloadHandler(
-    filename = function() {
-      # Return the selected filename (full filename with extension)
-      if (!is.null(input$file_choice) && input$file_choice != "No files available") {
-        return(input$file_choice)
-      } else {
-        return("file.txt")  # Fallback filename
-      }
-    },
-    content = function(file) {
-      # Copy the selected file to the download location
-      if (!is.null(input$file_choice) && input$file_choice != "No files available") {
-        file_path <- file.path("output", input$file_choice)
-        if (file.exists(file_path)) {
-          file.copy(file_path, file)
-        } else {
-          # If file doesn't exist, create an error file
-          writeLines("Error: File not found.", file)
-        }
-      } else {
-        writeLines("Error: No file selected.", file)
-      }
-    }
-  )
-
-  # ##### Catch ###########
-  # which_catch_out<- reactiveVal(TRUE)
-  # catch_agg <- reactive({
-  #
-  #   catch_agg<- predictions() %>%
-  #     #dat %>%
-  #     dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-  #                   number_weight == "Weight") %>%
-  #     dplyr::group_by(option, Category, draw_out) %>%
-  #     dplyr::summarise(Value = sum(Value)) %>%
-  #     dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
-  #                   under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
-  #     dplyr::group_by(option, Category) %>%
-  #     dplyr::summarise(under_acl = sum(under_acl),
-  #                      Value = median(Value)) %>%
-  #     tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
-  #     dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
-  #                                            "had" = "Haddock")) %>%
-  #     dplyr::select(Category, Value_SQ, under_acl_SQ, Value_alt, under_acl_alt) %>%
-  #     dplyr::rename(Species = Category, `SQ Total Mortality (mt)` = Value_SQ, `SQ % Under ACL (Out of 100 runs)` = under_acl_SQ,
-  #                   `Alternative Total Mortality (mt)` = Value_alt, `Atlernative % Under ACL (Out of 100 runs)` = under_acl_alt)
-  #
-  #   return(catch_agg)
-  # })
-  #
-  # catch_by_mode <- reactive({
-  #
-  #   print("start catch mode")
-  #   catch_by_mode<- predictions() %>%
-  #     #dat %>% #test %>%
-  #     dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-  #                   number_weight == "Weight") %>%
-  #     dplyr::group_by(option, Category, draw_out, mode) %>%
-  #     dplyr::summarise(Value = sum(Value)) %>%
-  #     dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= 99000 ~ 1, TRUE ~ 0),
-  #                   under_acl = dplyr::case_when(Category == "had" & Value <= 1075000 ~ 1, TRUE ~ under_acl)) %>%
-  #     dplyr::group_by(option, Category, mode) %>%
-  #     dplyr::summarise(under_acl = sum(under_acl),
-  #                      Value = median(Value)) %>%
-  #     tidyr::pivot_wider(names_from = c(option), values_from = c(Value, under_acl)) %>%
-  #     dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
-  #                                            "had" = "Haddock"),
-  #                   mode = dplyr::recode(mode, "fh" = "For Hire",
-  #                                        "pr" = "Private")) %>%
-  #     dplyr::select(Category, Value_SQ, Value_alt,  mode) %>%
-  #     dplyr::rename(Species = Category, `SQ Total Mortality (mt)` = Value_SQ,
-  #                   `Alternative Total Mortality (mt)` = Value_alt, `Mode` = mode)
-  #
-  #   return(catch_by_mode)
-  # })
-  #
-  # #### keep release discards ####
-  # which_keep_out<- reactiveVal(TRUE)
-  # keep_agg <- reactive({
-  #
-  #   # sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))%>%
-  #   #   dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
-  #   #  out<- read.csv(here::here("output/output_alt1_20250113_102706.csv"))%>%
-  #   #    dplyr::mutate(Value = dplyr::case_when(number_weight == "Weight" ~ as.numeric(Value)/2205, TRUE ~ as.numeric(Value)))
-  #   #  dat<- rbind(sq, out)
-  #
-  #   keep_agg<- predictions() %>%
-  #     #dat %>% #redictions_out %>%
-  #     dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
-  #     dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out) %>%
-  #     dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  #     dplyr::group_by(option, Category, catch_disposition, number_weight) %>%
-  #     tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
-  #     dplyr::mutate(perc_diff_num = ((alt_Number-SQ_Number)/SQ_Number) * 100,
-  #                   perc_diff_wt = ((alt_Weight-SQ_Weight)/SQ_Weight) * 100) %>%
-  #     dplyr::filter(!perc_diff_num == "NA",
-  #                   !perc_diff_wt == "NA") %>%
-  #     dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
-  #                      alt_Number = median(alt_Number), alt_Weight = median(alt_Weight),
-  #                      perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
-  #     dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
-  #     dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
-  #                                            "had" = "Haddock"),
-  #                   catch_disposition = dplyr::recode(catch_disposition, "keep" = "Harvest",
-  #                                                     "Discmortality" = "Dead Discards",
-  #                                                     "release" = "Discards")) %>%
-  #     dplyr::select(Category, catch_disposition, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
-  #     dplyr::rename(Species = Category, Variable = catch_disposition,
-  #                   `Total number of fish` = alt_Number, `% difference from SQ for number of fish` = perc_diff_num,
-  #                   `Total Weight (mt)` = alt_Weight, `% difference from SQ for weight of fish` = perc_diff_wt)
-  #
-  #   return(keep_agg)
-  #
-  # })
-  #
-  #
-  # keep_by_mode <- reactive({
-  #   keep_by_mode<- predictions() %>%
-  #     #dat %>% #predictions_out %>%
-  #     dplyr::filter(catch_disposition %in% c("keep", "release", "Discmortality")) %>%
-  #     dplyr::group_by(option, Category, catch_disposition, number_weight, draw_out, mode) %>%
-  #     dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  #     dplyr::group_by(option, Category, catch_disposition, number_weight, mode) %>%
-  #     dplyr::summarise(Value = median(Value)) %>%
-  #     tidyr::pivot_wider(names_from = c(option, number_weight), values_from = Value) %>%
-  #     dplyr::mutate(perc_diff_num = ((alt_Number-SQ_Number)/SQ_Number) * 100,
-  #                   perc_diff_wt = ((alt_Weight-SQ_Weight)/SQ_Weight) * 100) %>%
-  #     dplyr::group_by(Category, catch_disposition, mode) %>%
-  #     dplyr::filter(!perc_diff_num == "NA",
-  #                   !perc_diff_wt == "NA") %>%
-  #     dplyr::summarise(SQ_Number = median(SQ_Number), SQ_Weight = median(SQ_Weight),
-  #                      alt_Number = median(alt_Number), alt_Weight = median(alt_Weight),
-  #                      perc_diff_num = median(perc_diff_num), perc_diff_wt = median(perc_diff_wt)) %>%
-  #     dplyr::select(!c(SQ_Number, SQ_Weight)) %>%
-  #     dplyr::mutate(Category = dplyr::recode(Category, "cod" = "Cod",
-  #                                            "had" = "Haddock"),
-  #                   catch_disposition = dplyr::recode(catch_disposition, "keep" = "Harvest",
-  #                                                     "Discmortality" = "Dead Discards",
-  #                                                     "release" = "Discards"),
-  #                   mode = dplyr::recode(mode, "fh" = "For Hire",
-  #                                        "pr" = "Private")) %>%
-  #     dplyr::select(Category, catch_disposition, mode, alt_Number, perc_diff_num, alt_Weight, perc_diff_wt) %>%
-  #     dplyr::rename(Species = Category, Variable = catch_disposition,
-  #                   `Total Number of fish` = alt_Number, `% difference in number of fish` = perc_diff_num,
-  #                   `Total Weight (mt)` = alt_Weight, `% difference in weight of fish` = perc_diff_wt, `Mode` = mode)
-  #   return(keep_by_mode)
-  # })
-  # #####################
-  #
-  # ##### Ntrips & welfare #######
-  # which_welfare_out<- reactiveVal(TRUE)
-  # welfare_agg <- reactive({
-  #
-  #   #     sq<- read.csv(here::here("data-raw/sq_predictions_cm.csv"))
-  #   #      out<- read.csv(here::here("predictions2.csv")) %>%
-  #   #        dplyr::select(!X)
-  #   #      dat<- rbind(sq, out)
-  #   # #
-  #   welfare2_agg <- predictions() %>%
-  #     #dat %>%
-  #     dplyr::filter(Category =="CV")%>%
-  #     dplyr::group_by( draw_out, option) %>%
-  #     dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  #     tidyr::pivot_wider(names_from = option, values_from = Value) %>%
-  #     dplyr::mutate(Value_diff = SQ - alt) %>%
-  #     dplyr::filter(!Value_diff == "NA") %>%
-  #     dplyr::ungroup() %>%
-  #     dplyr::summarise(median_cv = median(Value_diff)) %>%
-  #     dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv)
-  #
-  #
-  #   trips_agg<- predictions() %>%
-  #     #dat %>%
-  #     dplyr::filter(Category =="ntrips" & option == "alt") %>%
-  #     dplyr::group_by( draw_out) %>%
-  #     dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  #     dplyr::summarise(Value = median(Value)) %>%
-  #     dplyr::select(Value) %>%
-  #     dplyr::ungroup() %>%
-  #     dplyr::rename(`Total number of Angler Trips` = Value) %>%
-  #     dplyr::select(`Total number of Angler Trips`)
-  #
-  #
-  #   welfare_agg<- cbind(welfare2_agg, trips_agg)
-  #
-  #   return(welfare_agg)
-  #
-  # })
-  #
-  #
-  # welfare_by_mode <- reactive({
-  #
-  #   welfare_by_mode2 <- predictions() %>%
-  #     #predictions_out %>%
-  #     dplyr::filter(Category == "CV") %>%
-  #     dplyr::group_by( draw_out, option, mode) %>%
-  #     dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  #     tidyr::pivot_wider(names_from = option, values_from = Value) %>%
-  #     dplyr::mutate(Value_diff = SQ - alt) %>%
-  #     dplyr::filter(!Value_diff == "NA") %>%
-  #     dplyr::group_by(mode) %>%
-  #     dplyr::summarise(median_cv = median(Value_diff)) %>%
-  #     dplyr::rename(`Relative change in Angler Satisfaction ($)` = median_cv) %>%
-  #     dplyr::ungroup()
-  #
-  #
-  #   trips_by_mode<- predictions() %>%
-  #     #predictions_out %>%
-  #     dplyr::filter(Category =="ntrips" & option == "alt") %>%
-  #     dplyr::group_by(draw_out, mode) %>%
-  #     dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-  #     dplyr::group_by( mode) %>%
-  #     dplyr::summarise(Value = median(Value)) %>%
-  #     dplyr::select(Value) %>%
-  #     dplyr::ungroup() %>%
-  #     dplyr::rename(`Total number of Angler Trips` = Value) %>%
-  #     dplyr::select(`Total number of Angler Trips`)
-  #
-  #
-  #   welfare_by_mode<- cbind(welfare_by_mode2, trips_by_mode) %>%
-  #     dplyr::mutate(mode = dplyr::recode(mode, "fh" = "For Hire",
-  #                                        "pr" = "Private"))
-  #   return(welfare_by_mode)
-  # })
 
   ###Output Tables
   output$regtableout <- renderTable({
-    regs_agg()
+    regs()
   })
 
   #### Catch tables
@@ -1262,47 +924,15 @@ server <- function(input, output, session){
     which_welfare()
   })
 
-  ### Save data
-  observeEvent(input$runmeplease, {
-    dat<- pred()
 
-    Regs<- data.frame(Category = c("Cod1_FH_bag", "Cod1_FH_size", "Cod1_FH_Season",
-                                   "Cod1_PR_bag", "Cod1_PR_size", "Cod1_PR_Season",
-                                   "Had1_FH_bag", "Had1_FH_size", "Had1_FH_Season",
-                                   "Had1_PR_bag", "Had1_PR_size", "Had1_PR_Season",
-                                   "Had2_FH_bag", "Had2_FH_size", "Had2_FH_Season",
-                                   "Had2_PR_bag", "Had2_PR_size", "Had2_PR_Season",
-                                   "Cod2_FH_bag", "Cod2_FH_size", "Cod2_FH_Season",
-                                   "Cod2_PR_bag", "Cod2_PR_size", "Cod2_PR_Season",
-                                   "Had3_FH_bag", "Had3_FH_size", "Had3_FH_Season",
-                                   "Had3_PR_bag", "Had3_PR_size", "Had3_PR_Season"),
-                      Value = c(input$CodFH_1_bag, input$CodFH_1_len, paste0(input$CodFH_seas1[1], " - ", input$CodFH_seas1[2]),
-                                input$CodPR_1_bag, input$CodPR_1_len, paste0(input$CodPR_seas1[1], " - ", input$CodPR_seas1[2]),
-                                input$HadFH_1_bag, input$HadFH_1_len, paste0(input$HadFH_seas1[1], " - ", input$HadFH_seas1[2]),
-                                input$HadPR_1_bag, input$HadPR_1_len, paste0(input$HadPR_seas1[1], " - ", input$HadPR_seas1[2]),
-                                input$HadFH_2_bag, input$HadFH_2_len, paste0(input$HadFH_seas2[1], " - ", input$HadFH_seas2[2]),
-                                input$HadPR_2_bag, input$HadPR_2_len, paste0(input$HadPR_seas2[1], " - ", input$HadPR_seas2[2]),
-                                input$CodFH_2_bag, input$CodFH_2_len, paste0(input$CodFH_seas2[1], " - ", input$CodFH_seas2[2]),
-                                input$CodPR_2_bag, input$CodPR_2_len, paste0(input$CodPR_seas2[1], " - ", input$CodPR_seas2[2]),
-                                input$HadFH_3_bag, input$HadFH_3_len, paste0(input$HadFH_seas3[1], " - ", input$HadFH_seas3[2]),
-                                input$HadPR_3_bag, input$HadPR_3_len, paste0(input$HadPR_seas3[1], " - ", input$HadPR_seas3[2])),
-                      mode = c("NA"), catch_disposition = c("NA"), param = c("NA"), number_weight = c("NA"),
-                      season = c("NA"), draw_out = c("NA"), mrip_index = c("NA"),option= c("NA"))
-
-    dat_out<- dat %>% rbind(Regs)
-    Run_Name = Run_Name()
-    readr::write_csv(dat_out, file = here::here(paste0("output/output_", Run_Name, "_", format(Sys.time(), "%Y%m%d_%H%M%S"),  ".csv")))
-
-  })
-
-  output$downloadData <- downloadHandler(
-    filename = function(){"RecDSToutput.xlsx"},
-    content = function(filename) {
-      df_list <- list(Regulations=regs_agg(), Catch_Mortality_aggregated = catch_agg(), Catch_Mortality_by_mode = catch_by_mode(),
-                      Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
-                      Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_by_mode())
-      openxlsx::write.xlsx(append = TRUE, x = df_list , file = filename, row.names = FALSE)
-    })
+  # output$downloadData <- downloadHandler(
+  #   filename = function(){"RecDSToutput.xlsx"},
+  #   content = function(filename) {
+  #     df_list <- list(Regulations=regs_agg(), Catch_Mortality_aggregated = catch_agg(), Catch_Mortality_by_mode = catch_by_mode(),
+  #                     Keep_Release_aggregated = keep_agg(), Keep_Release_by_mode = keep_by_mode(),
+  #                     Satisfaction_trips_aggregated = welfare_agg(), Satisfaction_trips_by_mode = welfare_by_mode())
+  #     openxlsx::write.xlsx(append = TRUE, x = df_list , file = filename, row.names = FALSE)
+  #   })
 
 }
 shiny::shinyApp(ui = ui, server = server)
