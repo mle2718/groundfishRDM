@@ -259,7 +259,7 @@ get_predictions_out<- function(x){
 
 
 #write.csv(predictions_out10, file = here::here("SQ_predictions_1_5.csv"))
-predictions_out10<- furrr::future_map_dfr(
+predictions_out_monthly10<- furrr::future_map_dfr(
   1:5,
   ~{
     data.table::setDTthreads(1)
@@ -269,4 +269,19 @@ predictions_out10<- furrr::future_map_dfr(
   .options = furrr::furrr_options(seed = TRUE)
 )
 
-readr::write_csv(predictions_out10, file = here::here(paste0("output/output_", Run_Name, "_", format(Sys.time(), "%Y%m%d_%H%M%S"),  ".csv")))
+# write the monthly data as an RDS to avoid the .csv file searching
+
+time_saver<-format(Sys.time(), "%Y%m%d_%H%M%S")
+saveRDS(predictions_out_monthly10, file = here::here("output",paste0("output_", Run_Name, "_",time_saver,".Rds")))
+
+
+
+# Contract to monthly
+predictions_out_10 <- predictions_out_monthly10 %>%
+  group_by(species,mode,draw, model)%>%
+  summarise(across(where(is.numeric), sum, .names = "{.col}")) %>%
+  ungroup()
+
+
+
+readr::write_csv(predictions_out10, file = here::here("output",paste0("output_", Run_Name, "_",time_saver,  ".csv")))
