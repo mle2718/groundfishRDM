@@ -272,7 +272,7 @@ predictions_out_monthly10<- furrr::future_map_dfr(
 # write the monthly data as an RDS to avoid the .csv file searching
 
 time_saver<-format(Sys.time(), "%Y%m%d_%H%M%S")
-saveRDS(predictions_out_monthly10, file = here::here("output",paste0("output_", Run_Name, "_",time_saver,".Rds")))
+saveRDS(predictions_out_monthly10, file = here::here("output",paste0("monthly_output", Run_Name, "_",time_saver,".Rds")))
 
 
 
