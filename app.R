@@ -346,8 +346,8 @@ server <- function(input, output, session){
                     `Haddock Season(s)` = hadseason,
                     `% under Cod ACL` = under_acl_cod,
                     `% under Haddock ACL` = under_acl_hadd,
-                    `Cod Median Total Catch` = Value_cod,
-                    `Haddock Median Total Catch` = Value_hadd)
+                    `Cod Total Catch` = Value_cod,
+                    `Haddock Total Catch` = Value_hadd)
 
 
     DT::datatable(final_table)
