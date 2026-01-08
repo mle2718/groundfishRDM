@@ -41,7 +41,7 @@ WORKDIR /srv/rdmtool
 # Copy model scripts (assuming relative paths from repo root when building)
 # These paths may need adjustment depending where build context is executed
 COPY Code/ ./Code/
-COPY model_run.R ./
+COPY RecDST/ ./RecDST/
 COPY keda/consume_and_run.sh /app/consume_and_run.sh
 RUN chmod +x /app/consume_and_run.sh
 
