@@ -331,10 +331,6 @@ server <- function(input, output, session){
       summarise(size = first(value), .groups = "drop") %>%
       pivot_wider(names_from = size_type,values_from = size)
 
-    # acl <- regs1 %>%
-    #   dplyr::select(model, mode, under_acl_cod, under_acl_hadd) %>%
-    #   dplyr::distinct()
-
     final_table <- seasons %>%
       dplyr::left_join(bags, by = c("model", "mode")) %>%
       dplyr::left_join(minsizes, by = c("model", "mode")) %>%
@@ -510,7 +506,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
           ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
           ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
-          ggplot2::geom_text(ggplot2::aes(x=had_acl(), label="Had ACL", y=1146)) +
+          ggplot2::geom_text(ggplot2::aes(x=0, label="Had ACL", y=had_acl())) +
           ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
