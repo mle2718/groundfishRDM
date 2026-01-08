@@ -296,52 +296,62 @@ server <- function(input, output, session){
 
     regs1 <- regs() %>%
       dplyr::rename("model" = "run_name") %>%
-      dplyr::left_join(catch_agg, by = c("model")) %>%
-      tidyr::separate(input, into =c("Species", "season", "Var"), sep = "_") %>%
-      tidyr::pivot_wider(names_from = Var, values_from = c(value)) %>%
-      tidyr::separate(Species, into = c("Species", "mode"), sep = 3)
-
+      #dplyr::left_join(catch_agg, by = c("model")) %>%
+      mutate(
+        species = stringr::str_extract(input, "^[a-z]+"),
+        mode    = stringr::str_extract(input, "(FH|PR)"),
+        season  = stringr::str_extract(input, "\\d+"),
+        bound   = stringr::str_extract(input, "(op|cl)"),
+        value    = stringr::str_remove(value, "^\\d{4}-")  # remove year
+      ) %>%
+      group_by(model, species, mode, season) %>%
+      filter(!any(value == 0))
 
     seasons <- regs1 %>%
-      dplyr::filter(!is.na(op), !is.na(cl)) %>%
-      dplyr::mutate(season = paste(op, cl, sep = "-"),
-                    Species = ifelse(grepl("cod", Species), "cod", "haddock")) %>%
-      dplyr::group_by(model, mode, Species) %>%
-      dplyr::summarise(season = paste(unique(season), collapse = ";"), .groups = "drop") %>%
-      tidyr::pivot_wider(names_from = Species, values_from = season, names_glue = "{Species}season")
+      dplyr::select(!input) %>%
+      filter(bound %in% c("op", "cl")) %>%
+      pivot_wider(names_from = bound,values_from = value) %>%
+      mutate(season_range = paste(op, "-", cl)) %>%
+      group_by(model, species, mode) %>%
+      summarise(season = paste(season_range, collapse = " ; "),.groups = "drop") %>%
+      tidyr::pivot_wider(names_from = species, values_from = season, names_glue = "{species}season")
+
 
     bags <- regs1 %>%
-      dplyr::filter(!is.na(bag)) %>%
-      dplyr::mutate(Species = ifelse(grepl("cod", Species), "cod", "haddock")) %>%
-      dplyr::group_by(model, mode, Species) %>%
-      dplyr::summarise(baglimit = max(bag), .groups = "drop") %>%
-      tidyr::pivot_wider(names_from = Species, values_from = baglimit, names_glue = "{Species}baglimit")
+      dplyr::filter(stringr::str_detect(input, "bag")) %>%
+      mutate(bag_type = paste0(species, "bag")) %>%
+      group_by(model, mode, bag_type) %>%
+      summarise(bag = first(value), .groups = "drop") %>%
+      pivot_wider(names_from = bag_type,values_from = bag)
 
     minsizes <- regs1 %>%
-      dplyr::filter(!is.na(len)) %>%
-      dplyr::mutate(Species = ifelse(grepl("cod", Species), "cod", "haddock")) %>%
-      dplyr::group_by(model, mode, Species) %>%
-      dplyr::summarise(minsize = max(len), .groups = "drop") %>%
-      tidyr::pivot_wider(names_from = Species,values_from = minsize,names_glue = "{Species}minsize")
+      dplyr::filter(stringr::str_detect(input, "len")) %>%
+      mutate(size_type = paste0(species, "len")) %>%
+      group_by(model, mode, size_type) %>%
+      summarise(size = first(value), .groups = "drop") %>%
+      pivot_wider(names_from = size_type,values_from = size)
 
-    acl <- regs1 %>%
-      dplyr::select(model, mode, under_acl_cod, under_acl_hadd) %>%
-      dplyr::distinct()
+    # acl <- regs1 %>%
+    #   dplyr::select(model, mode, under_acl_cod, under_acl_hadd) %>%
+    #   dplyr::distinct()
 
     final_table <- seasons %>%
       dplyr::left_join(bags, by = c("model", "mode")) %>%
       dplyr::left_join(minsizes, by = c("model", "mode")) %>%
-      dplyr::left_join(acl, by = c("model", "mode")) %>%
+      dplyr::left_join(catch_agg, by = c("model")) %>%
+      dplyr::select(model, mode, codseason, codbag, codlen, hadseason, hadbag, hadlen, Value_cod, Value_hadd, under_acl_cod, under_acl_hadd) %>%
       dplyr::rename(Mode = mode,
                     `Run Identifier` = model,
-                    `Cod Bag Limit` = codbaglimit,
-                    `Cod Minimum Size (in)` = codminsize,
+                    `Cod Bag Limit` = codbag,
+                    `Cod Minimum Size (in)` = codlen,
                     `Cod Season(s)` = codseason,
-                    `Haddock Bag Limit` = haddockbaglimit,
-                    `Haddock Minimum Size (in)` = haddockminsize,
-                    `Haddock Season(s)` = haddockseason,
+                    `Haddock Bag Limit` = hadbag,
+                    `Haddock Minimum Size (in)` = hadlen,
+                    `Haddock Season(s)` = hadseason,
                     `% under Cod ACL` = under_acl_cod,
-                    `% under Haddock ACL` = under_acl_hadd)
+                    `% under Haddock ACL` = under_acl_hadd,
+                    `Cod Median Total Catch` = Value_cod,
+                    `Haddock Median Total Catch` = Value_hadd)
 
 
     DT::datatable(final_table)
@@ -759,15 +769,14 @@ server <- function(input, output, session){
                                      "codFH_seas2_op", "codFH_seas2_cl", "codPR_seas2_op", "codPR_seas2_cl",
                                      "codFH_seas3_op", "codFH_seas3_cl", "codPR_seas3_op", "codPR_seas3_cl",
 
-                                     "codFH_1_bag",   "codFH_1_len",    "codPR_1_bag",   "codPR_1_len",
-                                     "codFH_2_bag" ,  "codFH_2_len",    "codPR_2_bag",   "codPR_2_len",
-                                     "codFH_3_bag",   "codFH_3_len",    "codPR_3_bag",   "codPR_3_len"),
-                          value =  c(as.character(input$CodFH_seas1[1]), as.character(input$CodFH_seas1[2]),
-                                     as.character(input$CodFH_seas2[1]), as.character(input$CodFH_seas2[2]),
-                                     as.character(input$CodFH_seas3[1]), as.character(input$CodFH_seas3[2]),
+                                     "codFH_1_bag", "codPR_1_bag", "codFH_2_bag" , "codPR_2_bag",  "codFH_3_bag", "codPR_3_bag",
 
+                                     "codFH_1_len", "codPR_1_len", "codFH_2_len", "codPR_2_len","codFH_3_len", "codPR_3_len"),
+                          value =  c(as.character(input$CodFH_seas1[1]), as.character(input$CodFH_seas1[2]),
                                      as.character(input$CodPR_seas1[1]), as.character(input$CodPR_seas1[2]),
+                                     as.character(input$CodFH_seas2[1]), as.character(input$CodFH_seas2[2]),
                                      as.character(input$CodPR_seas2[1]), as.character(input$CodPR_seas2[2]),
+                                     as.character(input$CodFH_seas3[1]), as.character(input$CodFH_seas3[2]),
                                      as.character(input$CodPR_seas3[1]), as.character(input$CodPR_seas3[2]),
 
                                      as.character(input$CodFH_1_bag), as.character(input$CodPR_1_bag),
@@ -784,17 +793,16 @@ server <- function(input, output, session){
                                      "hadFH_seas2_op", "hadFH_seas2_cl", "hadPR_seas2_op", "hadPR_seas2_cl",
                                      "hadFH_seas3_op", "hadFH_seas3_cl", "hadPR_seas3_op", "hadPR_seas3_cl",
 
-                                     "hadFH_1_bag",   "hadFH_1_len",    "hadPR_1_bag",   "hadPR_1_len",
-                                     "hadFH_2_bag" ,  "hadFH_2_len",    "hadPR_2_bag",   "hadPR_2_len",
-                                     "hadFH_3_bag",   "hadFH_3_len",    "hadPR_3_bag",   "hadPR_3_len"),
+                                     "hadFH_1_bag", "hadPR_1_bag", "hadFH_2_bag" , "hadPR_2_bag", "hadFH_3_bag", "hadPR_3_bag",
+
+                                     "hadFH_1_len", "hadPR_1_len", "hadFH_2_len", "hadPR_2_len",  "hadFH_3_len", "hadPR_3_len"),
 
 
                           value =  c(as.character(input$HadFH_seas1[1]), as.character(input$HadFH_seas1[2]),
-                                     as.character(input$HadFH_seas2[1]), as.character(input$HadFH_seas2[2]),
-                                     as.character(input$HadFH_seas3[1]), as.character(input$HadFH_seas3[2]),
-
                                      as.character(input$HadPR_seas1[1]), as.character(input$HadPR_seas1[2]),
+                                     as.character(input$HadFH_seas2[1]), as.character(input$HadFH_seas2[2]),
                                      as.character(input$HadPR_seas2[1]), as.character(input$HadPR_seas2[2]),
+                                     as.character(input$HadFH_seas3[1]), as.character(input$HadFH_seas3[2]),
                                      as.character(input$HadPR_seas3[1]), as.character(input$HadPR_seas3[2]),
 
                                      as.character(input$HadFH_1_bag), as.character(input$HadPR_1_bag),
