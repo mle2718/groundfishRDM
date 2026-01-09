@@ -53,19 +53,19 @@ spec:
                 cpu: "800"
                 memory: "10000Gi"
             volumeMounts:
-              - name: app-share
+              - name: app-share-groundfish
                 mountPath: /srv/rdmtool/saved_regs
                 subPath: saved_regs
-              - name: app-share
+              - name: app-share-groundfish
                 mountPath: /srv/rdmtool/output
                 subPath: output
-              - name: app-share
+              - name: app-share-groundfish
                 mountPath: /srv/rdmtool/Data
                 subPath: Data
                 readOnly: true
             command: ["/bin/sh","-c","/app/consume_and_run.sh"]
         volumes:
-          - name: app-share
+          - name: app-share-groundfish
             persistentVolumeClaim:
               claimName: app-share-groundfish-pvc-3
   triggers:
