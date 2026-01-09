@@ -793,7 +793,7 @@ server <- function(input, output, session){
     library(openssl)
     library(uuid)
 
-    enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("AZURE_STORAGE_QUEUE_URL")) {
+    enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL")) {
       stopifnot(nzchar(run_name), nzchar(queue_url_sas))
       payload <- list(
         runName = run_name,
