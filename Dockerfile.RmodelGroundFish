@@ -1,0 +1,51 @@
+# Model runner Dockerfile
+FROM rocker/r-ver:4.3.2
+
+# System deps (add others as needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates jq git build-essential libssl-dev libcurl4-openssl-dev libxml2-dev \
+  && rm -rf /var/lib/apt/lists/* \
+  && curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Install needed R packages (adjust list to match Run_Model.R requirements)
+RUN install2.r -e -s \
+    shiny \
+    shinyjs \
+    shinyWidgets \
+    magrittr \
+    readr \
+    here \
+    dplyr \
+    tidyr \
+    stringr \
+    lubridate \
+    tibble \
+    data.table \
+    knitr \
+    openxlsx \
+    plyr \
+    markdown \
+    future \
+    furrr \
+    rlang \
+    httr \
+    jsonlite \
+    openssl \
+    uuid \
+    plotly \
+    feather \
+    DT
+
+WORKDIR /srv/rdmtool
+
+# Copy model scripts (assuming relative paths from repo root when building)
+# These paths may need adjustment depending where build context is executed
+COPY Code/ ./Code/
+COPY RecDST/ ./RecDST/
+COPY keda/consume_and_run.sh /app/consume_and_run.sh
+RUN chmod +x /app/consume_and_run.sh
+
+ENV PATH="/usr/local/bin:$PATH"
+
+# Default command (overridden by ScaledJob)
+CMD ["/bin/bash"]
