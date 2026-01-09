@@ -750,8 +750,7 @@ server <- function(input, output, session){
       res <- POST(
         url = queue_url_sas,
         body = xml_body,
-        content_type_xml(),
-        add_headers(`x-ms-version` = "2024-11-04")
+        content_type_xml()
       )
       stop_for_status(res)
       invisible(TRUE)
