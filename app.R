@@ -442,7 +442,7 @@ server <- function(input, output, session){
           tidyr::pivot_wider(names_from = species, values_from = Value) %>%
           dplyr::left_join(welfare) %>%
           dplyr::group_by(model) %>%
-          dplyr::summarise(`Angler Satisfaction($)` = median(pct_diff),
+          dplyr::summarise(`Angler Satisfaction($)` = median(CV),
                            cod = median(cod),
                            hadd = median(hadd))
 
@@ -453,7 +453,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=0)) +
           ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
+          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction (Compared to the past year, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
