@@ -751,7 +751,7 @@ server <- function(input, output, session){
         url = queue_url_sas,
         body = xml_body,
         content_type_xml(),
-        add_headers(`x-ms-version` = "2021-12-02")
+        add_headers(`x-ms-version` = "2024-11-04")
       )
       stop_for_status(res)
       invisible(TRUE)
