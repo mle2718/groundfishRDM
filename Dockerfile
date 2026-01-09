@@ -4,7 +4,7 @@ RUN apt-get update \
     nano \
     && rm -rf /var/lib/apt/lists/*
 COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
-COPY . /srv/app/
+COPY . /srv/rdmtool
 RUN install2.r -e -s \
     shiny \
     shinyjs \
@@ -32,4 +32,4 @@ RUN install2.r -e -s \
     rlang \
     openssl \
     uuid \
-    && chown -R shiny:shiny /srv/app
+    && chown -R shiny:shiny /srv/rdmtool
