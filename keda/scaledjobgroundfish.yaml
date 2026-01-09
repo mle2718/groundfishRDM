@@ -54,13 +54,13 @@ spec:
                 memory: "10000Gi"
             volumeMounts:
               - name: app-share-groundfish
-                mountPath: /srv/app/saved_regs
+                mountPath: /srv/rdmtool/saved_regs
                 subPath: saved_regs
               - name: app-share-groundfish
-                mountPath: /srv/app/output
+                mountPath: /srv/rdmtool/output
                 subPath: output
               - name: app-share-groundfish
-                mountPath: /srv/app/Data
+                mountPath: /srv/rdmtool/Data
                 subPath: Data
                 readOnly: true
             command: ["/bin/sh","-c","/app/consume_and_run.sh"]
