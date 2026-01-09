@@ -1,7 +1,7 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledJob
 metadata:
-  name: r-model-runner
+  name: r-model-runner-groundfish
   namespace: shinyproxy
 spec:
   pollingInterval: 30           # seconds between queue checks
@@ -16,7 +16,7 @@ spec:
     template:
       metadata:
         labels:
-          app: r-model-runner
+          app: r-model-runner-groundfish
       spec:
         restartPolicy: Never
         # Tolerations / node selection (adjust to your large node pool)
@@ -27,23 +27,23 @@ spec:
             effect: "NoSchedule"
         containers:
           - name: runner
-            image: ${RUNNER_IMAGE}
+            image: ${GROUNDFISH_RUNNER_IMAGE}
             imagePullPolicy: Always
             env:
               - name: GROUNDFISH_QUEUE_NAME
                 valueFrom:
                   secretKeyRef:
-                    name: r-model-queue
+                    name: r-model-queue-groundfish
                     key: queueName
               - name: GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING
                 valueFrom:
                   secretKeyRef:
-                    name: r-model-queue
+                    name: r-model-queue-groundfish
                     key: connectionString
               - name: GROUNDFISH_STORAGE_ACCOUNT_NAME
                 valueFrom:
                   secretKeyRef:
-                    name: r-model-queue
+                    name: r-model-queue-groundfish
                     key: accountName
             resources:
               requests:
@@ -67,33 +67,32 @@ spec:
         volumes:
           - name: app-share
             persistentVolumeClaim:
-              claimName: app-share-pvc
+              claimName: app-share-groundfish-pvc-3
   triggers:
     - type: azure-queue
       metadata:
-        queueName: ${QUEUE_NAME}
+        queueName: ${GROUNDFISH_QUEUE_NAME}
         queueLength: "1"          # scale one job per message
-        accountName: ${STORAGE_ACCOUNT_NAME}
       authenticationRef:
-        name: r-model-queue-trigger-auth
+        name: r-model-queue-trigger-auth-groundfish
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: r-model-queue
+  name: r-model-queue-groundfish
   namespace: shinyproxy
 stringData:
-  queueName: ${QUEUE_NAME}
+  queueName: ${GROUNDFISH_QUEUE_NAME}
   connectionString: ${STORAGE_QUEUE_CONNECTION_STRING}
   accountName: ${STORAGE_ACCOUNT_NAME}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: r-model-queue-trigger-auth
+  name: r-model-queue-trigger-auth-groundfish
   namespace: shinyproxy
 spec:
   secretTargetRef:
     - parameter: connection
-      name: r-model-queue
+      name: r-model-queue-groundfish
       key: connectionString
