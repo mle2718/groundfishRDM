@@ -756,6 +756,7 @@ server <- function(input, output, session){
       invisible(TRUE)
     }
 
+    print(GROUNDFISH_AZURE_STORAGE_QUEUE_URL)
 
     regulations <- NULL
     #if(any( )) will run all selected check boxes on UI-regulations selection tab
