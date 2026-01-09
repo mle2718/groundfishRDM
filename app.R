@@ -736,6 +736,7 @@ server <- function(input, output, session){
     library(openssl)
     library(uuid)
 
+    print("before function is made")
     enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL")) {
       stopifnot(nzchar(run_name), nzchar(queue_url_sas))
       payload <- list(
@@ -750,14 +751,16 @@ server <- function(input, output, session){
         url = queue_url_sas,
         body = xml_body,
         content_type_xml(),
-        add_headers(`x-ms-version` = "2020-10-02")
+        add_headers(`x-ms-version` = "2021-12-02")
       )
       stop_for_status(res)
       invisible(TRUE)
     }
 
+    print("after function is made")
     print(Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL"))
 
+    print("before regs")
     regulations <- NULL
     #if(any( )) will run all selected check boxes on UI-regulations selection tab
     codregs <- data.frame(run_name = c(Run_Name()),
@@ -812,7 +815,9 @@ server <- function(input, output, session){
 
     regulations <- regulations %>% rbind(codregs, hadregs)
 
+    print("before regs write")
     readr::write_csv(regulations, file = here::here(paste0("saved_regs/regs_", input$Run_Name, ".csv")))
+
 
     print("enqueue triggered")
     enqueue_simple_sas(input$Run_Name)
