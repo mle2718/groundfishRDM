@@ -813,7 +813,7 @@ server <- function(input, output, session){
 
     readr::write_csv(regulations, file = here::here(paste0("saved_regs/regs_", input$Run_Name, ".csv")))
 
-    enqueue_simple_sas(input$Run_Name)
+    #enqueue_simple_sas(input$Run_Name)
 
     return(regulations)
 
