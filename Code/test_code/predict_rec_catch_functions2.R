@@ -2,9 +2,9 @@
 
 ############# To Run Individual
 # # Variables to change
-# s<-"summer"
-# md<-"pr"
-# dr<-201
+ # s<-"winter"
+ # md<-"pr"
+ # dr<-1
 #
 # mode_draw <- c("pr", "fh")
 # draws <- 1:15
@@ -23,17 +23,15 @@ directed_trips_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_
   dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
                 season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
   dplyr::filter(draw == dr) %>%
-  #dplyr::mutate(cod_min_y2=cod_min, cod_bag_y2=cod_bag, hadd_min_y2=hadd_min, hadd_bag_y2=hadd_bag) %>%
   as.data.table()
 
 get_lowest_min_size_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
   tibble::tibble() %>%
-  #dplyr::mutate(cod_min_y2=cod_min, cod_bag_y2=cod_bag, hadd_min_y2=hadd_min, hadd_bag_y2=hadd_bag) %>%
   dplyr::select(mode, day,  dtrip, draw,
                 starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
 
-cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2)
-hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2)
+cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_alt)
+hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_alt)
 
 catch_data0 <- list()
 base_outcomes_angler_dems0 <- list()
@@ -430,10 +428,10 @@ mean_trip_data <- mean_trip_data %>%
 data.table::setDT(mean_trip_data)
 list_names <- c("CV","predicted_trips", "base_trips")
 
-aggregate_trip_data_mode <- mean_trip_data[, lapply(.SD, sum), by = .(mode), .SDcols = list_names]
+aggregate_trip_data_mode <- mean_trip_data[, lapply(.SD, sum), by = .(mode, month), .SDcols = list_names]
 
 # Aggregate for all modes
-aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum), .SDcols = list_names][
+aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum),  by = .(month), .SDcols = list_names][
   , mode := "all modes"
 ]
 
@@ -441,7 +439,7 @@ aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum), .SDcols = lis
 model_output1 <- data.table::rbindlist(list(aggregate_trip_data_mode, aggregate_trip_data_allmodes), use.names=TRUE)
 model_output1_long <- data.table::melt(
   model_output1,
-  id.vars = c("mode"),   # keep these as identifiers
+  id.vars = c("mode", "month"),   # keep these as identifiers
   measure.vars = c("CV", "predicted_trips", "base_trips"),
   variable.name = "metric",
   value.name = "value"
@@ -451,17 +449,17 @@ model_output1_long$species<-"NA"
 
 model_output1_long_base<-model_output1_long %>%
   dplyr::filter(metric=="base_trips") %>%
-  dplyr::select(mode, value, species) %>%
+  dplyr::select(mode, value, species, month) %>%
   dplyr::rename(value_base=value)
 
 model_output1_long_new<-model_output1_long %>%
   dplyr::filter(metric=="predicted_trips") %>%
-  dplyr::select(mode, value, species) %>%
+  dplyr::select(mode, value, species, month) %>%
   dplyr::rename(value_new=value) %>%
-  dplyr::left_join(model_output1_long_base, by=c("mode", "species")) %>%
+  dplyr::left_join(model_output1_long_base, by=c("mode", "species", "month")) %>%
   dplyr::mutate(additional_trips=value_new-value_base) %>%
   dplyr::mutate(metric="additional_trips") %>%
-  dplyr::select(metric, mode, additional_trips, species) %>%
+  dplyr::select(metric, mode, additional_trips, species, month) %>%
   dplyr::rename(value=additional_trips)
 
 model_output1_long <- model_output1_long %>%
@@ -561,7 +559,7 @@ length_data1 <- length_data1[, .(
   release_weight = sum(release_weight),
   discmort_weight = sum(discmort_weight),
   discmort_number = sum(discmort_number)
-), by = .(species, mode)]
+), by = .(species, mode, month)]
 
 
 # total removals numbers and weights
@@ -570,7 +568,7 @@ length_data1[, removals_number :=  keep_numbers + discmort_number]
 
 length_data_long <- data.table::melt(
   length_data1,
-  id.vars = c("species", "mode"),   # keep these as identifiers
+  id.vars = c("species", "mode", "month"),   # keep these as identifiers
   measure.vars = c("keep_numbers", "release_numbers",
                    "keep_weight", "release_weight",
                    "discmort_weight", "discmort_number",
@@ -584,7 +582,7 @@ length_data_long <- length_data_long[!is.na(value)]
 
 ## Split and classify
 length_data_long_all <- length_data_long[, .(value = sum(value)),
-                                         by = .(metric, species)]
+                                         by = .(metric, species, month)]
 
 length_data_long_all[, mode := "all modes"]
 
