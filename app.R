@@ -297,39 +297,39 @@ server <- function(input, output, session){
     regs1 <- regs() %>%
       dplyr::rename("model" = "run_name") %>%
       #dplyr::left_join(catch_agg, by = c("model")) %>%
-      mutate(
+      dplyr::mutate(
         species = stringr::str_extract(input, "^[a-z]+"),
         mode    = stringr::str_extract(input, "(FH|PR)"),
         season  = stringr::str_extract(input, "\\d+"),
         bound   = stringr::str_extract(input, "(op|cl)"),
         value    = stringr::str_remove(value, "^\\d{4}-")  # remove year
       ) %>%
-      group_by(model, species, mode, season) %>%
-      filter(!any(value == 0))
+      dplyr::group_by(model, species, mode, season) %>%
+      dplyr::filter(!any(value == 0))
 
     seasons <- regs1 %>%
       dplyr::select(!input) %>%
-      filter(bound %in% c("op", "cl")) %>%
-      pivot_wider(names_from = bound,values_from = value) %>%
-      mutate(season_range = paste(op, "-", cl)) %>%
-      group_by(model, species, mode) %>%
-      summarise(season = paste(season_range, collapse = " ; "),.groups = "drop") %>%
+      dplyr::filter(bound %in% c("op", "cl")) %>%
+      tidyr::pivot_wider(names_from = bound,values_from = value) %>%
+      dplyr::mutate(season_range = paste(op, "-", cl)) %>%
+      dplyr::group_by(model, species, mode) %>%
+      dplyr::summarise(season = paste(season_range, collapse = " ; "),.groups = "drop") %>%
       tidyr::pivot_wider(names_from = species, values_from = season, names_glue = "{species}season")
 
 
     bags <- regs1 %>%
       dplyr::filter(stringr::str_detect(input, "bag")) %>%
-      mutate(bag_type = paste0(species, "bag")) %>%
-      group_by(model, mode, bag_type) %>%
-      summarise(bag = first(value), .groups = "drop") %>%
-      pivot_wider(names_from = bag_type,values_from = bag)
+      dplyr::mutate(bag_type = paste0(species, "bag")) %>%
+      dplyr::group_by(model, mode, bag_type) %>%
+      dplyr::summarise(bag = dplyr::first(value), .groups = "drop") %>%
+      tidyr::pivot_wider(names_from = bag_type,values_from = bag)
 
     minsizes <- regs1 %>%
       dplyr::filter(stringr::str_detect(input, "len")) %>%
-      mutate(size_type = paste0(species, "len")) %>%
-      group_by(model, mode, size_type) %>%
-      summarise(size = first(value), .groups = "drop") %>%
-      pivot_wider(names_from = size_type,values_from = size)
+      dplyr::mutate(size_type = paste0(species, "len")) %>%
+      dplyr::group_by(model, mode, size_type) %>%
+      dplyr::summarise(size = dplyr::first(value), .groups = "drop") %>%
+      tidyr::pivot_wider(names_from = size_type,values_from = size)
 
     final_table <- seasons %>%
       dplyr::left_join(bags, by = c("model", "mode")) %>%
@@ -758,7 +758,6 @@ server <- function(input, output, session){
 
 
     regulations <- NULL
-    print("where am i")
     #if(any( )) will run all selected check boxes on UI-regulations selection tab
     codregs <- data.frame(run_name = c(Run_Name()),
                           input =  c("codFH_seas1_op", "codFH_seas1_cl", "codPR_seas1_op", "codPR_seas1_cl",
@@ -813,9 +812,8 @@ server <- function(input, output, session){
     regulations <- regulations %>% rbind(codregs, hadregs)
 
     readr::write_csv(regulations, file = here::here(paste0("saved_regs/regs_", input$Run_Name, ".csv")))
-    print("saved_inputs")
 
-    enqueue_simple_sas(input$Run_Name)
+    #enqueue_simple_sas(input$Run_Name)
 
     return(regulations)
 
