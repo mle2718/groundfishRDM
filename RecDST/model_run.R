@@ -100,7 +100,7 @@ directed_trips <- directed_trips %>%
                 hadd_min_y2 = hadd_min_y2_alt,
                 hadd_bag_y2 = hadd_bag_y2_alt)
 
-print("heading into parallel process")
+print("parallel function define")
 future::plan(future::multisession, workers = 6)
 set.seed(915)
 #future::plan(future::multisession, workers = 124)
@@ -257,7 +257,7 @@ get_predictions_out<- function(x){
 # use furrr package to parallelize the get_predictions_out function 100 times
 # This will spit out a dataframe with 100 predictions
 
-
+print("heading into parallel process")
 #write.csv(predictions_out10, file = here::here("SQ_predictions_1_5.csv"))
 predictions_out_monthly10<- furrr::future_map_dfr(
   1:5,
