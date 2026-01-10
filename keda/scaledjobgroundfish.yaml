@@ -35,23 +35,23 @@ spec:
                   secretKeyRef:
                     name: r-model-queue-groundfish
                     key: queueName
-              - name: GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING
+              - name: STORAGE_QUEUE_CONNECTION_STRING
                 valueFrom:
                   secretKeyRef:
                     name: r-model-queue-groundfish
                     key: connectionString
-              - name: GROUNDFISH_STORAGE_ACCOUNT_NAME
+              - name: STORAGE_ACCOUNT_NAME
                 valueFrom:
                   secretKeyRef:
                     name: r-model-queue-groundfish
                     key: accountName
             resources:
               requests:
-                cpu: "44"
-                memory: "300Gi"
+                cpu: "1"
+                memory: "2Gi"
               limits:
-                cpu: "800"
-                memory: "10000Gi"
+                cpu: "2"
+                memory: "4Gi"
             volumeMounts:
               - name: app-share-groundfish
                 mountPath: /srv/rdmtool/saved_regs
