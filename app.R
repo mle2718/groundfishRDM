@@ -428,7 +428,8 @@ server <- function(input, output, session){
           dplyr::group_by(draw) %>%
           dplyr::mutate(SQ_value = (value[model == "SQproposed"]),
                  pct_diff = 100 * (value - SQ_value) / SQ_value) %>%
-          dplyr::ungroup()
+          dplyr::ungroup() %>%
+          dplyr::mutate(CV = value)
 
         catch<- outputs() %>%
           #dat %>%
@@ -442,7 +443,7 @@ server <- function(input, output, session){
           tidyr::pivot_wider(names_from = species, values_from = Value) %>%
           dplyr::left_join(welfare) %>%
           dplyr::group_by(model) %>%
-          dplyr::summarise(`Angler Satisfaction($)` = median(pct_diff),
+          dplyr::summarise(`Angler Satisfaction($)` = median(CV)/1000000,
                            cod = median(cod),
                            hadd = median(hadd))
 
@@ -451,9 +452,9 @@ server <- function(input, output, session){
           ggplot2::geom_hline( yintercept =cod_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
           ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=0)) +
-          ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
+          ggplot2::xlab("Change in Angler Satisfaction ($M)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
+          ggplot2::labs(title = "Cod Mortality (mt) compared to Angler Satisfaction (Compared to the past year, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -482,7 +483,8 @@ server <- function(input, output, session){
           dplyr::group_by(draw) %>%
           dplyr::mutate(SQ_value = (value[model == "SQproposed"]),
                  pct_diff = 100 * (value - SQ_value) / SQ_value) %>%
-          dplyr::ungroup()
+          dplyr::ungroup() %>%
+          dplyr::mutate(CV = value)
 
         catch<- outputs() %>%
           #dat %>%
@@ -496,7 +498,7 @@ server <- function(input, output, session){
           tidyr::pivot_wider(names_from = species, values_from = Value) %>%
           dplyr::left_join(welfare) %>%
           dplyr::group_by(model) %>%
-          dplyr::summarise(`Angler Satisfaction($)` = median(pct_diff),
+          dplyr::summarise(`Angler Satisfaction($)` = median(CV)/1000000,
                            cod = median(cod),
                            hadd = median(hadd))
 
@@ -504,10 +506,10 @@ server <- function(input, output, session){
           ggplot2::geom_point() +
           ggplot2::geom_hline( yintercept =had_acl())+
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
-          ggplot2::xlab("Relative Change in Angler Satisfaction ($)")+
+          ggplot2::xlab("Change in Angler Satisfaction ($M)")+
           ggplot2::ylab("Total Recreational Haddock Mortality (mt)")+
           ggplot2::geom_text(ggplot2::aes(x=0, label="Had ACL", y=had_acl())) +
-          ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?)",
+          ggplot2::labs(title = "Haddock Mortality (mt) compared to Angler Satisfaction (Compared to the past year, how much better- or worse-off are anglers, in dollars?)",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
