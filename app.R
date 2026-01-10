@@ -741,6 +741,15 @@ server <- function(input, output, session){
     print("before function is made")
     enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL")) {
       stopifnot(nzchar(run_name), nzchar(queue_url_sas))
+      
+      # Clean and ensure /messages endpoint
+      queue_url_sas <- trimws(queue_url_sas, whitespace = "\" ")
+      post_url <- if (grepl("/messages/?$", queue_url_sas)) {
+        queue_url_sas
+      } else {
+        paste0(sub("/$", "", queue_url_sas), "/messages")
+      }
+      
       payload <- list(
         runName = run_name,
         submissionId = UUIDgenerate(),
@@ -750,7 +759,7 @@ server <- function(input, output, session){
       xml_body <- sprintf("<QueueMessage><MessageText>%s</MessageText></QueueMessage>", msg_b64)
 
       res <- POST(
-        url = queue_url_sas,
+        url = post_url,
         body = xml_body,
         content_type_xml()
       )
