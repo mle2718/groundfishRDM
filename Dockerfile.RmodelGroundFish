@@ -33,7 +33,7 @@ RUN install2.r -e -s \
     openssl \
     uuid \
     plotly \
-    feather \
+    fst \
     DT
 
 WORKDIR /srv/rdmtool
