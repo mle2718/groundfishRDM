@@ -272,13 +272,14 @@ predictions_out_monthly10<- furrr::future_map_dfr(
 # write the monthly data as an RDS to avoid the .csv file searching
 
 time_saver<-format(Sys.time(), "%Y%m%d_%H%M%S")
-saveRDS(predictions_out_monthly10, file = here::here("output",paste0("monthly_output", Run_Name, "_",time_saver,".Rds")))
+saveRDS(predictions_out_monthly10, file = here::here("output",paste0("monthly_output_", Run_Name, "_",time_saver,".Rds")))
 
 
 
 # Contract to monthly
 predictions_out_10 <- predictions_out_monthly10 %>%
-  group_by(species,mode,draw, model)%>%
+  dplyr::select(!month) %>%
+  group_by(metric, species,mode,draw, model)%>%
   summarise(across(where(is.numeric), sum, .names = "{.col}")) %>%
   ungroup()
 
