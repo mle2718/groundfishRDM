@@ -1,4 +1,7 @@
 FROM rocker/shiny:4.3
+
+ENV GROUNDFISH_AZURE_STORAGE_QUEUE_URL=""
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     nano \
