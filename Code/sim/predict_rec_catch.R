@@ -440,7 +440,7 @@ length_data1 <- length_data1[, .(
   release_weight = sum(release_weight),
   discmort_weight = sum(discmort_weight),
   discmort_number = sum(discmort_number)
-), by = .(species, mode)]
+), by = .(species, mode, month)]
 
 
 # total removals numbers and weights
@@ -449,7 +449,7 @@ length_data1[, removals_number :=  keep_numbers + discmort_number]
 
 length_data_long <- data.table::melt(
   length_data1,
-  id.vars = c("species", "mode"),   # keep these as identifiers
+  id.vars = c("species", "mode","month"),   # keep these as identifiers
   measure.vars = c("keep_numbers", "release_numbers",
                    "keep_weight", "release_weight",
                    "discmort_weight", "discmort_number",
@@ -463,7 +463,7 @@ length_data_long <- length_data_long[!is.na(value)]
 
 ## Split and classify
 length_data_long_all <- length_data_long[, .(value = sum(value)),
-                                         by = .(metric, species)]
+                                         by = .(metric, species, month)]
 
 length_data_long_all[, mode := "all modes"]
 
