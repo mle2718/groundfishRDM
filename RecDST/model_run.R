@@ -101,7 +101,7 @@ directed_trips <- directed_trips %>%
                 hadd_bag_y2 = hadd_bag_y2_alt)
 
 print("parallel function define")
-future::plan(future::multisession, workers = 6)
+future::plan(future::multisession, workers = 5)
 set.seed(915)
 #future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
@@ -269,6 +269,7 @@ predictions_out_monthly10<- furrr::future_map_dfr(
   .options = furrr::furrr_options(seed = TRUE)
 )
 
+print("output parallel")
 # write the monthly data as an RDS to avoid the .csv file searching
 
 time_saver<-format(Sys.time(), "%Y%m%d_%H%M%S")
