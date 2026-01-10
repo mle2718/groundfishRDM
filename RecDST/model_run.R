@@ -34,7 +34,7 @@ param_grid <- expand.grid(
   stringsAsFactors = FALSE
 )
 
-
+print("start data reading")
 fst::threads_fst(1)
 
 disc_mort<- fst::read_fst(file.path(here::here("Data/miscellaneous"), "Discard_Mortality.fst")) %>%
@@ -60,7 +60,7 @@ calendar_adjustments <- fst::read_fst(file.path(here::here("Data/miscellaneous")
 calib_comparison<-fst::read_fst(file.path(here::here("Data/miscellaneous"), "calibrated_model_stats_final.fst")) %>%
   data.table::as.data.table()
 
-#print(directed_trips)
+print("into directed_trips")
 directed_trips<-fst::read_fst(file.path(here::here("Data/miscellaneous"), paste0("directed_trip_draws_final.fst")))
 
 directed_trips <- directed_trips %>%
@@ -100,7 +100,7 @@ directed_trips <- directed_trips %>%
                 hadd_min_y2 = hadd_min_y2_alt,
                 hadd_bag_y2 = hadd_bag_y2_alt)
 
-
+print("heading into parallel process")
 future::plan(future::multisession, workers = 6)
 set.seed(915)
 #future::plan(future::multisession, workers = 124)
