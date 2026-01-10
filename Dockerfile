@@ -32,3 +32,5 @@ RUN install2.r -e -s \
     openssl \
     uuid \
     && chown -R shiny:shiny /srv/rdmtool
+
+CMD ["sh", "-c", "/usr/bin/shiny-server & sleep 2 && tail -F /var/log/shiny-server/*.log"]
