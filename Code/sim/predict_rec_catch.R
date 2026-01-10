@@ -309,10 +309,10 @@ mean_trip_data <- mean_trip_data %>%
 data.table::setDT(mean_trip_data)
 list_names <- c("CV","predicted_trips", "base_trips")
 
-aggregate_trip_data_mode <- mean_trip_data[, lapply(.SD, sum), by = .(mode), .SDcols = list_names]
+aggregate_trip_data_mode <- mean_trip_data[, lapply(.SD, sum), by = .(mode, month), .SDcols = list_names]
 
 # Aggregate for all modes
-aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum), .SDcols = list_names][
+aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum), by = .(month), .SDcols = list_names][
   , mode := "all modes"
 ]
 
@@ -320,7 +320,7 @@ aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum), .SDcols = lis
 model_output1 <- data.table::rbindlist(list(aggregate_trip_data_mode, aggregate_trip_data_allmodes), use.names=TRUE)
 model_output1_long <- data.table::melt(
   model_output1,
-  id.vars = c("mode"),   # keep these as identifiers
+  id.vars = c("mode", "month"),   # keep these as identifiers
   measure.vars = c("CV", "predicted_trips", "base_trips"),
   variable.name = "metric",
   value.name = "value"
@@ -330,17 +330,17 @@ model_output1_long$species<-"NA"
 
 model_output1_long_base<-model_output1_long %>%
   dplyr::filter(metric=="base_trips") %>%
-  dplyr::select(mode, value, species) %>%
+  dplyr::select(mode, value, species, month) %>%
   dplyr::rename(value_base=value)
 
 model_output1_long_new<-model_output1_long %>%
   dplyr::filter(metric=="predicted_trips") %>%
-  dplyr::select(mode, value, species) %>%
+  dplyr::select(mode, value, species, month) %>%
   dplyr::rename(value_new=value) %>%
-  dplyr::left_join(model_output1_long_base, by=c("mode", "species")) %>%
+  dplyr::left_join(model_output1_long_base, by=c("mode", "species", "month")) %>%
   dplyr::mutate(additional_trips=value_new-value_base) %>%
   dplyr::mutate(metric="additional_trips") %>%
-  dplyr::select(metric, mode, additional_trips, species) %>%
+  dplyr::select(metric, mode, additional_trips, species, month) %>%
   dplyr::rename(value=additional_trips)
 
 model_output1_long <- model_output1_long %>%
@@ -432,7 +432,7 @@ length_data1[, discmort_number := data.table::fcase(
 )]
 
 
-# Summarise by species, mode
+# Summarise by species, mode, month
 length_data1 <- length_data1[, .(
   keep_numbers = sum(keep_numbers),
   release_numbers = sum(release_numbers),
