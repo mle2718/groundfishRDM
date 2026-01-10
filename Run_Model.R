@@ -8,7 +8,7 @@ library(data.table)
 #args = "SQ"
 
 
-
+args <- commandArgs(trailingOnly = TRUE)
 
 source(here::here("RecDST/model_run.R"))
 
