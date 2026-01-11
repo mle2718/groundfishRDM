@@ -101,7 +101,7 @@ directed_trips <- directed_trips %>%
                 hadd_bag_y2 = hadd_bag_y2_alt)
 
 print("parallel function define")
-future::plan(future::multisession, workers = 5)
+future::plan(future::multisession, workers = 35)
 set.seed(915)
 #future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
