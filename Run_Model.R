@@ -5,7 +5,6 @@
 
 library(magrittr)
 library(data.table)
-#args = "SQ"
 
 
 args <- commandArgs(trailingOnly = TRUE)

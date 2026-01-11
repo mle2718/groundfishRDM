@@ -102,6 +102,7 @@ directed_trips <- directed_trips %>%
 
 print("parallel function define")
 future::plan(future::multisession, workers = 34)
+#future::plan(future::multisession, workers = 5)
 set.seed(915)
 #future::plan(future::multisession, workers = 124)
 get_predictions_out<- function(x){
