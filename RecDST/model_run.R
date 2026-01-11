@@ -111,16 +111,16 @@ get_predictions_out<- function(x){
 
   directed_trips2<-directed_trips %>%
     tibble::tibble() %>%
-    dplyr::select(mode, day_y2,  dtrip, draw,
+    dplyr::select(mode, day, day_y2,  dtrip, draw,
                   starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
-    dplyr::mutate(date=as.Date(day_y2, format = "%d%b%Y"),
+    dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
                   season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
     dplyr::filter(draw == x) %>%
     data.table::as.data.table()
 
   get_lowest_min_size_draw<-directed_trips2%>%
     tibble::tibble() %>%
-    dplyr::select(mode, day_y2,  dtrip, draw,
+    dplyr::select(mode, day, day_y2,  dtrip, draw,
                   starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
 
   cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2)
