@@ -260,7 +260,7 @@ get_predictions_out<- function(x){
 print("heading into parallel process")
 #write.csv(predictions_out10, file = here::here("SQ_predictions_1_5.csv"))
 predictions_out_monthly10<- furrr::future_map_dfr(
-  1:5,
+  1:100,
   ~{
     data.table::setDTthreads(1)
     get_predictions_out(.x)
