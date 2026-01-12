@@ -1,7 +1,7 @@
 
 
 predict_rec_catch <- function(dr, directed_trips, catch_data,
-                              cod_size_data, had_size_data,
+                              cod_size_data, hadd_size_data,
                               calib_comparison, n_choice_occasions,
                               calendar_adjustments, base_outcomes, discard_mortality_dat, param_grid){
 # Cod trip simulation

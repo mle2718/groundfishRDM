@@ -40,13 +40,13 @@ fst::threads_fst(1)
 disc_mort<- fst::read_fst(file.path(here::here("Data/miscellaneous"), "Discard_Mortality.fst")) %>%
   dplyr::rename(month=Month)
 
-cod_size_data <- fst::read_fst(file.path(here::here("Data/miscellaneous"), "baseline_catch_at_length.fst"))  %>%
+cod_size_data <- fst::read_fst(file.path(here::here("Data/miscellaneous"), "proj_catch_at_length.fst"))  %>%
   dplyr::filter(species=="cod") %>%
   dplyr::filter(!is.na(fitted_prob)) %>%
   dplyr::select(fitted_prob, length, season, draw ) %>%
   data.table::as.data.table()
 
-hadd_size_data <- fst::read_fst(file.path(here::here("Data/miscellaneous"), "baseline_catch_at_length.fst"))  %>%
+hadd_size_data <- fst::read_fst(file.path(here::here("Data/miscellaneous"), "proj_catch_at_length.fst"))  %>%
   dplyr::filter(species=="hadd") %>%
   dplyr::filter(!is.na(fitted_prob)) %>%
   dplyr::select(fitted_prob, length, season, draw ) %>%
@@ -240,7 +240,7 @@ get_predictions_out<- function(x){
                            directed_trips = directed_trips2,
                            catch_data = catch_data,
                            cod_size_data = cod_size_data2,
-                           had_size_data = hadd_size_data2,
+                           hadd_size_data = hadd_size_data2,
                            calib_comparison = calib_comparison2,
                            n_choice_occasions = n_choice_occasions,
                            calendar_adjustments = calendar_adjustments2,
