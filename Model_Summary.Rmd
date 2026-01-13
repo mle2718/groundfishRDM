@@ -17,31 +17,25 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 library(tidyverse)
 
-### Read in data
-fnames <- list.files(path=here::here("output/saved_output/"),pattern = "*.csv",full.names = T)
+options(scipen=999) 
 
-fnames2<- as.data.frame(fnames) %>%
-  tidyr::separate(fnames, into = c("a", "b", "c", "d"), sep = "_") %>%
-  dplyr::mutate(d = ifelse(stringr::str_detect(d, "202501"),  "NA", d),
-                e=c(1:nrow(.)),
-                run_name = dplyr::case_when(d != "NA" ~ d, TRUE ~ as.character(d))) %>%
+fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
+
+fnames2<- as.data.frame(fnames) %>% 
+  tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>% 
+  dplyr::mutate(run_name = b) %>% 
   dplyr::select(run_name)
 
-df <- fnames %>%
-  purrr::map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
+df <- fnames %>% 
+  map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
-df2<- df %>% dplyr::mutate(run_number = as.character(rep(fnames2$run_name, each = 6030))) %>% 
-  dplyr::select(!V1) %>% 
-  dplyr::filter(!run_number %in% c("MJP9", "MJP10"))
-
-### 
 cod_acl <- function(){
-    cod_acl = 99
+    cod_acl = 118
     return(cod_acl)
   }
 
 had_acl <- function(){
-    had_acl = 1075
+    had_acl = 1146
     return(had_acl)
   }
 
@@ -55,20 +49,19 @@ lb_to_mt <- function(){
 ## Total Catch Mortality
 
 ```{r, out.width="100%"}
- catch_agg<- df2 %>%
+     catch_agg<- df %>%
       #dat %>%
-      dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-                    number_weight == "Weight") %>%
-      dplyr::group_by(run_number, Category,draw_out) %>%
-      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
+      dplyr::filter(metric %in% c("keep_weight", "discmort_weight"),
+                    mode == "all modes")%>%
+      dplyr::group_by(model, species,draw) %>%
+      dplyr::summarise(Value = sum(as.numeric(value))) %>%
       dplyr::mutate(Value = Value * lb_to_mt()) %>%
-      dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0), 
-                    under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
-      dplyr::group_by(run_number, Category) %>%
+      dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(species == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(model, species) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
-      tidyr::pivot_wider(names_from = Category, values_from = c(Value, under_acl)) %>% 
-  arrange(run_number, under_acl_cod, decreasing = TRUE)
+      tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl))
 
     catch_agg2<- catch_agg %>%
       dplyr::mutate(under_acl_cod2 = dplyr::case_when(under_acl_cod < 50 ~ "Less than 50%", TRUE ~ ""),
@@ -77,53 +70,40 @@ lb_to_mt <- function(){
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 70 & under_acl_cod < 80 ~ "70-79%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 80 & under_acl_cod < 90 ~ "80-89%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 90 & under_acl_cod <=100 ~ "90-100%", TRUE ~ under_acl_cod2)) %>%
-      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_had < 50 ~ "Less than 50%", TRUE ~ ""),
-                    under_acl_had2 = dplyr::case_when(under_acl_had >= 50 & under_acl_had < 60 ~ "50-59%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_had >= 60 & under_acl_had < 70~ "60-69%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_had >= 70 & under_acl_had < 80 ~ "70-79%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_had >= 80 & under_acl_had < 90 ~ "80-89%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_had >= 90 & under_acl_had <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
+      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_hadd < 50 ~ "Less than 50%", TRUE ~ ""),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 50 & under_acl_hadd < 60 ~ "50-59%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 60 & under_acl_hadd < 70~ "60-69%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 70 & under_acl_hadd < 80 ~ "70-79%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 80 & under_acl_hadd < 90 ~ "80-89%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 90 & under_acl_hadd <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
-      dplyr::rename(`Haddock Mortality`=Value_had) %>%
+      dplyr::rename(`Haddock Mortality`=Value_hadd) %>%
       dplyr::ungroup()
-    
+
     p<- catch_agg2 %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
       ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod2, size = under_acl_had2)) +
       ggplot2::scale_color_manual(values = c("50-59%" = "#A9DFBF", "60-69%" = "#7DCEA0",
                                              "70-79%" = "#52BE80","80-89%" = "#27AE60",
                                              "90-100%" = "#1B5E20", "Less than 50%" = "red3"))+
-      ggplot2::scale_size_manual(values = c("50-59%" = 1.0000001, "60-69%" = 1.0000002,
-                                             "70-79%" = 1.0000000003,"80-89%" = 1.0000000004,
-                                             "90-100%" = 1.00000005, "Less than 50%" = 1.000000006))+
+      ggplot2::scale_size_manual(values = c("50-59%" = 1, "60-69%" = 1,
+                                            "70-79%" = 1,"80-89%" = 1,
+                                            "90-100%" = 1, "Less than 50%" = 1))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
-      ggplot2::geom_text(ggplot2::aes(label = run_number), check_overlap = TRUE)+
+      ggplot2::geom_text(ggplot2::aes(label = model), check_overlap = TRUE)+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
       ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=1200) +
-      ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=80) +
+      ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=100) +
       ggplot2::guides(size = "none")+
-      ggplot2::ggtitle("Cod and haddock mortality")+
-      ggplot2::ylab("Median recreational haddock mortality (mt)")+
-      ggplot2::xlab("Median recreational cod mortality (mt)")+
-      ggplot2::theme(legend.position = "bottom")
+      ggplot2::ggtitle("Cod and Haddock Mortality")+
+      ggplot2::ylab("Median Recreational Haddock Mortality (mt)")+
+      ggplot2::xlab("Median Recreational Cod Mortality (mt)")
 
-    fig<- plotly::ggplotly(p) %>% 
-      plotly::style(textposition = "top center") %>% 
-      plotly::layout(legend = list(orientation = "h", x = -0.1, y = -0.2))
+    fig<- plotly::ggplotly(p) %>% #,
+      plotly::style(textposition = "top center")
     fig
-
-    
-OK_runs<- catch_agg %>% 
-  dplyr::filter(under_acl_cod >= 50 & under_acl_had >= 50)
-
-OK_runs <- unique(OK_runs$run_number)
-
-shade.alpha <- 0.3
-shade.fill <- "lightgrey"
-x.shade.min <- 1
-x.shade.max <- 2
 
 
 ```
@@ -133,71 +113,77 @@ x.shade.max <- 2
 ## Distribution of total recreational fishing mortaltiy
 
 ```{r, out.width="100%"}
-dat<- df2 %>%
-      dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-                    number_weight == "Weight", Category == "cod", 
-                    run_number %in% OK_runs) %>%
-      dplyr::group_by(run_number, Category,draw_out) %>%
-      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * lb_to_mt()) %>% 
-  dplyr::mutate(under_acl = dplyr::case_when(Category == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0)) %>% 
-  dplyr::mutate(shaded = dplyr::case_when(run_number %in% c("AC3", "ML1", "JS11", "JS14", "JS17", "JS12",
-                                                            "AC2", "JS9", "JS6", "MJP7")~ "Shade", TRUE ~ "NoShade"), 
-                shaded = dplyr::case_when(run_number %in% c("SQ", "Opt1", "KB2", "MJP8")~ "Recommended", TRUE ~ shaded))
+dat<- df %>%
+      dplyr::filter(metric %in% c("removals_weight"), species == "cod") %>%
+      dplyr::group_by(model, species,draw) %>%
+      dplyr::mutate(value = value * lb_to_mt()) %>% 
+  dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & value <= cod_acl() ~ 1, TRUE ~ 0))
 
-dat2<- dat %>% 
-    group_by(run_number) %>%
-  dplyr::summarise(under_acl = sum(under_acl),median = round(median(Value),0),
-                   ci_lower = quantile(Value, 0.05), ci_upper = quantile(Value, 0.95))
+# dat2<- dat %>% 
+#     group_by(run_number) %>%
+#   dplyr::summarise(under_acl = sum(under_acl),median = round(median(Value),0),
+#                    ci_lower = quantile(Value, 0.05), ci_upper = quantile(Value, 0.95))
+# 
+# dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
+# dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
+# ylim_l<-min(dat$Value-10)
+# ylim_u<-max(dat$Value+5)
+# 
+# summary_data_labels<-dat2 %>%
+#   dplyr::select(run_number, Label)
+# 
+# # ordered_groups <- ordered_groups <- c("SQ",
+# #                     dat2$run_number[order(dat2$median[dat2$run_number != "SQ"])])
+# 
+# dat3_SQ<- dat2 %>% 
+#   dplyr::filter(run_number == "SQ")
+# dat3_p1 <- dat2 %>%
+#   dplyr::filter(run_number == "Opt1")
+# dat3_p2<-dat2 %>% 
+#   dplyr::filter(run_number == "KB2")
+# dat3_p3<-dat2 %>% 
+#   dplyr::filter(run_number == "MJP8")
+# dat3_rest<- dat2 %>% dplyr::filter(!run_number %in%  c("SQ", "Opt1", "KB2", "MJP8"))%>% 
+#   arrange(median, run_number)
+# dat3<- rbind(dat3_SQ, dat3_p1, dat3_p2, dat3_p3,  dat3_rest)
+# ordered_groups <- dat3$run_number
+# dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
+# dat$run_number <- factor(dat$run_number, levels = ordered_groups)
 
-dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-ylim_l<-min(dat$Value-10)
-ylim_u<-max(dat$Value+5)
-
-summary_data_labels<-dat2 %>%
-  dplyr::select(run_number, Label)
-
-# ordered_groups <- ordered_groups <- c("SQ",
-#                     dat2$run_number[order(dat2$median[dat2$run_number != "SQ"])])
-
-dat3_SQ<- dat2 %>% 
-  dplyr::filter(run_number == "SQ")
-dat3_p1 <- dat2 %>%
-  dplyr::filter(run_number == "Opt1")
-dat3_p2<-dat2 %>% 
-  dplyr::filter(run_number == "KB2")
-dat3_p3<-dat2 %>% 
-  dplyr::filter(run_number == "MJP8")
-dat3_rest<- dat2 %>% dplyr::filter(!run_number %in%  c("SQ", "Opt1", "KB2", "MJP8"))%>% 
-  arrange(median, run_number)
-dat3<- rbind(dat3_SQ, dat3_p1, dat3_p2, dat3_p3,  dat3_rest)
-ordered_groups <- dat3$run_number
-dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
-dat$run_number <- factor(dat$run_number, levels = ordered_groups)
-
-p2<-dat %>% 
-  ggplot(aes(x = run_number, y = Value, color = shaded))+
-  geom_point(alpha = .4,  size = 2) + 
- scale_color_manual(values=c("#56B4E9", "blue", "grey"))+
-  geom_point(data = dat2, aes(x = run_number, y = median),
-             inherit.aes = FALSE, color = "black", size = 4)+
-  geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
-                inherit.aes = FALSE, width = 0.1, color = "black")+
+p2<- dat %>% 
+  ggplot(aes(x = model, y = value))+
+  geom_point(color = "gray", alpha = 0.3, size = 2)+
+  geom_point(aes(x = model, y = median(value)), color = "black", size = 3)+
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Cod total mortality (% of runs below ACL in parenthesis)")+
-    theme_minimal() +
-  geom_text(data = dat2,
-            aes(x = run_number, y = min(dat$Value) - 10, label = Label),  
-            inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
-  ylim(ylim_l, ylim_u)  + 
+  theme_minimal() +
   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
-             color = "red", size = 1)+
-  scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 20))+
-  theme(legend.position="none")
-
+              color = "red", size = 1)
   
+
+# p2<-dat %>% 
+#   ggplot(aes(x = run_number, y = Value, color = shaded))+
+#   geom_point(alpha = .4,  size = 2) + 
+#  scale_color_manual(values=c("#56B4E9", "blue", "grey"))+
+#   geom_point(data = dat2, aes(x = run_number, y = median),
+#              inherit.aes = FALSE, color = "black", size = 4)+
+#   geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
+#                 inherit.aes = FALSE, width = 0.1, color = "black")+
+#   ylab("Metric tons")+
+#   xlab(element_blank())+
+#   ggtitle("Cod total mortality (% of runs below ACL in parenthesis)")+
+#     theme_minimal() +
+#   geom_text(data = dat2,
+#             aes(x = run_number, y = min(dat$Value) - 10, label = Label),  
+#             inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
+#   ylim(ylim_l, ylim_u)  + 
+#   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
+#              color = "red", size = 1)+
+#   scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 20))+
+#   theme(legend.position="none")
+# 
+#   
 
 fig2<- plotly::ggplotly(p2) 
 fig2
@@ -206,56 +192,25 @@ fig2
 
 
 ```{r, out.width="100%"}
-dat<- df2 %>%
-      dplyr::filter(catch_disposition %in% c("keep", "Discmortality"),
-                    number_weight == "Weight", Category == "had", 
-                    run_number %in% OK_runs) %>%
-      dplyr::group_by(run_number, Category,draw_out) %>%
-      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * lb_to_mt()) %>% 
-  dplyr::mutate(under_acl = dplyr::case_when(Category == "had" & Value <= had_acl() ~ 1, TRUE ~ 0)) %>% 
-    dplyr::mutate(shaded = dplyr::case_when(run_number %in% c("AC3", "ML1", "JS11", "JS14", "JS17", "JS12",
-                                                            "AC2", "JS9", "JS6", "MJP7")~ "Shade", TRUE ~ "NoShade"), 
-                shaded = dplyr::case_when(run_number %in% c("SQ", "Opt1", "KB2", "MJP8")~ "Recommended", TRUE ~ shaded))
+dat<- df %>%
+      dplyr::filter(metric %in% c("removals_weight"), species == "hadd") %>%
+      dplyr::group_by(model, species,draw) %>%
+      dplyr::mutate(value = value * lb_to_mt()) %>% 
+  dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & value <= had_acl() ~ 1, TRUE ~ 0))
 
-dat2<- dat %>% 
-    group_by(run_number) %>%
-  dplyr::summarise(under_acl = sum(under_acl),median = median(Value),
-                   ci_lower = quantile(Value, 0.05), ci_upper = quantile(Value, 0.95))
-
-dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-ylim_l<-min(dat$Value-40)
-ylim_u<-max(dat$Value+5)
-
-dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
-dat$run_number <- factor(dat$run_number, levels = ordered_groups)
-
-p2<-dat %>% 
-  ggplot(aes(x = run_number, y = Value, color = shaded))+
-  geom_point(alpha = .4,  size = 2) + 
- scale_color_manual(values=c("#56B4E9", "blue", "grey"))+ # Jittered points
-  geom_point(data = dat2, aes(x = run_number, y = median),
-             inherit.aes = FALSE, color = "black", size = 4)+
-  geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
-                inherit.aes = FALSE, width = 0.1, color = "black")+
+p2<- dat %>% 
+  ggplot(aes(x = model, y = value))+
+  geom_point(color = "gray", alpha = 0.3, size = 2)+
+  geom_point(aes(x = model, y = median(value)), color = "black", size = 3)+
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Haddock total mortality (% of runs below ACL in parenthesis)")+
-    theme_minimal() +
-  geom_text(data = dat2,
-            aes(x = run_number, y = min(dat$Value) - 40, label = Label),  
-            inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
-  ylim(ylim_l, ylim_u)  + 
+  theme_minimal() +
   geom_hline(aes(yintercept = had_acl()), linetype = "dashed",
-             color = "red", size = 1)+
-  scale_y_continuous(breaks = seq(round(400, -1), round(ylim_u,-1), by = 100))+
-    theme(legend.position="none")
-  
+              color = "red", size = 1)
 
 fig2<- plotly::ggplotly(p2) 
 fig2
-  
 ```
 
 
@@ -263,34 +218,30 @@ fig2
 Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?
 
 ```{r, out.width="100%"}
-cv_agg_SQ<- df2 %>%
-  dplyr::filter(Category == c("CV") & run_number=="SQ") %>%
-  dplyr::rename(Value_SQ=Value) %>%
-  dplyr::select(Category, mode, Value_SQ, season, draw_out)
+cv_agg_SQ<- df %>%
+  dplyr::filter(metric == c("CV") & model=="SQproposed") %>%
+  dplyr::rename(value_SQ=value) %>%
+  dplyr::select(metric, mode, value_SQ, draw)
 
-cv_agg_alt<- df2 %>%
-  dplyr::filter(Category == c("CV"), 
-                run_number %in% OK_runs) %>%
-  dplyr::select(Category, mode, Value, season, draw_out, run_number)
+cv_agg_alt<- df %>%
+  dplyr::filter(metric == c("CV")) %>%
+  dplyr::select(metric, mode, value,  draw, model)
 
 cv<-cv_agg_alt %>%
-  dplyr::left_join(cv_agg_SQ, by=c("Category", "mode", "season", "draw_out"))
+  dplyr::left_join(cv_agg_SQ, by=c("metric", "mode", "draw"))
 
 cv<-cv %>%
-  dplyr::group_by(run_number, draw_out ) %>%
+  dplyr::group_by(model, draw ) %>%
   dplyr::summarise(
-    value=sum(as.numeric(Value)),
-    value_sq=sum(as.numeric(Value_SQ))) %>%
+    value=sum(as.numeric(value)),
+    value_sq=sum(as.numeric(value_SQ))) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(diff=(value_sq-value)/1000000)%>% 
-    dplyr::mutate(shaded = dplyr::case_when(run_number %in% c("AC3", "ML1", "JS11", "JS14", "JS17", "JS12",
-                                                            "AC2", "JS9", "JS6", "MJP7")~ "Shade", TRUE ~ "NoShade"), 
-                shaded = dplyr::case_when(run_number %in% c("SQ", "Opt1", "KB2", "MJP8")~ "Recommended", TRUE ~ shaded))
+  dplyr::mutate(diff=(value_sq-value)/1000000)
 
 
 cv$run_number <- factor(dat$run_number, levels = ordered_groups)
 dat2 <- cv %>%
-  group_by(run_number) %>%
+  group_by(model) %>%
   dplyr::summarise(median = median(diff),ci_lower = quantile(diff, 0.05),
             ci_upper = quantile(diff, 0.95))
 
@@ -304,23 +255,20 @@ ylim_u<-max(cv$diff+.5)
 library(ggplot2)
 library(scales)
 
-cv_plot<-ggplot(cv, aes(x = run_number, y = diff, color = shaded)) +
-  geom_point(alpha = .4,  size = 2) + 
- scale_color_manual(values=c("#56B4E9", "blue", "grey"))+ # Jittered points
-  geom_point(data = dat2, aes(x = run_number, y = median),
+cv_plot<-cv %>% 
+  ggplot( aes(x = model, y = diff)) +
+  geom_point(alpha = .4,  size = 2, color = "gray")+ 
+  #scale_color_manual(values=c("#56B4E9", "blue", "grey"))+ # Jittered points
+  geom_point(aes(x = model, y = median(diff)),
              inherit.aes = FALSE, color = "black", size = 4) +  # Median point
-  geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
-                inherit.aes = FALSE, width = 0.1, color = "black") +  # Confidence intervals
   labs(
     title = "",
     x = "",
     y = "million $"
   ) +
   theme_minimal() +
-  geom_hline(yintercept = 0, color = "black", linetype = "dashed",)+
-  ylim(ylim_l, ylim_u)  +
-  scale_y_continuous(breaks = seq(round(-2.5, 2), round(10,2), by = 0.5))+
-    theme(legend.position="none")
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed")+
+  ylim(ylim_l, ylim_u) 
 
 fig3<- plotly::ggplotly(cv_plot) %>% 
       plotly::style(textposition = "top center")
@@ -332,48 +280,39 @@ fig3
 ### Distribution of dead discards
 
 ```{r, out.width="100%"}
-dat<- df2 %>%
-      dplyr::filter(catch_disposition %in% c("Discmortality"),
-                    number_weight == "Weight", Category == "cod", 
-                    run_number %in% OK_runs) %>%
-      dplyr::group_by(run_number, Category,draw_out) %>%
-      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * lb_to_mt())%>% 
-    dplyr::mutate(shaded = dplyr::case_when(run_number %in% c("AC3", "ML1", "JS11", "JS14", "JS17", "JS12",
-                                                            "AC2", "JS9", "JS6", "MJP7")~ "Shade", TRUE ~ "NoShade"), 
-                shaded = dplyr::case_when(run_number %in% c("SQ", "Opt1", "KB2", "MJP8")~ "Recommended", TRUE ~ shaded))
-
-dat2<- dat %>% 
-    group_by(run_number) %>%
-  dplyr::summarise(median = median(Value),
-                   ci_lower = quantile(Value, 0.05), ci_upper = quantile(Value, 0.95))
+dat<- df %>%
+      dplyr::filter(metric == "discmort_weight", 
+                    species == "cod") %>%
+      dplyr::group_by(model, species,draw) %>%
+      dplyr::summarise(value = sum(as.numeric(value))) %>%
+      dplyr::mutate(value = value * lb_to_mt())
 
 # dat2$Label <- paste0("% runs < ACL: ", round(dat2$under_acl, .01))
 # dat2$Label <- paste0("% runs < ACL: ", round(dat2$under_acl, .01))
 ylim_l<-min(dat$Value-5)
 ylim_u<-max(dat$Value+5)
 
-dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
-dat$run_number <- factor(dat$run_number, levels = ordered_groups)
+# dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
+# dat$run_number <- factor(dat$run_number, levels = ordered_groups)
 
 p2<-dat %>% 
-  ggplot(aes(x = run_number, y = Value, color = shaded))+
-  geom_point(alpha = .4,  size = 2) + 
- scale_color_manual(values=c("#56B4E9", "blue", "grey"))+  # Jittered points
-  geom_point(data = dat2, aes(x = run_number, y = median),
+  ggplot(aes(x = model, y = value))+
+  geom_point(alpha = .4,  size = 2, color = "gray") + 
+  #scale_color_manual(values=c("#56B4E9", "blue", "grey"))+  # Jittered points
+  geom_point(aes(x = model, y = median(value)),
              inherit.aes = FALSE, color = "black", size = 4)+
-  geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
-                inherit.aes = FALSE, width = 0.1, color = "black")+
+  # geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
+  #               inherit.aes = FALSE, width = 0.1, color = "black")+
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Cod discard mortality")+
-    theme_minimal() +
+    theme_minimal() #+
   #geom_text(data = dat2,
   #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
-  ylim(ylim_l, ylim_u)  + 
-  scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 10))+
-    theme(legend.position="none")
+  # ylim(ylim_l, ylim_u)  + 
+  # scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 10))+
+  #   theme(legend.position="none")
   
 
 fig2<- plotly::ggplotly(p2) 
@@ -382,46 +321,40 @@ fig2
 ```
 
 ```{r, out.width="100%"}
-dat<- df2 %>%
-      dplyr::filter(catch_disposition %in% c("Discmortality"),
-                    number_weight == "Weight", Category == "had", 
-                    run_number %in% OK_runs) %>%
-      dplyr::group_by(run_number, Category,draw_out) %>%
-      dplyr::summarise(Value = sum(as.numeric(Value))) %>%
-      dplyr::mutate(Value = Value * lb_to_mt())%>% 
-    dplyr::mutate(shaded = dplyr::case_when(run_number %in% c("AC3", "ML1", "JS11", "JS14", "JS17", "JS12",
-                                                            "AC2", "JS9", "JS6", "MJP7")~ "Shade", TRUE ~ "NoShade"), 
-                shaded = dplyr::case_when(run_number %in% c("SQ", "Opt1", "KB2", "MJP8")~ "Recommended", TRUE ~ shaded))
 
-dat2<- dat %>% 
-    group_by(run_number) %>%
-  dplyr::summarise(median = median(Value),
-                   ci_lower = quantile(Value, 0.05), ci_upper = quantile(Value, 0.95))
+dat<- df %>%
+      dplyr::filter(metric == "discmort_weight", 
+                    species == "hadd") %>%
+      dplyr::group_by(model, species,draw) %>%
+      dplyr::summarise(value = sum(as.numeric(value))) %>%
+      dplyr::mutate(value = value * lb_to_mt())
 
-ylim_l<-min(dat$Value-5)
-ylim_u<-max(dat$Value+5)
+# dat2$Label <- paste0("% runs < ACL: ", round(dat2$under_acl, .01))
+# dat2$Label <- paste0("% runs < ACL: ", round(dat2$under_acl, .01))
+# ylim_l<-min(dat$Value-5)
+# ylim_u<-max(dat$Value+5)
 
-dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
-dat$run_number <- factor(dat$run_number, levels = ordered_groups)
+# dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
+# dat$run_number <- factor(dat$run_number, levels = ordered_groups)
 
 p2<-dat %>% 
-  ggplot(aes(x = run_number, y = Value, color = shaded))+
-  geom_point(alpha = .4,  size = 2) + 
- scale_color_manual(values=c("#56B4E9", "blue", "grey"))+  # Jittered points
-  geom_point(data = dat2, aes(x = run_number, y = median),
+  ggplot(aes(x = model, y = value))+
+  geom_point(alpha = .4,  size = 2, color = "gray") + 
+  #scale_color_manual(values=c("#56B4E9", "blue", "grey"))+  # Jittered points
+  geom_point(aes(x = model, y = median(value)),
              inherit.aes = FALSE, color = "black", size = 4)+
-  geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
-                inherit.aes = FALSE, width = 0.1, color = "black")+
+  # geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
+  #               inherit.aes = FALSE, width = 0.1, color = "black")+
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Haddock discard mortality")+
-    theme_minimal() +
-  # geom_text(data = dat2,
-  #           aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
-  #           inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
-  ylim(ylim_l, ylim_u)  + 
-  scale_y_continuous(breaks = seq(round(100, -1), round(ylim_u,-1), by = 50))+
-    theme(legend.position="none")
+    theme_minimal() #+
+  #geom_text(data = dat2,
+  #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
+  #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
+  # ylim(ylim_l, ylim_u)  + 
+  # scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 10))+
+  #   theme(legend.position="none")
   
 
 fig2<- plotly::ggplotly(p2) 
