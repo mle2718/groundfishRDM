@@ -2,17 +2,17 @@
 set -euo pipefail
 
 # Simple Azure Storage Queue consumer: single dequeue -> run model -> delete message immediately.
-# Requires env vars: STORAGE_QUEUE_CONNECTION_STRING, QUEUE_NAME.
+# Requires env vars: STORAGE_QUEUE_CONNECTION_STRING, GROUNDFISH_QUEUE_NAME.
 
 : "${STORAGE_QUEUE_CONNECTION_STRING:?Missing STORAGE_QUEUE_CONNECTION_STRING}"
-: "${QUEUE_NAME:?Missing QUEUE_NAME}"
+: "${GROUNDFISH_QUEUE_NAME:?Missing GROUNDFISH_QUEUE_NAME}"
 WORKDIR=/srv/rdmtool
 
 # Dependencies: curl, jq, base64, Rscript
 command -v jq >/dev/null 2>&1 || { echo "jq not found"; exit 1; }
 command -v Rscript >/dev/null 2>&1 || { echo "Rscript not found"; exit 1; }
 
-ACCOUNT_NAME=${STORAGE_ACCOUNT_NAME:-$(echo "$STORAGE_QUEUE_CONNECTION_STRING" | sed -n 's/.*AccountName=\([^;]*\).*/\1/p')}
+ACCOUNT_NAME=${GROUNDFISH_STORAGE_ACCOUNT_NAME:-$(echo "$STORAGE_QUEUE_CONNECTION_STRING" | sed -n 's/.*AccountName=\([^;]*\).*/\1/p')}
 [[ -z "$ACCOUNT_NAME" ]] && { echo "Could not determine storage account name" >&2; exit 1; }
 
 iso_utc() { date -u '+%Y-%m-%dT%H:%M:%SZ'; }
@@ -20,7 +20,7 @@ iso_utc() { date -u '+%Y-%m-%dT%H:%M:%SZ'; }
 get_message() {
   # Single dequeue attempt; message will become invisible briefly but we delete immediately.
   if command -v az >/dev/null 2>&1; then
-    az storage message get --queue-name "$QUEUE_NAME" --connection-string "$STORAGE_QUEUE_CONNECTION_STRING" -o json 2>/dev/null || true
+    az storage message get --queue-name "$GROUNDFISH_QUEUE_NAME" --connection-string "$STORAGE_QUEUE_CONNECTION_STRING" -o json 2>/dev/null || true
   else
     echo '[]'
   fi
@@ -57,7 +57,7 @@ echo "STARTING $(iso_utc) submission=$SUBMISSION_ID run=$RUN_NAME"
 # Delete immediately to ignore visibility timeout / retries as requested
 if command -v az >/dev/null 2>&1; then
   if [[ -n "$DELETE_ID" && -n "$DELETE_POP_RECEIPT" ]]; then
-    az storage message delete --queue-name "$QUEUE_NAME" --id "$DELETE_ID" --pop-receipt "$DELETE_POP_RECEIPT" --connection-string "$STORAGE_QUEUE_CONNECTION_STRING" || true
+    az storage message delete --queue-name "$GROUNDFISH_QUEUE_NAME" --id "$DELETE_ID" --pop-receipt "$DELETE_POP_RECEIPT" --connection-string "$STORAGE_QUEUE_CONNECTION_STRING" || true
   fi
 fi
 

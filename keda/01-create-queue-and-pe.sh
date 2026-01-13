@@ -73,9 +73,9 @@ fi
 echo "[INFO] Private endpoint and DNS zone configured. Exporting connection string."
 CONN_STR=$(az storage account show-connection-string -n "$SA" -g "$RG" --query connectionString -o tsv)
 cat > queue-connection.env <<EOF
-STORAGE_QUEUE_CONNECTION_STRING=${CONN_STR}
-QUEUE_NAME=${QNAME}
-STORAGE_ACCOUNT_NAME=${SA}
+GROUNDFISH_STORAGE_QUEUE_CONNECTION_STRING=${CONN_STR}
+GROUNDFISH_QUEUE_NAME=${QNAME}
+GROUNDFISH_STORAGE_ACCOUNT_NAME=${SA}
 EOF
 
 echo "[INFO] Done. queue-connection.env created."

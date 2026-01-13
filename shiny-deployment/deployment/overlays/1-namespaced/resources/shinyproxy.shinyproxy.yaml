@@ -55,6 +55,8 @@ spec:
         container-image: ${IMAGE}
         container-memory-request: 500Gi
         container-cpu-request: 30
+        container-env:
+          GROUNDFISH_AZURE_STORAGE_QUEUE_URL: "#{groundfish-queue-url,queueUrlSas}"
         kubernetes-pod-patches: |
           - op: add
             path: /spec/tolerations
