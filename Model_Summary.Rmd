@@ -448,8 +448,8 @@ total_mortality<- function(model){
     dplyr::rename(`Run Identifier` = model, 
                   `% under Cod ACL` = under_acl_cod,
                   `% under Haddock ACL` = under_acl_hadd,
-                  `Cod Total Mortality` = Value_cod,
-                  `Haddock Total Mortality` = Value_hadd)
+                  `Cod Mortality (mt)` = Value_cod,
+                  `Haddock Mortality (mt)` = Value_hadd)
   knitr::kable(mort)
 }
 
@@ -477,8 +477,8 @@ total_mortality_mode<- function(model){
     dplyr::rename(`Run Identifier` = model, 
                   `% under Cod ACL` = under_acl_cod,
                   `% under Haddock ACL` = under_acl_hadd,
-                  `Cod Total Mortality` = Value_cod,
-                  `Haddock Total Mortality` = Value_hadd)
+                  `Cod Mortality (mt)` = Value_cod,
+                  `Haddock Mortality (mt)` = Value_hadd)
   knitr::kable(mort_mode, digits = 2)
 }
 
@@ -496,7 +496,10 @@ keep_release<- function(model){
     dplyr::filter(mode == "all modes") %>% 
     mutate(Variable = metric) %>%
     group_by(species, Variable, model) %>%
-    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>% 
+    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
+                          total * lb_to_mt(), 
+                          total)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, species,keep_numbers,keep_weight, release_numbers,release_weight, 
@@ -504,13 +507,13 @@ keep_release<- function(model){
     dplyr::rename(`Run Identifier` = model, 
                   Species = species, 
                   `Harvest in Numbers` = keep_numbers,
-                  `Harvest in Weight` = keep_weight,
+                  `Harvest (mt)` = keep_weight,
                   `Discards in Numbers` = release_numbers,
-                  `Discards in Weight` = release_weight,
+                  `Discards (mt)` = release_weight,
                   `Dead Discards in Numbers` = discmort_number,
-                  `Dead Discards in Weight` = discmort_weight,
+                  `Dead Discards (mt)` = discmort_weight,
                   `Total Mortality in Numbers` = removals_number,
-                  `Total Mortality in Weight` = removals_weight)
+                  `Total Mortality (mt)` = removals_weight)
   knitr::kable(keep_rel)
 }
 
@@ -527,7 +530,10 @@ keep_release_mode<- function(model){
     dplyr::filter(!mode == "all modes") %>% 
     mutate(Variable = metric) %>%
     group_by(species, Variable, model, mode) %>%
-    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>% 
+    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
+                          total * lb_to_mt(), 
+                          total)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, species, mode, keep_numbers,keep_weight, release_numbers,release_weight, 
@@ -535,13 +541,13 @@ keep_release_mode<- function(model){
     dplyr::rename(`Run Identifier` = model, 
                   Species = species, 
                   `Harvest in Numbers` = keep_numbers,
-                  `Harvest in Weight` = keep_weight,
+                  `Harvest (mt)` = keep_weight,
                   `Discards in Numbers` = release_numbers,
-                  `Discards in Weight` = release_weight,
+                  `Discards (mt)` = release_weight,
                   `Dead Discards in Numbers` = discmort_number,
-                  `Dead Discards in Weight` = discmort_weight,
+                  `Dead Discards (mt)` = discmort_weight,
                   `Total Mortality in Numbers` = removals_number,
-                  `Total Mortality in Weight` = removals_weight)
+                  `Total Mortality (mt)` = removals_weight)
   knitr::kable(keep_rel_mode)
 }
 
