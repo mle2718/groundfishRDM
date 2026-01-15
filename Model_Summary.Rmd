@@ -365,7 +365,7 @@ total_mortality<- function(model){
       dplyr::group_by(model, species) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
-    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 0)))) %>% 
+    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
       tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>% 
     dplyr::rename(`Policy Identifier` = model, 
                   `% under Cod ACL` = under_acl_cod,
@@ -394,7 +394,7 @@ total_mortality_mode<- function(model){
       dplyr::group_by(model, species, mode) %>%
       dplyr::summarise(#under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
-    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 0)))) %>% 
+    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
       tidyr::pivot_wider(names_from = species, values_from = c(Value)) %>% 
     dplyr::rename(`Policy Identifier` = model, 
                   `Cod Mortality (mt)` = cod,
