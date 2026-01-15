@@ -16,6 +16,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 library(tidyverse)
+library(scales)
 
 options(scipen=999, 
         digits = 2) 
@@ -115,41 +116,12 @@ lb_to_mt <- function(){
 
 ```{r, out.width="100%"}
 dat<- df %>%
-      dplyr::filter(metric %in% c("removals_weight"), species == "cod") %>%
+      dplyr::filter(metric %in% c("removals_weight"), species == "cod", 
+                    mode == "all modes") %>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::mutate(value = value * lb_to_mt()) %>% 
   dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & value <= cod_acl() ~ 1, TRUE ~ 0))
 
-# dat2<- dat %>% 
-#     group_by(run_number) %>%
-#   dplyr::summarise(under_acl = sum(under_acl),median = round(median(Value),0),
-#                    ci_lower = quantile(Value, 0.05), ci_upper = quantile(Value, 0.95))
-# 
-# dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-# dat2$Label <- paste0("(", round(dat2$under_acl, .01), ")")
-# ylim_l<-min(dat$Value-10)
-# ylim_u<-max(dat$Value+5)
-# 
-# summary_data_labels<-dat2 %>%
-#   dplyr::select(run_number, Label)
-# 
-# # ordered_groups <- ordered_groups <- c("SQ",
-# #                     dat2$run_number[order(dat2$median[dat2$run_number != "SQ"])])
-# 
-# dat3_SQ<- dat2 %>% 
-#   dplyr::filter(run_number == "SQ")
-# dat3_p1 <- dat2 %>%
-#   dplyr::filter(run_number == "Opt1")
-# dat3_p2<-dat2 %>% 
-#   dplyr::filter(run_number == "KB2")
-# dat3_p3<-dat2 %>% 
-#   dplyr::filter(run_number == "MJP8")
-# dat3_rest<- dat2 %>% dplyr::filter(!run_number %in%  c("SQ", "Opt1", "KB2", "MJP8"))%>% 
-#   arrange(median, run_number)
-# dat3<- rbind(dat3_SQ, dat3_p1, dat3_p2, dat3_p3,  dat3_rest)
-# ordered_groups <- dat3$run_number
-# dat2$run_number <- factor(dat2$run_number, levels = ordered_groups)
-# dat$run_number <- factor(dat$run_number, levels = ordered_groups)
 
 p2<- dat %>% 
   ggplot(aes(x = model, y = value))+
@@ -163,28 +135,7 @@ p2<- dat %>%
               color = "red", size = 1)
   
 
-# p2<-dat %>% 
-#   ggplot(aes(x = run_number, y = Value, color = shaded))+
-#   geom_point(alpha = .4,  size = 2) + 
-#  scale_color_manual(values=c("#56B4E9", "blue", "grey"))+
-#   geom_point(data = dat2, aes(x = run_number, y = median),
-#              inherit.aes = FALSE, color = "black", size = 4)+
-#   geom_errorbar(data = dat2, aes(x = run_number, ymin = ci_lower, ymax = ci_upper),
-#                 inherit.aes = FALSE, width = 0.1, color = "black")+
-#   ylab("Metric tons")+
-#   xlab(element_blank())+
-#   ggtitle("Cod total mortality (% of runs below ACL in parenthesis)")+
-#     theme_minimal() +
-#   geom_text(data = dat2,
-#             aes(x = run_number, y = min(dat$Value) - 10, label = Label),  
-#             inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
-#   ylim(ylim_l, ylim_u)  + 
-#   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
-#              color = "red", size = 1)+
-#   scale_y_continuous(breaks = seq(round(ylim_l, -1), round(ylim_u,-1), by = 20))+
-#   theme(legend.position="none")
-# 
-#   
+
 
 fig2<- plotly::ggplotly(p2) 
 fig2
@@ -194,7 +145,8 @@ fig2
 
 ```{r, out.width="100%"}
 dat<- df %>%
-      dplyr::filter(metric %in% c("removals_weight"), species == "hadd") %>%
+      dplyr::filter(metric %in% c("removals_weight"), species == "hadd", 
+                    mode == "all modes") %>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::mutate(value = value * lb_to_mt()) %>% 
   dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & value <= had_acl() ~ 1, TRUE ~ 0))
@@ -219,66 +171,6 @@ fig2
 Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?
 
 ```{r, out.width="100%"}
-cv_agg_SQ<- df %>%
-  dplyr::filter(metric == c("CV") & model=="SQproposed") %>%
-  dplyr::rename(value_SQ=value) %>%
-  dplyr::select(metric, mode, value_SQ, draw)
-
-cv_agg_alt<- df %>%
-  dplyr::filter(metric == c("CV")) %>%
-  dplyr::select(metric, mode, value,  draw, model)
-
-cv<-cv_agg_alt %>%
-  dplyr::left_join(cv_agg_SQ, by=c("metric", "mode", "draw"))
-
-cv<-cv %>%
-  dplyr::group_by(model, draw ) %>%
-  dplyr::summarise(
-    value=sum(as.numeric(value)),
-    value_sq=sum(as.numeric(value_SQ))) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(diff=(value_sq-value)/1000000)
-
-
-#cv$run_number <- factor(dat$run_number, levels = ordered_groups)
-dat2 <- cv %>%
-  group_by(model) %>%
-  dplyr::summarise(median = median(diff),ci_lower = quantile(diff, 0.05),
-            ci_upper = quantile(diff, 0.95))
-
-#dat2<-dat2 %>%
-#  dplyr::left_join(summary_data_labels, by=c("run_number"))
-
-
-ylim_l<-min(cv$diff-.5)
-ylim_u<-max(cv$diff+.5)
-
-library(ggplot2)
-library(scales)
-
-cv_plot<-cv %>% 
-  ggplot( aes(x = model, y = diff)) +
-  geom_point(alpha = .4,  size = 2, color = "gray")+ 
-  #scale_color_manual(values=c("#56B4E9", "blue", "grey"))+ # Jittered points
-  stat_summary( fun = median,geom = "point",color = "black",size = 3)+  # Median point
-  labs(
-    title = "",
-    x = "",
-    y = "million $"
-  ) +
-  theme_minimal() +
-  geom_hline(yintercept = 0, color = "black", linetype = "dashed")+
-  ylim(ylim_l, ylim_u) 
-
-fig3<- plotly::ggplotly(cv_plot) %>% 
-      plotly::style(textposition = "top center")
-
-fig3
-  
-```
-
-
-```{r, out.width="100%"}
 
 cv_agg<- df %>%
   dplyr::filter(metric == c("CV"), 
@@ -296,8 +188,7 @@ cv_plot<-cv_agg %>%
     y = "million $"
   ) +
   theme_minimal() +
-  geom_hline(yintercept = 0, color = "black", linetype = "dashed")+
-  ylim(ylim_l, ylim_u) 
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed")
 
 fig3<- plotly::ggplotly(cv_plot) %>% 
       plotly::style(textposition = "top center")
@@ -311,7 +202,8 @@ fig3
 ```{r, out.width="100%"}
 dat<- df %>%
       dplyr::filter(metric == "discmort_weight", 
-                    species == "cod") %>%
+                    species == "cod", 
+                    mode == "all modes") %>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(value = sum(as.numeric(value))) %>%
       dplyr::mutate(value = value * lb_to_mt())
@@ -352,7 +244,8 @@ fig2
 
 dat<- df %>%
       dplyr::filter(metric == "discmort_weight", 
-                    species == "hadd") %>%
+                    species == "hadd", 
+                    mode == "all modes") %>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(value = sum(as.numeric(value))) %>%
       dplyr::mutate(value = value * lb_to_mt())
@@ -462,7 +355,7 @@ total_mortality<- function(model){
     pull(file)
   
   mort <- read_csv(file)  %>%
-      dplyr::filter(metric %in% c("keep_weight", "discmort_weight"),
+      dplyr::filter(metric %in% c("removals_weight"),
                     mode == "all modes")%>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -491,23 +384,21 @@ total_mortality_mode<- function(model){
     pull(file)
   
   mort_mode <- read_csv(file)  %>%
-      dplyr::filter(metric %in% c("keep_weight", "discmort_weight"),
+      dplyr::filter(metric %in% c("removals_weight"),
                     !mode == "all modes")%>%
       dplyr::group_by(model, species,draw, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
       dplyr::mutate(Value = Value * lb_to_mt()) %>%
-      dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(species == "hadd" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+      # dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
+      #               under_acl = dplyr::case_when(species == "hadd" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(model, species, mode) %>%
-      dplyr::summarise(under_acl = sum(under_acl),
+      dplyr::summarise(#under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
-      tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>% 
+      tidyr::pivot_wider(names_from = species, values_from = c(Value)) %>% 
     dplyr::rename(`Policy Identifier` = model, 
-                  `% under Cod ACL` = under_acl_cod,
-                  `% under Haddock ACL` = under_acl_hadd,
-                  `Cod Mortality (mt)` = Value_cod,
-                  `Haddock Mortality (mt)` = Value_hadd)
+                  `Cod Mortality (mt)` = cod,
+                  `Haddock Mortality (mt)` = hadd)
   knitr::kable(mort_mode, digits = 2)
 }
 
@@ -525,7 +416,7 @@ keep_release<- function(model){
     dplyr::filter(mode == "all modes") %>% 
     mutate(Variable = metric) %>%
     group_by(species, Variable, model) %>%
-    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
     mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
                           total * lb_to_mt(), 
                           total)) %>%
@@ -559,7 +450,7 @@ keep_release_mode<- function(model){
     dplyr::filter(!mode == "all modes") %>% 
     mutate(Variable = metric) %>%
     group_by(species, Variable, model, mode) %>%
-    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
     mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
                           total * lb_to_mt(), 
                           total)) %>%
@@ -595,7 +486,7 @@ cv_trips<- function(model){
     dplyr::filter(mode == "all modes") %>% 
     mutate(Variable = metric) %>%
     group_by(species, Variable, model) %>%
-    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>% 
+    summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>% 
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, predicted_trips, CV) %>% 
@@ -618,7 +509,7 @@ cv_trips_mode<- function(model){
     dplyr::filter(!mode == "all modes") %>% 
     mutate(Variable = metric) %>%
     group_by(species, Variable, model,mode ) %>%
-    summarise( total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, mode, predicted_trips, CV) %>% 
