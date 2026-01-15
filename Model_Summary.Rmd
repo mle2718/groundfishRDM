@@ -167,8 +167,8 @@ fig2
 ```
 
 
-### Distribution of  change in angler satisfaction ($)
-Compared to status-quo regulations, how much better- or worse-off are anglers, in dollars?
+### Angler satisfaction (consumer surplus, $)
+How much better off will anglers be next year compared to last year, in dollars?
 
 ```{r, out.width="100%"}
 
