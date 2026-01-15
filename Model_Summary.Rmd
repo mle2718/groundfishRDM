@@ -1,5 +1,5 @@
 ---
-title: "DST Run Summary"
+title: "Groundfish DST Summary"
 output:
   html_document:
     theme: default
@@ -47,7 +47,7 @@ lb_to_mt <- function(){
 
 ```
 
-## Total Catch Mortality
+## Total Mortality
 
 ```{r, out.width="100%"}
      catch_agg<- df %>%
@@ -111,7 +111,7 @@ lb_to_mt <- function(){
 
 
 
-## Distribution of total recreational fishing mortaltiy
+## Total recreational fishing mortaltiy
 
 ```{r, out.width="100%"}
 dat<- df %>%
@@ -277,7 +277,36 @@ fig3
   
 ```
 
-### Distribution of dead discards
+
+```{r, out.width="100%"}
+
+cv_agg<- df %>%
+  dplyr::filter(metric == c("CV"), 
+                mode == "all modes") %>%
+  dplyr::mutate(value=(value)/1000000)
+
+cv_plot<-cv_agg %>% 
+  ggplot( aes(x = model, y = value)) +
+  geom_point(alpha = .4,  size = 2, color = "gray")+ 
+  #scale_color_manual(values=c("#56B4E9", "blue", "grey"))+ # Jittered points
+  stat_summary( fun = median,geom = "point",color = "black",size = 3)+  # Median point
+  labs(
+    title = "",
+    x = "",
+    y = "million $"
+  ) +
+  theme_minimal() +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed")+
+  ylim(ylim_l, ylim_u) 
+
+fig3<- plotly::ggplotly(cv_plot) %>% 
+      plotly::style(textposition = "top center")
+
+fig3
+  
+```
+
+### Dead discards
 
 ```{r, out.width="100%"}
 dat<- df %>%
@@ -360,7 +389,7 @@ fig2
 ```
 
 
-## Individual Run Results {.tabset}
+## Individual Policy Results {.tabset}
 ```{r}
 ## Regulations
 regulations <- function(model){
@@ -410,7 +439,7 @@ regulations <- function(model){
       #dplyr::left_join(catch_agg, by = c("model")) %>%
       dplyr::select(model, mode, codseason, codbag, codlen, hadseason, hadbag, hadlen) %>%
       dplyr::rename(Mode = mode,
-                    `Run Identifier` = model,
+                    `Policy Identifier` = model,
                     `Cod Bag Limit` = codbag,
                     `Cod Minimum Size (in)` = codlen,
                     `Cod Season(s)` = codseason,
@@ -445,7 +474,7 @@ total_mortality<- function(model){
                        Value = round(median(Value),0)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
       tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>% 
-    dplyr::rename(`Run Identifier` = model, 
+    dplyr::rename(`Policy Identifier` = model, 
                   `% under Cod ACL` = under_acl_cod,
                   `% under Haddock ACL` = under_acl_hadd,
                   `Cod Mortality (mt)` = Value_cod,
@@ -474,7 +503,7 @@ total_mortality_mode<- function(model){
                        Value = round(median(Value),0)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
       tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>% 
-    dplyr::rename(`Run Identifier` = model, 
+    dplyr::rename(`Policy Identifier` = model, 
                   `% under Cod ACL` = under_acl_cod,
                   `% under Haddock ACL` = under_acl_hadd,
                   `Cod Mortality (mt)` = Value_cod,
@@ -504,7 +533,7 @@ keep_release<- function(model){
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, species,keep_numbers,keep_weight, release_numbers,release_weight, 
                   discmort_number,discmort_weight, removals_number, removals_weight ) %>% 
-    dplyr::rename(`Run Identifier` = model, 
+    dplyr::rename(`Policy Identifier` = model, 
                   Species = species, 
                   `Harvest in Numbers` = keep_numbers,
                   `Harvest (mt)` = keep_weight,
@@ -538,7 +567,7 @@ keep_release_mode<- function(model){
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, species, mode, keep_numbers,keep_weight, release_numbers,release_weight, 
                   discmort_number,discmort_weight, removals_number, removals_weight ) %>% 
-    dplyr::rename(`Run Identifier` = model, 
+    dplyr::rename(`Policy Identifier` = model, 
                   Species = species, 
                   `Harvest in Numbers` = keep_numbers,
                   `Harvest (mt)` = keep_weight,
@@ -570,7 +599,7 @@ cv_trips<- function(model){
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, predicted_trips, CV) %>% 
-    dplyr::rename(`Run Identifier` = model, 
+    dplyr::rename(`Policy Identifier` = model, 
                   `Estimated number of trips` = predicted_trips, 
                   `Angler Satisfaction` = CV)
   knitr::kable(cv_trips)
@@ -593,7 +622,7 @@ cv_trips_mode<- function(model){
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, mode, predicted_trips, CV) %>% 
-    dplyr::rename(`Run Identifier` = model, 
+    dplyr::rename(`Policy Identifier` = model, 
                   `Estimated number of trips` = predicted_trips, 
                   `Angler Satisfaction` = CV)
   knitr::kable(cv_trips_mode)
