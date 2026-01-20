@@ -129,10 +129,11 @@ p2<- dat %>%
   stat_summary( fun = median,geom = "point",color = "black",size = 3)+  # Median point
   ylab("Metric tons")+
   xlab(element_blank())+
-  ggtitle("Cod total mortality (% of runs below ACL in parenthesis)")+
+  ggtitle("Cod total mortality")+
   theme_minimal() +
   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
-              color = "red", size = 1)
+              color = "red", size = 1)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
   
 
 
@@ -157,10 +158,11 @@ p2<- dat %>%
   stat_summary( fun = median,geom = "point",color = "black",size = 3)+  # Median point
   ylab("Metric tons")+
   xlab(element_blank())+
-  ggtitle("Haddock total mortality (% of runs below ACL in parenthesis)")+
+  ggtitle("Haddock total mortality")+
   theme_minimal() +
   geom_hline(aes(yintercept = had_acl()), linetype = "dashed",
-              color = "red", size = 1)
+              color = "red", size = 1)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 fig2<- plotly::ggplotly(p2) 
 fig2
@@ -188,7 +190,8 @@ cv_plot<-cv_agg %>%
     y = "million $"
   ) +
   theme_minimal() +
-  geom_hline(yintercept = 0, color = "black", linetype = "dashed")
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 fig3<- plotly::ggplotly(cv_plot) %>% 
       plotly::style(textposition = "top center")
@@ -226,7 +229,8 @@ p2<-dat %>%
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Cod discard mortality")+
-    theme_minimal() #+
+    theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) #+
   #geom_text(data = dat2,
   #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
@@ -268,7 +272,8 @@ p2<-dat %>%
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Haddock discard mortality")+
-    theme_minimal() #+
+    theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  #+
   #geom_text(data = dat2,
   #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
@@ -600,6 +605,87 @@ cv_trips_mode("SQactual")
 ```
 
 
+### JS1 {.tabset}
+
+```{r}
+regulations("JS1")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("JS1")
+
+```
+
+```{r}
+total_mortality_mode("JS1")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("JS1")
+```
+
+```{r}
+keep_release_mode("JS1")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("JS1")
+```
+
+
+```{r}
+
+cv_trips_mode("JS1")
+```
+
+
+### JS2 {.tabset}
+
+```{r}
+regulations("JS2")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("JS2")
+
+```
+
+```{r}
+total_mortality_mode("JS2")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("JS2")
+```
+
+```{r}
+keep_release_mode("JS2")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("JS2")
+```
+
+
+```{r}
+
+cv_trips_mode("JS2")
+```
+
+
+
 ### MHA1 {.tabset}
 
 ```{r}
@@ -674,6 +760,89 @@ cv_trips("MHA2")
 ```{r}
 cv_trips_mode("MHA2")
 ```
+
+
+### MJP {.tabset}
+
+```{r}
+regulations("MJP")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MJP")
+
+```
+
+```{r}
+total_mortality_mode("MJP")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MJP")
+```
+
+```{r}
+keep_release_mode("MJP")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MJP")
+```
+
+
+```{r}
+
+cv_trips_mode("MJP")
+```
+
+
+
+### MJP1 {.tabset}
+
+```{r}
+regulations("MJP1")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MJP1")
+
+```
+
+```{r}
+total_mortality_mode("MJP1")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MJP1")
+```
+
+```{r}
+keep_release_mode("MJP1")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MJP1")
+```
+
+
+```{r}
+
+cv_trips_mode("MJP1")
+```
+
+
 
 
 ### MP C & H {.tabset}
@@ -1103,6 +1272,95 @@ cv_trips("MPH2")
 ```{r}
 cv_trips_mode("MPH2")
 ```
+
+
+### MSG1 {.tabset}
+
+```{r}
+regulations("MSG1")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MSG1")
+
+```
+
+```{r}
+total_mortality_mode("MSG1")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MSG1")
+```
+
+```{r}
+keep_release_mode("MSG1")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MSG1")
+```
+
+
+```{r}
+
+cv_trips_mode("MSG1")
+```
+
+
+
+### MSG2 {.tabset}
+
+```{r}
+regulations("MSG2")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MSG2")
+
+```
+
+```{r}
+total_mortality_mode("MSG2")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MSG2")
+```
+
+```{r}
+keep_release_mode("MSG2")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MSG2")
+```
+
+
+```{r}
+
+cv_trips_mode("MSG2")
+```
+
+
+
+
+
+
+
+
 
 
 ### MW1 {.tabset}
