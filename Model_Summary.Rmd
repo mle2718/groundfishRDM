@@ -386,6 +386,9 @@ regulations <- function(model){
     final_table <- seasons %>%
       dplyr::left_join(bags, by = c("model", "mode")) %>%
       dplyr::left_join(minsizes, by = c("model", "mode")) %>%
+      dplyr::mutate(codseason = if (!"codseason" %in% names(.)) NA_character_ else codseason, 
+                    codbag = if (!"codbag" %in% names(.)) NA_character_ else codbag, 
+                    codlen = if (!"codlen" %in% names(.)) NA_character_ else codlen) %>% 
       #dplyr::left_join(catch_agg, by = c("model")) %>%
       dplyr::select(model, mode, codseason, codbag, codlen, hadseason, hadbag, hadlen) %>%
       dplyr::rename(Mode = mode,
@@ -749,6 +752,44 @@ cv_trips("JS2")
 cv_trips_mode("JS2")
 ```
 
+### KLB2 {.tabset}
+
+```{r}
+regulations("KLB2")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB2")
+
+```
+
+```{r}
+total_mortality_mode("KLB2")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB2")
+```
+
+```{r}
+keep_release_mode("KLB2")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB2")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB2")
+```
 
 
 ### KLB7 {.tabset}
