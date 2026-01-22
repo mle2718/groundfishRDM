@@ -52,14 +52,14 @@ df <- fnames %>%
 
 ######################## Compute scaled Mortality by Scaling Wave 5 removals weight ###################
 # Read in Monthly results
-month_file_names <- list.files(path=here::here("output/"),pattern = "monthly_output_*.Rds",full.names = T)
+month_file_names <- list.files(path=here::here("output/"),pattern = ".Rds",full.names = T)
 
 adjusted_removals <- month_file_names %>% 
   map_df(~readRDS(.))
 
 # Keep just removals, for both species
 adjusted_removals<-adjusted_removals %>%
-   dplyr::filter(metric %in% c("removals_weight"))
+   dplyr::filter(metric == "removals_weight")
 
 # Append scaling_factor
 cod_W5scaling_factor<-3.65
@@ -74,23 +74,24 @@ adjusted_removals<-adjusted_removals %>%
 
 # Adjust removals weight by the scaling factor, and convert to metric_tons
 adjusted_removals<-adjusted_removals %>%
-      dplyr::mutate(Value = as.numeric(Value) * scaling_factor* lb_to_mt())
+      dplyr::mutate(value = value * scaling_factor* lb_to_mt())
 
 # Contract to Annual
 adjusted_removals<-adjusted_removals %>%
-      dplyr::group_by(model, species, draw) %>%
-      dplyr::mutate(Value = sum(Value) %>%
-      rename(adjusted_mortality_mt=Value)
+      dplyr::group_by(model, mode, species, draw) %>%
+      dplyr::summarise(value = sum(value)) %>%
+      rename(adjusted_mortality_mt=value)
 
 # check the number of times the policy is under the ACL, compute median adjusted removals 
 
 adjusted_removals<-adjusted_removals %>%
       dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & adjusted_mortality_mt <= cod_acl() ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(species == "had" & adjusted_mortality_mt <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
-      dplyr::group_by(model, species) %>%
+                    under_acl = dplyr::case_when(species == "hadd" & adjusted_mortality_mt <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(mode, model, species) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        adjusted_mortality_mt = round(median(adjusted_mortality_mt),0)) %>%
-      tidyr::pivot_wider(names_from = species, values_from = c(adjusted_mortality_mt, under_acl))
+      tidyr::pivot_wider(names_from = species, values_from = c(adjusted_mortality_mt, under_acl)) %>% 
+  dplyr::mutate(model = gsub(" ", "", model))
 
 
 
@@ -103,7 +104,7 @@ adjusted_removals<-adjusted_removals %>%
 ```{r, out.width="100%"}
      catch_agg<- df %>%
       #dat %>%
-      dplyr::filter(metric %in% c("keep_weight", "discmort_weight"),
+      dplyr::filter(metric  == c("removals_weight"),
                     mode == "all modes")%>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -166,7 +167,8 @@ adjusted_removals<-adjusted_removals %>%
 
 ```{r, out.width="100%"}
 dat<- df %>%
-      dplyr::filter(metric %in% c("removals_weight"), species == "cod", 
+      dplyr::filter(metric == c("removals_weight"), 
+                    species == "cod", 
                     mode == "all modes") %>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::mutate(value = value * lb_to_mt()) %>% 
@@ -400,9 +402,9 @@ regulations <- function(model){
 }
 
 ## Mortality
-total_mortality<- function(model){
+total_mortality<- function(select_model){
 
- file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+ file <- list.files(path = here::here("output"), pattern = paste0("^output_", select_model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -410,7 +412,7 @@ total_mortality<- function(model){
     pull(file)
   
   mort <- read_csv(file)  %>%
-      dplyr::filter(metric %in% c("removals_weight"),
+      dplyr::filter(metric == c("removals_weight"),
                     mode == "all modes")%>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -422,16 +424,29 @@ total_mortality<- function(model){
                        Value = round(median(Value),0)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
       tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>% 
-    dplyr::rename(`Policy Identifier` = model, 
-                  `% under Cod ACL` = under_acl_cod,
+    dplyr::rename(`% under Cod ACL` = under_acl_cod,
                   `% under Haddock ACL` = under_acl_hadd,
                   `Cod Mortality (mt)` = Value_cod,
                   `Haddock Mortality (mt)` = Value_hadd)
+  
+  mort2<- adjusted_removals %>% dplyr::filter(model == select_model, 
+                                              mode == "all modes") %>% 
+    dplyr::ungroup() %>% 
+    dplyr::select(-"mode", -"model") %>% 
+    dplyr::rename(`% under Cod ACL - new MRIP data` = under_acl_cod,
+                  `% under Haddock ACL - new MRIP data` = under_acl_hadd,
+                  `Cod Mortality (mt) - new MRIP data` = adjusted_mortality_mt_cod ,
+                  `Haddock Mortality (mt) - new MRIP data` = adjusted_mortality_mt_hadd )
+  
+  mort<- mort %>% cbind(mort2) %>% 
+    dplyr::rename(`Policy Identifier` = model) 
+  
+  
   knitr::kable(mort)
 }
 
 total_mortality_mode<- function(model){
-  file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+  file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -439,7 +454,7 @@ total_mortality_mode<- function(model){
     pull(file)
   
   mort_mode <- read_csv(file)  %>%
-      dplyr::filter(metric %in% c("removals_weight"),
+      dplyr::filter(metric == c("removals_weight"),
                     !mode == "all modes")%>%
       dplyr::group_by(model, species,draw, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -459,7 +474,7 @@ total_mortality_mode<- function(model){
 
 ## Keep/Release/Dead Discards
 keep_release<- function(model){
-  file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+  file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -493,7 +508,7 @@ keep_release<- function(model){
 }
 
 keep_release_mode<- function(model){
-    file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+    file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -529,7 +544,7 @@ keep_release_mode<- function(model){
 
 ## angler satisfaction and trips
 cv_trips<- function(model){
-    file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+    file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -552,7 +567,7 @@ cv_trips<- function(model){
 }
 
 cv_trips_mode<- function(model){
-    file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+   file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
