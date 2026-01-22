@@ -31,6 +31,53 @@ fnames2<- as.data.frame(fnames) %>%
 df <- fnames %>% 
   map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
+
+
+######################## Compute scaled Mortality by Scaling Wave 5 removals weight ###################
+# Read in Monthly results
+month_file_names <- list.files(path=here::here("output/"),pattern = "monthly_output_*.Rds",full.names = T)
+
+adjusted_removals <- month_file_names %>% 
+  map_df(~readRDS(.))
+
+# Keep just removals, for both species
+adjusted_removals<-adjusted_removals %>%
+   dplyr::filter(metric %in% c("removals_weight"))
+
+# Append scaling_factor
+cod_W5scaling_factor<-3.65
+haddock_W5scaling_factor<-0.45
+
+adjusted_removals<-adjusted_removals %>%
+   mutate(scaling_factor=case_when(
+     species == "cod" & month %in% c(9,10) ~cod_W5scaling_factor,
+     species == "had" & month %in% c(9,10) ~haddock_W5scaling_factor,
+     .default=1)
+  )
+
+# Adjust removals weight by the scaling factor, and convert to metric_tons
+adjusted_removals<-adjusted_removals %>%
+      dplyr::mutate(Value = as.numeric(Value) * scaling_factor* lb_to_mt())
+
+# Contract to Annual
+adjusted_removals<-adjusted_removals %>%
+      dplyr::group_by(model, species, draw) %>%
+      dplyr::mutate(Value = sum(Value) %>%
+      rename(adjusted_mortality_mt=Value)
+
+# check the number of times the policy is under the ACL, compute median adjusted removals 
+
+adjusted_removals<-adjusted_removals %>%
+      dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & adjusted_mortality_mt <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(species == "had" & adjusted_mortality_mt <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(model, species) %>%
+      dplyr::summarise(under_acl = sum(under_acl),
+                       adjusted_mortality_mt = round(median(adjusted_mortality_mt),0)) %>%
+      tidyr::pivot_wider(names_from = species, values_from = c(adjusted_mortality_mt, under_acl))
+
+
+
+
 cod_acl <- function(){
     cod_acl = 118
     return(cod_acl)
