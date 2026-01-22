@@ -80,7 +80,7 @@ adjusted_removals<-adjusted_removals %>%
 adjusted_removals<-adjusted_removals %>%
       dplyr::group_by(model, mode, species, draw) %>%
       dplyr::summarise(value = sum(value)) %>%
-      rename(adjusted_mortality_mt=value)
+      dplyr::rename(adjusted_mortality_mt=value)
 
 # check the number of times the policy is under the ACL, compute median adjusted removals 
 
@@ -484,10 +484,10 @@ keep_release<- function(model){
   keep_rel <-  read_csv(file)  %>%
     dplyr::filter(grepl("number|weight", metric)) %>% 
     dplyr::filter(mode == "all modes") %>% 
-    mutate(Variable = metric) %>%
-    group_by(species, Variable, model) %>%
-    summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
-    mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
+    dplyr::mutate(Variable = metric) %>%
+    dplyr::group_by(species, Variable, model) %>%
+    dplyr::summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
                           total * lb_to_mt(), 
                           total)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
@@ -748,6 +748,91 @@ cv_trips("JS2")
 
 cv_trips_mode("JS2")
 ```
+
+
+
+### KLB7 {.tabset}
+
+```{r}
+regulations("KLB7")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB7")
+
+```
+
+```{r}
+total_mortality_mode("KLB7")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB7")
+```
+
+```{r}
+keep_release_mode("KLB7")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB7")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB7")
+```
+
+
+
+
+### KLB8 {.tabset}
+
+```{r}
+regulations("KLB8")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB8")
+
+```
+
+```{r}
+total_mortality_mode("KLB8")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB8")
+```
+
+```{r}
+keep_release_mode("KLB8")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB8")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB8")
+```
+
+
 
 
 
