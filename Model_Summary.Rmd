@@ -68,7 +68,7 @@ haddock_W5scaling_factor<-0.45
 adjusted_removals<-adjusted_removals %>%
    mutate(scaling_factor=case_when(
      species == "cod" & month %in% c(9,10) ~cod_W5scaling_factor,
-     species == "had" & month %in% c(9,10) ~haddock_W5scaling_factor,
+     species == "hadd" & month %in% c(9,10) ~haddock_W5scaling_factor,
      .default=1)
   )
 
