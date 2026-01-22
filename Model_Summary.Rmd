@@ -21,6 +21,23 @@ library(scales)
 options(scipen=999, 
         digits = 2) 
 
+
+cod_acl <- function(){
+    cod_acl = 118
+    return(cod_acl)
+  }
+
+had_acl <- function(){
+    had_acl = 1146
+    return(had_acl)
+  }
+
+lb_to_mt <- function(){
+    lb_to_mt = 0.000454
+    return(lb_to_mt)
+  }
+
+
 fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
 
 fnames2<- as.data.frame(fnames) %>% 
@@ -78,20 +95,6 @@ adjusted_removals<-adjusted_removals %>%
 
 
 
-cod_acl <- function(){
-    cod_acl = 118
-    return(cod_acl)
-  }
-
-had_acl <- function(){
-    had_acl = 1146
-    return(had_acl)
-  }
-
-lb_to_mt <- function(){
-    lb_to_mt = 0.000454
-    return(lb_to_mt)
-  }
 
 ```
 
