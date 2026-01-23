@@ -68,28 +68,28 @@ directed_trips <- directed_trips %>%
   dplyr::mutate(date_adj = lubridate::dmy(day_y2)) %>%
 
   dplyr::mutate(
-    cod_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas1_op) & date_adj <= lubridate::ymd(codFH_seas1_cl) ~ as.numeric(codFH_1_bag), TRUE ~ cod_bag_y2),
+    cod_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas1_op) & date_adj <= lubridate::ymd(codFH_seas1_cl) ~ as.numeric(codFH_1_bag), TRUE ~ 0),
     cod_bag_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(codPR_seas1_op) & date_adj <= lubridate::ymd(codPR_seas1_cl) ~ as.numeric(codPR_1_bag), TRUE ~ cod_bag_y2),
     cod_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas2_op) & date_adj <= lubridate::ymd(codFH_seas2_cl) ~ as.numeric(codFH_2_bag), TRUE ~ cod_bag_y2),
     cod_bag_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(codPR_seas2_op) & date_adj <= lubridate::ymd(codPR_seas2_cl) ~ as.numeric(codPR_2_bag), TRUE ~ cod_bag_y2),
     cod_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas3_op) & date_adj <= lubridate::ymd(codFH_seas3_cl) ~ as.numeric(codFH_3_bag), TRUE ~ cod_bag_y2),
     cod_bag_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(codPR_seas3_op) & date_adj <= lubridate::ymd(codPR_seas3_cl) ~ as.numeric(codPR_3_bag), TRUE ~ cod_bag_y2),
 
-    cod_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas1_op) & date_adj <= lubridate::ymd(codFH_seas1_cl) ~ as.numeric(codFH_1_len)*2.54, TRUE ~ cod_min_y2),
+    cod_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas1_op) & date_adj <= lubridate::ymd(codFH_seas1_cl) ~ as.numeric(codFH_1_len)*2.54, TRUE ~ 100),
     cod_min_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(codPR_seas1_op) & date_adj <= lubridate::ymd(codPR_seas1_cl) ~ as.numeric(codPR_1_len)*2.54, TRUE ~ cod_min_y2),
     cod_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas2_op) & date_adj <= lubridate::ymd(codFH_seas2_cl) ~ as.numeric(codFH_2_len)*2.54, TRUE ~ cod_min_y2),
     cod_min_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(codPR_seas2_op) & date_adj <= lubridate::ymd(codPR_seas2_cl) ~ as.numeric(codPR_2_len)*2.54, TRUE ~ cod_min_y2),
     cod_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(codFH_seas3_op) & date_adj <= lubridate::ymd(codFH_seas3_cl) ~ as.numeric(codFH_3_len)*2.54, TRUE ~ cod_min_y2),
     cod_min_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(codPR_seas3_op) & date_adj <= lubridate::ymd(codPR_seas3_cl) ~ as.numeric(codPR_3_len)*2.54, TRUE ~ cod_min_y2),
 
-    hadd_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas1_op) & date_adj <= lubridate::ymd(hadFH_seas1_cl) ~ as.numeric(hadFH_1_bag), TRUE ~ hadd_bag_y2),
+    hadd_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas1_op) & date_adj <= lubridate::ymd(hadFH_seas1_cl) ~ as.numeric(hadFH_1_bag), TRUE ~ 0),
     hadd_bag_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(hadPR_seas1_op) & date_adj <= lubridate::ymd(hadPR_seas1_cl) ~ as.numeric(hadPR_1_bag), TRUE ~ hadd_bag_y2),
     hadd_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas2_op) & date_adj <= lubridate::ymd(hadFH_seas2_cl) ~ as.numeric(hadFH_2_bag), TRUE ~ hadd_bag_y2),
     hadd_bag_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(hadPR_seas2_op) & date_adj <= lubridate::ymd(hadPR_seas2_cl) ~ as.numeric(hadPR_2_bag), TRUE ~ hadd_bag_y2),
     hadd_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas3_op) & date_adj <= lubridate::ymd(hadFH_seas3_cl) ~ as.numeric(hadFH_3_bag), TRUE ~ hadd_bag_y2),
     hadd_bag_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(hadPR_seas3_op) & date_adj <= lubridate::ymd(hadPR_seas3_cl) ~ as.numeric(hadPR_3_bag), TRUE ~ hadd_bag_y2),
 
-    hadd_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas1_op) & date_adj <= lubridate::ymd(hadFH_seas1_cl) ~ as.numeric(hadFH_1_len)*2.54, TRUE ~ hadd_min_y2),
+    hadd_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas1_op) & date_adj <= lubridate::ymd(hadFH_seas1_cl) ~ as.numeric(hadFH_1_len)*2.54, TRUE ~ 100),
     hadd_min_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(hadPR_seas1_op) & date_adj <= lubridate::ymd(hadPR_seas1_cl) ~ as.numeric(hadPR_1_len)*2.54, TRUE ~ hadd_min_y2),
     hadd_min_y2=dplyr::case_when(mode == "fh" & date_adj >= lubridate::ymd(hadFH_seas2_op) & date_adj <= lubridate::ymd(hadFH_seas2_cl) ~ as.numeric(hadFH_2_len)*2.54, TRUE ~ hadd_min_y2),
     hadd_min_y2=dplyr::case_when(mode == "pr" & date_adj >= lubridate::ymd(hadPR_seas2_op) & date_adj <= lubridate::ymd(hadPR_seas2_cl) ~ as.numeric(hadPR_2_len)*2.54, TRUE ~ hadd_min_y2),

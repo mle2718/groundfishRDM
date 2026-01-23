@@ -21,15 +21,6 @@ library(scales)
 options(scipen=999, 
         digits = 2) 
 
-fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
-
-fnames2<- as.data.frame(fnames) %>% 
-  tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>% 
-  dplyr::mutate(run_name = b) %>% 
-  dplyr::select(run_name)
-
-df <- fnames %>% 
-  map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
 cod_acl <- function(){
     cod_acl = 118
@@ -46,6 +37,66 @@ lb_to_mt <- function(){
     return(lb_to_mt)
   }
 
+
+fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
+
+fnames2<- as.data.frame(fnames) %>% 
+  tidyr::separate(fnames, into = c("a", "b", "c"), sep = "_") %>% 
+  dplyr::mutate(run_name = b) %>% 
+  dplyr::select(run_name)
+
+df <- fnames %>% 
+  map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
+
+
+
+######################## Compute scaled Mortality by Scaling Wave 5 removals weight ###################
+# Read in Monthly results
+month_file_names <- list.files(path=here::here("output/"),pattern = ".Rds",full.names = T)
+
+adjusted_removals <- month_file_names %>% 
+  map_df(~readRDS(.))
+
+# Keep just removals, for both species
+adjusted_removals<-adjusted_removals %>%
+   dplyr::filter(metric == "removals_weight")
+
+# Append scaling_factor
+cod_W5scaling_factor<-3.65
+haddock_W5scaling_factor<-0.45
+
+adjusted_removals<-adjusted_removals %>%
+   mutate(scaling_factor=case_when(
+     species == "cod" & month %in% c(9,10) ~cod_W5scaling_factor,
+     species == "hadd" & month %in% c(9,10) ~haddock_W5scaling_factor,
+     .default=1)
+  )
+
+# Adjust removals weight by the scaling factor, and convert to metric_tons
+adjusted_removals<-adjusted_removals %>%
+      dplyr::mutate(value = value * scaling_factor* lb_to_mt())
+
+# Contract to Annual
+adjusted_removals<-adjusted_removals %>%
+      dplyr::group_by(model, mode, species, draw) %>%
+      dplyr::summarise(value = sum(value)) %>%
+      dplyr::rename(adjusted_mortality_mt=value)
+
+# check the number of times the policy is under the ACL, compute median adjusted removals 
+
+adjusted_removals<-adjusted_removals %>%
+      dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & adjusted_mortality_mt <= cod_acl() ~ 1, TRUE ~ 0),
+                    under_acl = dplyr::case_when(species == "hadd" & adjusted_mortality_mt <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+      dplyr::group_by(mode, model, species) %>%
+      dplyr::summarise(under_acl = sum(under_acl),
+                       adjusted_mortality_mt = round(median(adjusted_mortality_mt),0)) %>%
+      tidyr::pivot_wider(names_from = species, values_from = c(adjusted_mortality_mt, under_acl)) %>% 
+  dplyr::mutate(model = gsub(" ", "", model))
+
+
+
+
+
 ```
 
 ## Total Mortality
@@ -53,7 +104,7 @@ lb_to_mt <- function(){
 ```{r, out.width="100%"}
      catch_agg<- df %>%
       #dat %>%
-      dplyr::filter(metric %in% c("keep_weight", "discmort_weight"),
+      dplyr::filter(metric  == c("removals_weight"),
                     mode == "all modes")%>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -116,7 +167,8 @@ lb_to_mt <- function(){
 
 ```{r, out.width="100%"}
 dat<- df %>%
-      dplyr::filter(metric %in% c("removals_weight"), species == "cod", 
+      dplyr::filter(metric == c("removals_weight"), 
+                    species == "cod", 
                     mode == "all modes") %>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::mutate(value = value * lb_to_mt()) %>% 
@@ -129,10 +181,11 @@ p2<- dat %>%
   stat_summary( fun = median,geom = "point",color = "black",size = 3)+  # Median point
   ylab("Metric tons")+
   xlab(element_blank())+
-  ggtitle("Cod total mortality (% of runs below ACL in parenthesis)")+
+  ggtitle("Cod total mortality")+
   theme_minimal() +
   geom_hline(aes(yintercept = cod_acl()), linetype = "dashed",
-              color = "red", size = 1)
+              color = "red", size = 1)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
   
 
 
@@ -157,10 +210,11 @@ p2<- dat %>%
   stat_summary( fun = median,geom = "point",color = "black",size = 3)+  # Median point
   ylab("Metric tons")+
   xlab(element_blank())+
-  ggtitle("Haddock total mortality (% of runs below ACL in parenthesis)")+
+  ggtitle("Haddock total mortality")+
   theme_minimal() +
   geom_hline(aes(yintercept = had_acl()), linetype = "dashed",
-              color = "red", size = 1)
+              color = "red", size = 1)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 fig2<- plotly::ggplotly(p2) 
 fig2
@@ -188,7 +242,8 @@ cv_plot<-cv_agg %>%
     y = "million $"
   ) +
   theme_minimal() +
-  geom_hline(yintercept = 0, color = "black", linetype = "dashed")
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 fig3<- plotly::ggplotly(cv_plot) %>% 
       plotly::style(textposition = "top center")
@@ -226,7 +281,8 @@ p2<-dat %>%
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Cod discard mortality")+
-    theme_minimal() #+
+    theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) #+
   #geom_text(data = dat2,
   #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
@@ -268,7 +324,8 @@ p2<-dat %>%
   ylab("Metric tons")+
   xlab(element_blank())+
   ggtitle("Haddock discard mortality")+
-    theme_minimal() #+
+    theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  #+
   #geom_text(data = dat2,
   #          aes(x = run_number, y = min(dat$Value) - 5, label = Label),  
   #          inherit.aes = FALSE, hjust = 0.5, vjust = 1, size = 3.5,color = "black") +
@@ -329,6 +386,9 @@ regulations <- function(model){
     final_table <- seasons %>%
       dplyr::left_join(bags, by = c("model", "mode")) %>%
       dplyr::left_join(minsizes, by = c("model", "mode")) %>%
+      dplyr::mutate(codseason = if (!"codseason" %in% names(.)) NA_character_ else codseason, 
+                    codbag = if (!"codbag" %in% names(.)) NA_character_ else codbag, 
+                    codlen = if (!"codlen" %in% names(.)) NA_character_ else codlen) %>% 
       #dplyr::left_join(catch_agg, by = c("model")) %>%
       dplyr::select(model, mode, codseason, codbag, codlen, hadseason, hadbag, hadlen) %>%
       dplyr::rename(Mode = mode,
@@ -345,9 +405,9 @@ regulations <- function(model){
 }
 
 ## Mortality
-total_mortality<- function(model){
+total_mortality<- function(select_model){
 
- file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+ file <- list.files(path = here::here("output"), pattern = paste0("^output_", select_model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -355,7 +415,7 @@ total_mortality<- function(model){
     pull(file)
   
   mort <- read_csv(file)  %>%
-      dplyr::filter(metric %in% c("removals_weight"),
+      dplyr::filter(metric == c("removals_weight"),
                     mode == "all modes")%>%
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -367,16 +427,29 @@ total_mortality<- function(model){
                        Value = round(median(Value),0)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
       tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>% 
-    dplyr::rename(`Policy Identifier` = model, 
-                  `% under Cod ACL` = under_acl_cod,
+    dplyr::rename(`% under Cod ACL` = under_acl_cod,
                   `% under Haddock ACL` = under_acl_hadd,
                   `Cod Mortality (mt)` = Value_cod,
                   `Haddock Mortality (mt)` = Value_hadd)
+  
+  mort2<- adjusted_removals %>% dplyr::filter(model == select_model, 
+                                              mode == "all modes") %>% 
+    dplyr::ungroup() %>% 
+    dplyr::select(-"mode", -"model") %>% 
+    dplyr::rename(`% under Cod ACL - new MRIP data` = under_acl_cod,
+                  `% under Haddock ACL - new MRIP data` = under_acl_hadd,
+                  `Cod Mortality (mt) - new MRIP data` = adjusted_mortality_mt_cod ,
+                  `Haddock Mortality (mt) - new MRIP data` = adjusted_mortality_mt_hadd )
+  
+  mort<- mort %>% cbind(mort2) %>% 
+    dplyr::rename(`Policy Identifier` = model) 
+  
+  
   knitr::kable(mort)
 }
 
 total_mortality_mode<- function(model){
-  file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+  file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -384,7 +457,7 @@ total_mortality_mode<- function(model){
     pull(file)
   
   mort_mode <- read_csv(file)  %>%
-      dplyr::filter(metric %in% c("removals_weight"),
+      dplyr::filter(metric == c("removals_weight"),
                     !mode == "all modes")%>%
       dplyr::group_by(model, species,draw, mode) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
@@ -404,7 +477,7 @@ total_mortality_mode<- function(model){
 
 ## Keep/Release/Dead Discards
 keep_release<- function(model){
-  file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+  file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -414,10 +487,10 @@ keep_release<- function(model){
   keep_rel <-  read_csv(file)  %>%
     dplyr::filter(grepl("number|weight", metric)) %>% 
     dplyr::filter(mode == "all modes") %>% 
-    mutate(Variable = metric) %>%
-    group_by(species, Variable, model) %>%
-    summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
-    mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
+    dplyr::mutate(Variable = metric) %>%
+    dplyr::group_by(species, Variable, model) %>%
+    dplyr::summarise( total = median(value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
                           total * lb_to_mt(), 
                           total)) %>%
     dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
@@ -438,7 +511,7 @@ keep_release<- function(model){
 }
 
 keep_release_mode<- function(model){
-    file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+    file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -474,7 +547,7 @@ keep_release_mode<- function(model){
 
 ## angler satisfaction and trips
 cv_trips<- function(model){
-    file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+    file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -497,7 +570,7 @@ cv_trips<- function(model){
 }
 
 cv_trips_mode<- function(model){
-    file <- list.files(path = here::here("output"), pattern = paste0("output_", model, "_"),full.names = TRUE ) |>
+   file <- list.files(path = here::here("output"), pattern = paste0("^output_", model, "_.*\\.csv$"),,full.names = TRUE ) |>
     tibble(file = _) |>
     mutate(mtime = file.info(file)$mtime) |>
     arrange(desc(mtime)) |>
@@ -600,6 +673,210 @@ cv_trips_mode("SQactual")
 ```
 
 
+### JS1 {.tabset}
+
+```{r}
+regulations("JS1")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("JS1")
+
+```
+
+```{r}
+total_mortality_mode("JS1")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("JS1")
+```
+
+```{r}
+keep_release_mode("JS1")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("JS1")
+```
+
+
+```{r}
+
+cv_trips_mode("JS1")
+```
+
+
+### JS2 {.tabset}
+
+```{r}
+regulations("JS2")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("JS2")
+
+```
+
+```{r}
+total_mortality_mode("JS2")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("JS2")
+```
+
+```{r}
+keep_release_mode("JS2")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("JS2")
+```
+
+
+```{r}
+
+cv_trips_mode("JS2")
+```
+
+### KLB2 {.tabset}
+
+```{r}
+regulations("KLB2")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB2")
+
+```
+
+```{r}
+total_mortality_mode("KLB2")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB2")
+```
+
+```{r}
+keep_release_mode("KLB2")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB2")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB2")
+```
+
+
+### KLB7 {.tabset}
+
+```{r}
+regulations("KLB7")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB7")
+
+```
+
+```{r}
+total_mortality_mode("KLB7")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB7")
+```
+
+```{r}
+keep_release_mode("KLB7")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB7")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB7")
+```
+
+
+
+
+### KLB8 {.tabset}
+
+```{r}
+regulations("KLB8")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB8")
+
+```
+
+```{r}
+total_mortality_mode("KLB8")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB8")
+```
+
+```{r}
+keep_release_mode("KLB8")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB8")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB8")
+```
+
+
+
+
+
 ### MHA1 {.tabset}
 
 ```{r}
@@ -674,6 +951,89 @@ cv_trips("MHA2")
 ```{r}
 cv_trips_mode("MHA2")
 ```
+
+
+### MJP {.tabset}
+
+```{r}
+regulations("MJP")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MJP")
+
+```
+
+```{r}
+total_mortality_mode("MJP")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MJP")
+```
+
+```{r}
+keep_release_mode("MJP")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MJP")
+```
+
+
+```{r}
+
+cv_trips_mode("MJP")
+```
+
+
+
+### MJP1 {.tabset}
+
+```{r}
+regulations("MJP1")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MJP1")
+
+```
+
+```{r}
+total_mortality_mode("MJP1")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MJP1")
+```
+
+```{r}
+keep_release_mode("MJP1")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MJP1")
+```
+
+
+```{r}
+
+cv_trips_mode("MJP1")
+```
+
+
 
 
 ### MP C & H {.tabset}
@@ -1103,6 +1463,95 @@ cv_trips("MPH2")
 ```{r}
 cv_trips_mode("MPH2")
 ```
+
+
+### MSG1 {.tabset}
+
+```{r}
+regulations("MSG1")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MSG1")
+
+```
+
+```{r}
+total_mortality_mode("MSG1")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MSG1")
+```
+
+```{r}
+keep_release_mode("MSG1")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MSG1")
+```
+
+
+```{r}
+
+cv_trips_mode("MSG1")
+```
+
+
+
+### MSG2 {.tabset}
+
+```{r}
+regulations("MSG2")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MSG2")
+
+```
+
+```{r}
+total_mortality_mode("MSG2")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MSG2")
+```
+
+```{r}
+keep_release_mode("MSG2")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MSG2")
+```
+
+
+```{r}
+
+cv_trips_mode("MSG2")
+```
+
+
+
+
+
+
+
+
 
 
 ### MW1 {.tabset}
