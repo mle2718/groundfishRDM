@@ -874,7 +874,84 @@ cv_trips_mode("KLB8")
 ```
 
 
+### KLB9 {.tabset}
 
+```{r}
+regulations("KLB9")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB9")
+
+```
+
+```{r}
+total_mortality_mode("KLB9")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB9")
+```
+
+```{r}
+keep_release_mode("KLB9")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB9")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB9")
+```
+
+
+### KLB10 {.tabset}
+
+```{r}
+regulations("KLB10")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("KLB10")
+
+```
+
+```{r}
+total_mortality_mode("KLB10")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("KLB10")
+```
+
+```{r}
+keep_release_mode("KLB10")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("KLB10")
+```
+
+
+```{r}
+
+cv_trips_mode("KLB10")
+```
 
 
 ### MHA1 {.tabset}
