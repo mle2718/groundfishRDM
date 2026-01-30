@@ -1624,6 +1624,44 @@ cv_trips_mode("MSG2")
 
 
 
+### MSG3 {.tabset}
+
+```{r}
+regulations("MSG3")
+```
+
+#### Total mortality
+
+```{r}
+total_mortality("MSG3")
+
+```
+
+```{r}
+total_mortality_mode("MSG3")
+```
+
+#### Keep/Release/Dead Discards
+
+```{r}
+keep_release("MSG3")
+```
+
+```{r}
+keep_release_mode("MSG3")
+```
+
+#### Angler satisfaction/trips
+
+```{r}
+cv_trips("MSG3")
+```
+
+
+```{r}
+
+cv_trips_mode("MSG3")
+```
 
 
 
