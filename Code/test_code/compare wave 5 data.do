@@ -23,23 +23,20 @@ global wavelist 1 2 3 4 5 6
 
 
 forvalues x = 0/1 {
-global calibration_year0 "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data 
-global calibration_year1 "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data 
 
-// 1) Pull the MRIP data
-
+// 1) locate the relevent MRIP data
 
 if `x'==0{
 *For actual model data:
 global input_data_cd "E:\Lou_projects\groundfishRDM\input_data" /* Lou's local data path where the original MRIP data was stores */
-global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data 
+global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data  original
 
 }
 *For updated 2025 wave 5 and 4 data:
 
 if `x'==1{
 global input_data_cd "C:\Users\andrew.carr-harris\Desktop\MRIP_data_2025\updated_2025_data" /* Lou's local data path where the updated (2025 wave 4 + 5) and other MRIP data is stored */
-global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data 
+global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data  updated
 
 }
 

@@ -80,7 +80,7 @@ n_choice_occasions_draw <- bind_rows(n_choice_occasions0)
 
 rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
 
-# Size data used in projections is "baseline"proj_catch_at_length.fst"
+# Size data used in projections is "proj_catch_at_length.fst"
 # For testing, change the size data file to "baseline_catch_at_length.fst"
 cod_size_data_draw <- read_fst(file.path(final_process_misc_cd, "proj_catch_at_length.fst"))  %>%
   dplyr::filter(species=="cod", draw==dr) %>%
@@ -551,7 +551,7 @@ length_data1[, discmort_number := data.table::fcase(
 )]
 
 
-# Summarise by species, mode
+# Summarise by species, mode, month
 length_data1 <- length_data1[, .(
   keep_numbers = sum(keep_numbers),
   release_numbers = sum(release_numbers),

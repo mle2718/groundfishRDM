@@ -286,6 +286,35 @@ gen year =2026
 
 append using `nal2025'
 
+
+*haddock 18 inch = 45.72
+*cod 23 inch = 58.42
+egen sum= sum(NaL_from_smooth_trawl), by(year  species draw )
+gen prop=NaL_from_smooth_trawl/sum
+sort year  species draw length
+
+gen cod_legal=1 if species=="cod" & length>=58.42
+gen hadd_legal=1 if species=="hadd" & length>=45.72
+
+egen sumproplegal_cod=sum(prop), by(year  species draw cod_legal)
+egen sumproplegal_hadd=sum(prop), by(year  species draw hadd_legal)
+
+su sumproplegal_cod if year==2025 & species=="cod" & length>=58.42
+return list
+local cod2025=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2026 & species=="cod" & length>=58.42
+return list
+local cod2026=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2025 & species=="hadd" & length>=45.72
+return list
+local hadd2025=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2026 & species=="hadd" & length>=45.72
+return list
+local hadd2026=round(`r(mean)', .01)
+
 gen length5_lo = floor(length/5)*5
 gen length5_hi = length5_lo + 4
 
@@ -299,25 +328,24 @@ egen sum_nal=sum(NaL_from_smooth_trawl), by(year species draw)
 gen prop_nal=NaL_from_smooth_trawl/sum
 drop NaL_from_smooth_trawl sum
 reshape wide  prop_nal, i(species  draw length ) j(year)
+	
+collapse (mean)	 prop*, by(species length)
+encode len, gen(length2)
 
-graph box prop_nal2025 prop_nal2026 if species =="hadd" , ///
-    over(length, label(labsize(small))) ///
-    title("haddock proportions number at length", size(medium)) ///
+twoway(scatter prop_nal2025 length2 if species =="cod", connect(direct)) (scatter prop_nal2026 length2 if species =="cod", connect(direct) ///
+    title("cod proportions number at length (cm)", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
 	ytitle(Proportion of fish that are length-{it:l}) ///
-    ylab(, labsize(small)) ///
-    box(1, fcolor(navy)   lcolor(navy)) ///
-    box(2, fcolor(maroon) lcolor(maroon)) ///
-    marker(1, msymbol(O) msize(tiny) mcolor(navy)) ///
-    marker(2, msymbol(O) msize(tiny) mcolor(maroon)) ///
-    legend(order(1 "2025" 2 "2026") position(6) cols(2)) 
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `cod2025' (2025), `cod2026' (2026)", size(small) yoffset(-3)))
 
-graph box prop_nal2025 prop_nal2026 if species =="cod" , ///
-    over(length, label(labsize(small))) ///
-    title("cod proportions number at length", size(medium)) ///
+twoway(scatter prop_nal2025 length2 if species =="hadd", connect(direct)) (scatter prop_nal2026 length2 if species =="hadd", connect(direct) ///
+    title("haddock proportions number at length (cm)", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
 	ytitle(Proportion of fish that are length-{it:l}) ///
-    ylab(, labsize(small)) ///
-    box(1, fcolor(navy)   lcolor(navy)) ///
-    box(2, fcolor(maroon) lcolor(maroon)) ///
-    marker(1, msymbol(O) msize(tiny) mcolor(navy)) ///
-    marker(2, msymbol(O) msize(tiny) mcolor(maroon)) ///
-    legend(order(1 "2025" 2 "2026") position(6) cols(2)) 
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of haddock at or above 18 inches:  `hadd2025' (2025), `hadd2026' (2026)", size(small) yoffset(-3)))

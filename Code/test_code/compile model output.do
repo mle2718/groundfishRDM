@@ -23,42 +23,252 @@ global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 &
 do "$input_code_cd\MRIP data wrapper.do"
 
 
-
-* This file computes predictions of harvest in weight in 2026 under status quo regulations
+* This file computes predictions of harvest in weight in 2026 under acual status quo regulations (SQ) and proposed status quo regulations (SQ_alt)
 
 cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\test_code"
 import delimited using "cod_hadd_SQ_output_12_31.csv", clear
+gen source = "FY25 actual regulations"
+tempfile sq
+save `sq', replace
+
+import delimited using "cod_hadd_SQalt_output_1_2.csv", clear
+gen source = "FY25 proposed regulations"
+tempfile prop
+save `prop', replace
+
+* monthly datasets
+/*
+cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\test_code"
+import delimited using "cod_hadd_SQ_output_monthly_1_13.csv", clear
+gen source = "FY25 actual regulations monthly"
+tempfile sqm
+save `sqm', replace
+
+import delimited using "cod_hadd_SQalt_output_monthly_1_13.csv", clear
+gen source = "FY25 proposed regulations monthly"
+tempfile propm
+save `propm', replace
+*/
+append using `sq'
 
 
-*Coastwide predictions
-format value %12.02gc
+/*average weight of may cod harvest and dead discard*/
+keep if source=="FY25 proposed regulations"
+*keep if draw<=100
+tempfile new
+save `new', replace 
+
+* list of metrics (NO extra quotes)
+local values "keep_numbers keep_weight discmort_number discmort_weight"
+display "`values'"
+
+* create one tempfile per metric, keep only that metric, rename value -> metricname
+foreach v of local values {
+    use `new', clear
+    keep if metric == "`v'"
+    drop metric
+    rename value `v'
+
+    * create a tempfile macro name like keep_numbers1, keep_weight1, etc.
+    tempfile `v'1
+    save ``v'1', replace
+}
+
+* merge them together
+use `keep_numbers1', clear
+merge 1:1 species mode draw source using `keep_weight1',      keep(3) nogen
+merge 1:1 species mode draw source using `discmort_number1',  keep(3) nogen
+merge 1:1 species mode draw source using `discmort_weight1',  keep(3) nogen
+
+gen avg_weight_harvest= keep_weight/keep_numbers
+gen avg_weight_dead_disc= discmort_weight /discmort_number
+
+collapse (mean) avg_weight_harvest avg_weight_dead_disc, by(species mode source)
+
+	
+}
+preserve
+
+*append using `prop'
+*append using `sqm'
 
 /*
+import delimited using  "C:\Users\andrew.carr-harris\Desktop\output_SQproposed_20260111_231606.csv", clear 
+gen source = "FY25 proposed regulations Kim"
+tempfile propkim
+save `propkim', replace
+
+import delimited using  "C:\Users\andrew.carr-harris\Desktop\output_SQactual_20260111_231758", clear 
+gen source = "FY25 actial  regulations Kim"
+
+
+append using `sq'
+append using `prop'
+append using `propkim'
+*/
+append using `sq'
+keep if mode=="all modes"
+
+format value* %12.02gc
+keep if draw<=100
+/*
 FY2026 sub-ACLs:
-
-GOM haddock – 1,146 mt
-
-WGOM cod – 118 mt
+	GOM haddock – 1,146 mt
+	WGOM cod – 118 mt
 */
 
 * create a total catch statistic
 preserve
 keep if inlist(metric, "keep_numbers", "release_numbers")
-collapse (sum) value, by(species draw mode)
+collapse (sum) value, by(species draw mode source)
 gen metric="catch_numbers"
 tempfile catch
 save `catch', replace
 restore
 append using `catch'
-levelsof metric
 
-preserve
-keep if  metric=="removals_weight" & mode=="all modes"
+/*
+drop month 
+
+
 replace value=value/2205 if strmatch(metric, "*weight*")==1
- vioplot value if metric=="removals_weight" & mode=="all modes", over(species) yline(118 1146) ylab(0(100)1200) ytitle("total removals (mt)")
-restore
+collapse (sum) value, by(metric species mode draw source)
+
+gen tab=1 if metric=="removals_weight" & mode=="all modes" & species=="cod" & value<=118
+su tab if metric=="removals_weight" & mode=="all modes" & species=="cod" & source=="FY25 actual regulations" 
+su tab if metric=="removals_weight" & mode=="all modes" & species=="cod" & source=="FY25 proposed regulations" 
+drop tab 
+
+gen tab=1 if metric=="removals_weight" & mode=="all modes" & species=="hadd" & value<=1146
+su tab if metric=="removals_weight" & mode=="all modes" & species=="hadd" & source=="FY25 actual regulations" 
+su tab if metric=="removals_weight" & mode=="all modes" & species=="hadd" & source=="FY25 proposed regulations" 
+drop tab 
+
+
+* trips 
+su value if metric=="predicted_trips" & mode=="all modes" & source=="FY25 actual regulations", detail
+su value if metric=="predicted_trips" & mode=="all modes" & source=="FY25 proposed regulations", detail
+su value if metric=="additional_trips" & mode=="all modes" & source=="FY25 actual regulations", detail
+su value if metric=="additional_trips" & mode=="all modes" & source=="FY25 proposed regulations", detail
+
+return list
+local med_sq=round(r(p50))
+
+***Total removals
+*(a) cod
+su value if metric=="removals_weight" & mode=="all modes" & species=="cod" & source=="FY25 actual regulations", detail
+return list
+local med_sq=round(r(p50))
+
+su value if metric=="removals_weight" & mode=="all modes" & species=="cod" & source=="FY25 proposed regulations", detail
+return list
+local med_sq_alt=round(r(p50))
+
+gr box value if metric=="removals_weight" & mode=="all modes" & species=="cod", over(source)  ///
+	yline(118,  lcolor(navy)   lpattern(dash)) ///
+	ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
+    text(125 0.5 "cod ACL", place(e) size(small)) ///
+	note("Median predicted removals under:" "   FY25 actual regulations = `med_sq' mt" "   FY25 proposed regulations = `med_sq_alt' mt" , yoffset(-6)) ///
+    graphregion(margin(b+8)) title("Predicted FY26 cod removals", size(medium))  name(cod_mort, replace)  
 	
-gen domain=species+"_"+metric+"_"+mode
+graph export $figure_cd\predicted_cod_mort.jpg, width(1024) height(768) replace
+
+*(b) haddock
+su value if metric=="removals_weight" & mode=="all modes" & species=="hadd" & source=="FY25 actual regulations", detail
+return list
+local med_sq=round(r(p50))
+
+su value if metric=="removals_weight" & mode=="all modes" & species=="hadd" & source=="FY25 proposed regulations", detail
+return list
+local med_sq_alt=round(r(p50))
+
+su value if metric=="removals_weight" & mode=="all modes" & species=="hadd" & source=="FY25 proposed regulations Kim", detail
+return list
+local med_sq_alt_kim=round(r(p50))
+
+
+gr box value if metric=="removals_weight" & mode=="all modes" & species=="hadd", over(source)  ///
+	yline(1146,  lcolor(navy)   lpattern(dash)) ///
+	ylab(#8, labsize(small)) ytitle("total removals (mt)") ///
+    text(1200 0.5 "haddock ACL", place(e) size(small)) ///
+	note("Median predicted removals under:" "   FY25 actual regulations = `med_sq' mt" "   FY25 proposed regulations = `med_sq_alt' mt" "   Kim FY25 proposed regulations = `med_sq_alt_kim' mt" , yoffset(-6)) ///
+    graphregion(margin(b+8)) title("Predicted FY26 haddock removals", size(medium)) name(hadd_mort, replace)
+	
+graph export $figure_cd\predicted_hadd_mort.jpg, width(1024) height(768) replace
+
+
+
+***Harvest 
+*(a) cod
+su value if metric=="keep_weight" & mode=="all modes" & species=="cod" & source=="FY25 actual regulations", detail
+return list
+local med_sq=round(r(p50))
+
+su value if metric=="keep_weight" & mode=="all modes" & species=="cod" & source=="FY25 proposed regulations", detail
+return list
+local med_sq_alt=round(r(p50))
+
+gr box value if metric=="keep_weight" & mode=="all modes" & species=="cod", over(source)  ///
+	ylab(#8, labsize(small)) ytitle("harvest (mt)") ///
+	note("Median predicted harvest under:" "   FY25 actual regulations = `med_sq' mt" "   FY25 proposed regulations = `med_sq_alt' mt" , yoffset(-6)) ///
+    graphregion(margin(b+8)) title("Predicted FY26 cod harvest", size(medium))
+	
+graph export $figure_cd\predicted_cod_harv.jpg, width(1024) height(768) replace
+
+*(b) haddock
+su value if metric=="release_weight" & mode=="all modes" & species=="hadd" & source=="FY25 actual regulations", detail
+return list
+local med_sq=round(r(p50))
+
+su value if metric=="release_weight" & mode=="all modes" & species=="hadd" & source=="FY25 proposed regulations", detail
+return list
+local med_sq_alt=round(r(p50))
+
+gr box value if metric=="release_weight" & mode=="all modes" & species=="hadd", over(source)  ///
+	ylab(#8, labsize(small)) ytitle("harvest (mt)") ///
+	note("Median predicted harvest under:" "   FY25 actual regulations = `med_sq' mt" "   FY25 proposed regulations = `med_sq_alt' mt" , yoffset(-6)) ///
+    graphregion(margin(b+8)) title("Predicted FY26 haddock harvest", size(medium))
+	
+graph export $figure_cd\predicted_hadd_harv.jpg, width(1024) height(768) replace
+
+	
+***Discard mortlaity  
+*(a) cod
+su value if metric=="discmort_weight" & mode=="all modes" & species=="cod" & source=="FY25 actual regulations", detail
+return list
+local med_sq=round(r(p50))
+
+su value if metric=="discmort_weight" & mode=="all modes" & species=="cod" & source=="FY25 proposed regulations", detail
+return list
+local med_sq_alt=round(r(p50))
+
+gr box value if metric=="discmort_weight" & mode=="all modes" & species=="cod", over(source)  ///
+	ylab(#8, labsize(small)) ytitle("discard mortality (mt)") ///
+	note("Median predicted discard mortality under:" "   FY25 actual regulations = `med_sq' mt" "   FY25 proposed regulations = `med_sq_alt' mt" , yoffset(-6)) ///
+    graphregion(margin(b+8)) title("Predicted FY26 cod discard mortality", size(medium
+	
+graph export $figure_cd\predicted_cod_discmort.jpg, width(1024) height(768) replace
+
+*(b) haddock
+su value if metric=="discmort_weight" & mode=="all modes" & species=="hadd" & source=="FY25 actual regulations", detail
+return list
+local med_sq=round(r(p50))
+
+su value if metric=="discmort_weight" & mode=="all modes" & species=="hadd" & source=="FY25 proposed regulations", detail
+return list
+local med_sq_alt=round(r(p50))
+
+gr box value if metric=="discmort_weight" & mode=="all modes" & species=="hadd", over(source)  ///
+	ylab(#8, labsize(small)) ytitle("discard mortality (mt)") ///
+	note("Median predicted discard mortality under:" "   FY25 actual regulations = `med_sq' mt" "   FY25 proposed regulations = `med_sq_alt' mt" , yoffset(-6)) ///
+    graphregion(margin(b+8)) title("Predicted FY26 haddock discard mortality", size(medium))	
+	
+graph export $figure_cd\predicted_hadd_discmort.jpg, width(1024) height(768) replace
+
+***********	
+	*/
+	
+gen domain=species+"_"+metric
 
 tempfile base
 save `base', replace
@@ -105,14 +315,13 @@ use `ptiles', clear
 
 split domain, parse(_)
 rename domain1 species
-gen metric= domain2+"_"+domain3 if domain4!=""
-replace metric=domain2 if domain4==""
-rename domain4 mode
-replace mode=domain3 if mode==""
+gen metric= domain2+"_"+domain3 if domain3!=""
+replace metric=domain2 if domain3==""
 
 drop domain2 domain3  domain
-order species  metric mode lb95 lb90 p50 ub90 ub95
+order species  metric  lb95 lb90 p50 ub90 ub95
 
+tempfile base
 save `base', replace
 
 
@@ -174,6 +383,7 @@ replace mode1="fh" if inlist(mode_fx, "4", "5")
 *drop shore trips
 drop if mode1=="sh"
 
+
 * classify trips that I care about into the things I care about (caught or targeted sf/bsb) and things I don't care about "ZZ" 
 replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim1_common)," ","",.)
@@ -189,6 +399,8 @@ replace common_dom="ATLCO" if inlist(common, "haddock")
 
 replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
+keep if common_dom=="ATLCO"
+
 
 *New MRIP site allocations
 preserve 
@@ -196,9 +408,7 @@ import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
-replace nmfs_stock_area="WGOM" if inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
-replace nmfs_stock_area="XX" if !inlist(nmfs_stat_area, 521, 526, 541, 514, 513, 515)
-keep nmfs_stock_area intsite nmfs_stat_area state
+keep nmfs_stock_area* intsite nmfs_stat_area state
 duplicates drop
 tempfile mrip_sites
 save `mrip_sites', replace 
@@ -206,15 +416,13 @@ restore
 
 merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into WGOM or not WGOM */
-gen str3 area_s="XX"
-replace area_s="WGOM" if st2=="33"
-replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
+tostring nmfs_stat_area, replace
+replace nmfs_stat_area="SNE" if inlist(state, "CT", "RI", "NY", "NJ", "MD") 
+replace nmfs_stat_area="NH" if inlist(state, "NH") 
 
-tostring wave, gen(wv2)
-tostring year, gen(yr2)
-
-gen my_dom_id_string=area_s+"_"+mode1+"_"+common_dom
+keep if inlist(nmfs_stat_area, "513", "514" ,"515" ,"521", "526" ,"NH")
+replace nmfs_stat_area="WGOM"
+gen my_dom_id_string=nmfs_stat_area+"_"+common_dom
 
 * Define the list of species to process
 local species "atlanticcod haddock"
@@ -267,10 +475,7 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
-keep if common_dom=="ATLCO"
-keep if area_s=="WGOM"
 
-replace my_dom_id_string=mode1+"_"+common_dom
 
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
 
@@ -318,29 +523,19 @@ postclose handle
 * Load results back into memory
 use `results', clear
 
-split domain, parse("@")
-drop domain1
-split domain2, parse(.)
-split domain21, parse(b)
-
-drop domain2 domain21 domain22 domain212
-destring domain211, replace
-rename domain211 my_dom_id
-merge m:1 my_dom_id using `domains' 
-sort varname  my_dom_id
-keep varname total  my_dom_id_string ll95 ul95
+sort varname  
+keep varname total  domain ll95 ul95
 
 split varname, parse(_)
 rename varname1 species
 rename varname2 metric
-split my, parse(_)
-drop my_dom_id_string2
-rename my_dom_id_string1 mode
+
+
 replace metric="catch_numbers" if metric=="cat"
 replace metric="keep_numbers" if metric=="keep"
 replace metric="keep_weight" if metric=="keepwt"
 replace metric="release_numbers" if metric=="rel"
-drop my varname 
+drop dom varname 
 gen source="MRIP FY 2024"
 rename total value
 rename value p50 
@@ -352,11 +547,11 @@ rename ul95 ub95
 * combine MRIP and simulation output
 append using `base'
 replace source="RDM FY 2026" if source==""
-order species metric mode source 
+order species metric  source 
 encode source, gen(source2)
 
-gen domain=species+"_"+mode+"_"+metric
-replace domain=mode+"_"+metric if inlist(metric, "CV") | strmatch(metric, "*trips")==1
+gen domain=species+"_"+metric
+replace domain=metric if inlist(metric, "CV") | strmatch(metric, "*trips")==1
 
 /*
 replace value=p50 if source=="RDM 2026"
@@ -370,7 +565,7 @@ replace ul80=ul if source=="MRIP 2024"
 replace ll90=ll if source=="MRIP 2024" 
 replace ul90=ul if source=="MRIP 2024" 
 */
-replace source2=source2+2
+replace source2=source2+1
 
 generate source2_90 = source2 - 0.1
 generate source2_95 = source2 + 0.1
@@ -381,24 +576,10 @@ replace source2_95=source2 if source=="MRIP FY 2024"
 
 local vars p50 lb90 ub90 lb95 ub95
 foreach v of local vars{
-	format  `v' %14.0gc
 	replace `v'=`v'/2205 if strmatch(metric, "*weight*")==1
-	replace `v'=`v'/1000 if strmatch(metric, "*numbers*")==1 | strmatch(metric, "*number*")==1
-	replace `v'=`v'/1000000 if strmatch(metric, "*CV*")==1
+	format  `v' %12.02gc
 
 }
-/*
-local vars p5 p10 p50 p90 p95
-foreach v of local vars{
-	format  `v' %14.0gc
-	replace `v'=`v'/2205 if strmatch(metric, "*weight*")==1
-	replace `v'=`v'/1000 if strmatch(metric, "*numbers*")==1 | strmatch(metric, "*number*")==1
-	replace `v'=`v'/1000000 if strmatch(metric, "*CV*")==1
-
-}
-*/
-*cd "C:\Users\andrew.carr-harris\Desktop\MRIP_data_2025\rdm testing data\SQ_runs_10_24"
-
 
 /*
 FY2026 sub-ACLs:
@@ -409,8 +590,7 @@ WGOM cod – 118 mt
 *harvest based on age-length weights
 
 
-gr drop _all 
-levelsof domain if inlist(metric, "keep_weight") & mode!="all modes",  local(doms)
+levelsof domain if inlist(metric, "keep_weight") ,  local(doms)
 foreach d of local doms{
 
 levelsof species if dom=="`d'"
@@ -421,13 +601,6 @@ if `r(levels)'=="hadd"{
 	local sp="Haddock"
 }
 
-levelsof mode if dom=="`d'"
-if `r(levels)'=="fh"{
-	local md="for-hire"
-}
-if `r(levels)'=="pr"{
-	local md="private boat"
-}
 
 twoway  (rcap lb90 ub90 source2_90  if domain=="`d'", lcolor(navy)) ///
 			 (rcap lb95 ub95 source2_95 if domain=="`d'", lcolor(blue)) ///

@@ -484,72 +484,111 @@ gen year=2025
 append using `base'
 
 
+
+preserve
+
+gen cod_legal=1 if species=="cod" & length>=58.42
+gen hadd_legal=1 if species=="hadd" & length>=45.72
+
+egen sumproplegal_cod=sum(fitted_prob), by(year  species season draw cod_legal)
+egen sumproplegal_hadd=sum(fitted_prob), by(year  species season draw hadd_legal)
+
+su sumproplegal_cod if year==2025 & species=="cod" & length>=58.42 & season=="summer"
+return list
+local cod2025_sum=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2026 & species=="cod" & length>=58.42 & season=="summer"
+return list
+local cod2026_sum=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2025 & species=="cod" & length>=58.42 & season=="winter"
+return list
+local cod2025_win=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2026 & species=="cod" & length>=58.42 & season=="winter"
+return list
+local cod2026_win=round(`r(mean)', .01)
+
+
+
+su sumproplegal_hadd if year==2025 & species=="hadd" & length>=45.72 & season=="summer"
+return list
+local hadd2025_sum=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2026 & species=="hadd" & length>=45.72 & season=="summer"
+return list
+local hadd2026_sum=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2025 & species=="hadd" & length>=45.72 & season=="winter"
+return list
+local hadd2025_win=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2026 & species=="hadd" & length>=45.72 & season=="winter"
+return list
+local hadd2026_win=round(`r(mean)', .01)
+
 gen length5_lo = floor(length/5)*5
 gen length5_hi = length5_lo + 4
 
 * String label: "20-24", "25-29", etc.
 gen str20 length5_bin = string(length5_lo) + "-" + string(length5_hi)
 label var length5_bin "Length bin (cm)"
+collapse (sum)	 fitted_prob*, by(species season length5_bin year draw)
+collapse (mean)	 fitted_prob*, by(species season length5_bin year )
 
-preserve
-collapse (sum) fitted_prob, by(year season species draw length5_bin)
-egen sum_fitted_prob=sum(fitted_prob), by(year season species draw)
-gen proportion=fitted_prob/sum
-drop fitted_prob sum
-reshape wide proportion , i(species season draw length ) j(year)
+encode len, gen(length2)
 
+*haddock min size 18 inch = 45.72cm
+*cod min size 23 inch = 58.42cm
 
-graph box proportion2025 proportion2026 if species =="cod" & season=="winter", ///
-    over(length, label(labsize(small))) ///
-    title("cod", size(medium)) ///
+twoway(scatter fitted_prob length2 if species =="cod" & season=="summer" & year==2025, connect(direct)) ///
+			(scatter fitted_prob length2 if species =="cod" & season=="summer" & year==2026, connect(direct) ///
+    title("cod proportions catch at length May - Aug. (cm)", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
 	ytitle(Proportion of fish that are length-{it:l}) ///
-    ylab(, labsize(small)) ///
-    box(1, fcolor(navy)   lcolor(navy)) ///
-    box(2, fcolor(maroon) lcolor(maroon)) ///
-    marker(1, msymbol(O) msize(tiny) mcolor(navy)) ///
-    marker(2, msymbol(O) msize(tiny) mcolor(maroon)) ///
-    legend(order(1 "2025" 2 "2026") position(6) cols(2)) 
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `cod2025_sum' (2025), `cod2026_sum' (2026)", size(small) yoffset(-3)) ///
+	name(cod_sum, replace))
 
+twoway(scatter fitted_prob length2 if species =="cod" & season=="winter" & year==2025,  connect(direct)) ///
+			(scatter fitted_prob length2 if species =="cod" & season=="winter" & year==2026, connect(direct) ///
+    title("cod proportions catch at length (cm) Sept. - Apr", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `cod2025_win' (2025), `cod2026_win' (2026)", size(small) yoffset(-3)) ///
+	name(cod_win, replace))
+
+twoway(scatter fitted_prob length2 if species =="hadd" & season=="summer" & year==2025, connect(direct)) ///
+			(scatter fitted_prob length2 if species =="hadd" & season=="summer" & year==2026, connect(direct) ///
+    title("haddock proportions catch at length May - Aug. (cm)", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `hadd2025_sum' (2025), `hadd2026_sum' (2026)", size(small) yoffset(-3)) ///
+	name(hadd_sum, replace))
+	
+twoway(scatter fitted_prob length2 if species =="hadd" & season=="winter" & year==2025, connect(direct)) ///
+			(scatter fitted_prob length2 if species =="hadd" & season=="winter" & year==2026, connect(direct) ///
+    title("haddock proportions catch at length (cm) Sept. - Apr", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of haddock at or above 23 inches:  `hadd2025_win' (2025), `hadd2026_win' (2026)", size(small) yoffset(-3)) ///
+	name(hadd_win, replace))
+	
 *graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
-
-
-graph box proportion2025 proportion2026 if species =="hadd" & season=="winter", ///
-    over(length, label(labsize(small))) ///
-    title("haddock", size(medium)) ///
-	ytitle(Proportion of fish that are length-{it:l}) ///
-    ylab(, labsize(small)) ///
-    box(1, fcolor(navy)   lcolor(navy)) ///
-    box(2, fcolor(maroon) lcolor(maroon)) ///
-    marker(1, msymbol(O) msize(tiny) mcolor(navy)) ///
-    marker(2, msymbol(O) msize(tiny) mcolor(maroon)) ///
-    legend(order(1 "2025" 2 "2026") position(6) cols(2)) 
-
-*graph export "$figure_cd/prop_nal_haddock_by_year.png", as(png) replace
+*graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
 restore
 
-preserve
-collapse (sum) fitted_prob, by(year season species draw length5_bin)
-levelsof species, local(splist)
-levelsof season,  local(seaslist)
-
-foreach sp of local splist {
-    foreach se of local seaslist {
-
-        graph box fitted_prob if species=="`sp'" & season=="`se'", ///
-            over(length5_bin, sort(length5_lo)) ///
-            by(year, col(1) ///
-                title("Catch-at-length probabilities: `sp', `se'") ///
-                note("Boxplots of replicate probabilities by 5-cm length bin")) ///
-            ytitle("Probability") ///
-            name(box_`sp'_`se', replace)
-		
-        *graph export "$figure_cd/CAL_`sp'_`se'_byyear.png", replace
-    }
-}
-restore 
-
-
-drop length5_lo length5_hi length5_bin 
 drop cal*
 keep if year==2026
 egen replicate=rowtotal(hadd_replicate - cod_replicate)

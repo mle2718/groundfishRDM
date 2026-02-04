@@ -92,7 +92,7 @@ save  "$iterative_input_data_cd\preference_params.dta", replace
 
 
 /*
-u "$input_data_cd\preference_params.dta", clear 
+u "$iterative_input_data_cd\preference_params.dta", clear 
 
 ds draw, not
 return list

@@ -83,7 +83,24 @@ predictions_all <- purrr::map_dfr(
 
 })
 
-write_csv(predictions_all, file.path(code_cd, paste0("cod_hadd_SQ_output_12_31.csv")))
+# predictions_check<-predictions_all %>%
+#   dplyr::filter(mode=="all modes")
+#
+# predictions_check <- predictions_check %>%
+#   dplyr::select(-month) %>%
+#   group_by(metric, species,mode, draw)%>%
+#   summarise(across(where(is.numeric), sum, .names = "{.col}")) %>%
+#   dplyr::ungroup()
+#
+# predictions_check <- predictions_check %>%
+#   dplyr::select(-draw) %>%
+#   dplyr::group_by(metric, species,mode)%>%
+#   dplyr::summarise(across(where(is.numeric), mean, .names = "{.col}")) %>%
+#   ungroup() %>%
+#   dplyr::mutate(value=value/2205)
+
+
+write_csv(predictions_all, file.path(code_cd, paste0("cod_hadd_SQalt_output_monthly_1_13.csv")))
 
 summary_predictions<-predictions_all %>%
   as.data.table() %>%
