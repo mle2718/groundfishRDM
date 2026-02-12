@@ -4,7 +4,7 @@
 #outcomes until simulated harvest in numbers of fish is within 5% or 500 fish of the MRIP estimate.
 
 #Set number of original draws. We use 125 for the final run. Choose a lot fewer for test runs
-n_simulations<-201
+n_simulations<-100
 
 n_draws<-50 #Number of simulated trips per day
 

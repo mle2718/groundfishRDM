@@ -75,7 +75,7 @@ disc_mort<- fst::read_fst(file.path(final_process_misc_cd, "Discard_Mortality.fs
 system.time({
 
 # Local loop
-draws <- 1:201
+draws <- 1:100
 predictions_all <- purrr::map_dfr(
   draws,
   run_one_draw
@@ -100,7 +100,10 @@ predictions_all <- purrr::map_dfr(
 #   dplyr::mutate(value=value/2205)
 
 
-write_csv(predictions_all, file.path(code_cd, paste0("cod_hadd_SQalt_output_monthly_1_13.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("SQalt_updated_2_9.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_2_9.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("KLB8_updated_2_9.csv")))
+write_csv(predictions_all, file.path(code_cd, paste0("WRTIII5_updated_2_9.csv")))
 
 summary_predictions<-predictions_all %>%
   as.data.table() %>%

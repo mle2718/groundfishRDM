@@ -35,10 +35,17 @@
 
 **************************************************ADJUST GLOBALS************************************************** 	
 * these need to be changed every year 
-global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data 
 
-global calibration_date_start td(01sep2024)
-global calibration_date_end td(31aug2025)
+/*Original data years*/
+*global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data 
+*global calibration_date_start td(01sep2024)
+*global calibration_date_end td(31aug2025)
+
+/*Updated data years*/
+global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data  updated
+global calibration_date_start td(01nov2024)
+global calibration_date_end td(31oct2025)
+
 
 global projection_date_start td(01may2026)
 global projection_date_end td(30apr2027)
@@ -55,7 +62,7 @@ global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026)
 global leap_yr_days "td(29feb2024)" 
 
 * choose number of draws to create. Will ultimately select ~100 for final model
-global ndraws 201
+global ndraws 100
 
 * adjust 2022 survey trip costs to account for inflation (January 2022 - January 2025)
 * source =https://www.bls.gov/data/inflation_calculator.htm

@@ -21,9 +21,16 @@ directed_trips_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_
   dplyr::select(mode, day,  dtrip, draw,
                 starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
   dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
-  dplyr::filter(draw == dr) %>%
-  as.data.table()
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer"),
+                #Next two lines close cod in September
+                                #cod_bag_y2_alt = ifelse(lubridate::month(date) == 9, 0, cod_bag_y2_alt),
+                                #cod_min_y2_alt = ifelse(lubridate::month(date) == 9, 100, cod_min_y2_alt)) %>%
+
+                #Next two lines close cod for the private boat sector
+                                cod_bag_y2_alt = ifelse(mode=="pr", 0, cod_bag_y2_alt),
+                                cod_min_y2_alt = ifelse(mode=="pr", 100, cod_min_y2_alt)) %>%
+                  dplyr::filter(draw == dr) %>%
+                  data.table::as.data.table()
 
 get_lowest_min_size_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
   tibble::tibble() %>%
