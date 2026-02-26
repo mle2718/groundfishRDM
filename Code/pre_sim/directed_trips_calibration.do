@@ -181,6 +181,8 @@ su dtrip
 return list
 
 replace se=dtrip if se==.
+replace pse=(se/dtrip)*100
+
 drop ll ul pse
 
 *drop shore trips

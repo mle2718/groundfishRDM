@@ -35,7 +35,7 @@ df <- read_xlsx("E:/Lou_projects/groundfishRDM/input_data/baseline_mrip_catch_pr
 # I used copula model to simulate 1), whereas 2) and 3) are distributed NB
 
 n_sim <- 5000   # number of samples per draw
-n_draws <- 100  # number of simulated datasets
+n_draws <- 201  # number of simulated datasets
 
 
 ############ COD ############

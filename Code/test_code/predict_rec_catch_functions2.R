@@ -20,25 +20,114 @@ directed_trips_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_
   tibble::tibble() %>%
   dplyr::select(mode, day,  dtrip, draw,
                 starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+  dplyr::filter(draw == dr) %>%
+  data.table::as.data.table() %>%
   dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer"),
-                #Next two lines close cod in September
-                                #cod_bag_y2_alt = ifelse(lubridate::month(date) == 9, 0, cod_bag_y2_alt),
-                                #cod_min_y2_alt = ifelse(lubridate::month(date) == 9, 100, cod_min_y2_alt)) %>%
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
+  as.data.table()
 
-                #Next two lines close cod for the private boat sector
-                                cod_bag_y2_alt = ifelse(mode=="pr", 0, cod_bag_y2_alt),
-                                cod_min_y2_alt = ifelse(mode=="pr", 100, cod_min_y2_alt)) %>%
-                  dplyr::filter(draw == dr) %>%
-                  data.table::as.data.table()
+inch_to_cm <- function(x) x * 2.54
+
+# Initialize “closed” defaults
+directed_trips_draw[, `:=`(
+  cod_bag_y2_new = 0L,
+  cod_min_y2_new = 100,   # effectively closed (very high min)
+  hadd_bag_y2_new = 0L,
+  hadd_min_y2_new = 100
+)]
+
+# -----------------------------
+# COD: open only in October
+# bag: (set to 1 here; change if you want a different bag)
+# min size: 23 inches -> cm
+# -----------------------------
+# directed_trips_draw[
+#   lubridate::month(date) == 10,
+#   `:=`(
+#     cod_bag_y2_new = 1L,
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+
+
+# pr mode → cod fully closed (already set by defaults)
+# fh mode → open September and October
+directed_trips_draw[
+  mode == "fh" & lubridate::month(date) %in% c(9, 10),
+  `:=`(
+    cod_bag_y2_new = 1L,                     # change if needed
+    cod_min_y2_new = inch_to_cm(23)
+  )
+]
+# -----------------------------
+# HADDOCK: open 5/1–2/28 and 4/1–4/30
+# bag: 5
+# min size: 17 inches -> cm
+# -----------------------------
+
+directed_trips_draw[
+  lubridate::month(date) %in% c(5,6,7,8,9,10,11,12,1,2,4),
+  `:=`(
+    hadd_bag_y2_new = 15L,
+    hadd_min_y2_new = inch_to_cm(17)
+  )
+]
+
+
 
 get_lowest_min_size_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
-  tibble::tibble() %>%
   dplyr::select(mode, day,  dtrip, draw,
-                starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min"))
+                starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+  data.table::as.data.table() %>%
+  dplyr::mutate(date=as.Date(day, format = "%d%b%Y")) %>%
+  as.data.table()
 
-cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_alt)
-hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_alt)
+# Initialize “closed” defaults
+get_lowest_min_size_draw[, `:=`(
+  cod_bag_y2_new = 0L,
+  cod_min_y2_new = 100,   # effectively closed (very high min)
+  hadd_bag_y2_new = 0L,
+  hadd_min_y2_new = 100
+)]
+
+# -----------------------------
+# COD: open only in October
+# bag: (set to 1 here; change if you want a different bag)
+# min size: 23 inches -> cm
+# -----------------------------
+# get_lowest_min_size_draw[
+#   lubridate::month(date) == 10,
+#   `:=`(
+#     cod_bag_y2_new = 1L,
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+# pr mode → cod fully closed (already set by defaults)
+# fh mode → open September and October
+
+get_lowest_min_size_draw[
+  mode == "fh" & lubridate::month(date) %in% c(9, 10),
+  `:=`(
+    cod_bag_y2_new = 1L,                     # change if needed
+    cod_min_y2_new = inch_to_cm(23)
+  )
+]
+
+# -----------------------------
+# HADDOCK: open 5/1–2/28 and 4/1–4/30
+# bag: 5
+# min size: 17 inches -> cm
+# -----------------------------
+get_lowest_min_size_draw[
+  lubridate::month(date) %in% c(5,6,7,8,9,10,11,12,1,2,4),
+  `:=`(
+    hadd_bag_y2_new = 15L,
+    hadd_min_y2_new = inch_to_cm(17)
+  )
+]
+
+cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_new)
+hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_new)
 
 catch_data0 <- list()
 base_outcomes_angler_dems0 <- list()

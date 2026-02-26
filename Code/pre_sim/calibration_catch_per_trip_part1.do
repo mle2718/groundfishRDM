@@ -204,11 +204,10 @@ save `basefile', replace
 	- Round 5: Current + most recent prior year, sub-region, species."
 	
 
-* The calibration estimation strata is: current year + wave + state + mode, for harvest/discards/catch per trip
+* The calibration estimation strata is: current year + month + mode, for harvest/discards/catch per trip
 
 * For strata with missing, I'll impute a PSE from other strata and apply it to the missing-SE strata. 
-	- Round 1: current year + TWO WAVE PERIOD + state + mode
-	- Round 2: current year + HALF YEAR PERIOD + state + mode
+	- Round 1: current year + current and neighboring month  + state + mode
  */
 
 * Create a postfile to collect results

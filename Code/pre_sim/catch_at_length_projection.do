@@ -465,8 +465,6 @@ drop sum
 
 rename fitted_prob fitted_prob_2026
 
-* Plot catch-at-length probability distributions 2025 versus 2026
-* 5cm length bins 
 preserve
 drop fitted_prob_2025 naa_2025 
 rename fitted_prob_2026 fitted_prob
@@ -484,8 +482,37 @@ gen year=2025
 append using `base'
 
 
+* Graphs of the fitted observed/fitted probabilities
+* Create a local macro for unique draws 
+/*
+levelsof draw , local(draws)
 
-preserve
+* Initialize an empty plot command
+local plots
+
+* Build up one line per draw
+foreach d of local draws {
+    local plots `plots' (line fitted_prob_2026 length if draw==`d' & species=="hadd" & season=="winter", ///
+        lcolor(gs10) lwidth(thin) lpattern(solid))
+}
+
+* Draw combined graph
+twoway `plots', ///
+    legend(off) ///
+    xlabel(, labsize(small)) ///
+    ylabel(, labsize(small)) ///
+    title("Fitted catch-at-length probabilities by length (Haddock, closed season)", size(medium)) ///
+    ytitle("Probability", size(medium)) xtitle("Length (cm)", size(medium)) xlab(#40)
+
+*/
+
+/*
+* Plot catch-at-length probability distributions 2025 versus 2026
+* 5cm length bins 
+
+
+
+
 
 gen cod_legal=1 if species=="cod" & length>=58.42
 gen hadd_legal=1 if species=="hadd" & length>=45.72
@@ -588,7 +615,7 @@ twoway(scatter fitted_prob length2 if species =="hadd" & season=="winter" & year
 *graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
 *graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
 restore
-
+*/
 drop cal*
 keep if year==2026
 egen replicate=rowtotal(hadd_replicate - cod_replicate)
