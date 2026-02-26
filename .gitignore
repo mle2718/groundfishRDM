@@ -3,5 +3,6 @@
 .RData
 .Ruserdata
 .secrets
+.csv
 
 **/.env
