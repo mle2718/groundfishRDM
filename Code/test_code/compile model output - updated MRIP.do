@@ -17,7 +17,7 @@ global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 global yearlist 2023 2024 2025
 global wavelist 1 2 3 4 5 6
 
-global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data 
+global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data 
 
 // Pull the MRIP data for comparison with model output
 *do "$input_code_cd\MRIP data wrapper.do"
@@ -35,17 +35,17 @@ gen source = "FY25 proposed regulations"
 tempfile prop
 save `prop', replace
 
-import delimited using "SQ_updated_2_9.csv", clear
+import delimited using "SQ_updated_2_19.csv", clear
 gen source = "FY25 actual regulations - updated MRIP"
 tempfile sq_updated
 save `sq_updated', replace
 
-import delimited using "SQalt_updated_2_9.csv", clear
+import delimited using "SQalt_updated_2_19.csv", clear
 gen source = "FY25 proposed regulations - updated MRIP"
 tempfile prop_updated
 save `prop_updated', replace
 
-import delimited using "KLB8_updated_2_9.csv", clear
+import delimited using "KLB8_updated_2_19.csv", clear
 gen source = "KLB8 (close September) - updated MRIP"
 tempfile KLB8_updated
 save `KLB8_updated', replace
@@ -55,6 +55,24 @@ gen source = "WRTIII5 (close private) - updated MRIP"
 tempfile WRTIII5_updated
 save `WRTIII5_updated', replace
 
+preserve
+u `WRTIII5_updated', clear 
+drop source 
+rename value value_close_pr
+
+merge 1:1 metric species month mode draw using `KLB8_updated', keep(3) nogen 
+drop source 
+rename value value_close_sep
+
+merge 1:1 metric species month mode draw using `prop_updated', keep(3) nogen 
+drop source 
+rename value value_prop24_updated
+
+
+drop if mode=="all modes"
+restore
+
+
 append using `sq'
 append using `prop'
 append using `sq_updated'
@@ -63,8 +81,11 @@ append using `KLB8_updated'
 
 
 format value* %12.02gc
+sort source metric species month mode draw
 keep if mode=="all modes"
-collapse (sum) value, by(metric species draw  source)
+*keep if inlist(month, 9, 10)
+*drop if month==11
+collapse (sum) value, by(metric species draw source)
 
 * create a total catch statistic
 preserve
@@ -79,21 +100,66 @@ append using `catch'
 replace value=value/2205 if strmatch(metric, "*weight*")==1
 collapse (sum) value, by(metric species  draw source)
 sort metric species source draw
-browse if metric=="removals_weight"
+*keep if metric=="removals_weight"
 
-keep if draw<=100
+*keep if draw<=100
 /*
 FY2026 sub-ACLs:
 	GOM haddock – 1,146 mt
 	WGOM cod – 118 mt
 */
 
+
 gen domain=species+"_"+metric+"_"+source
+
+count if metric=="removals_weight" & species=="cod" & source=="FY25 actual regulations" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+count if metric=="removals_weight" & species=="cod" & source=="FY25 proposed regulations" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+count if metric=="removals_weight" & species=="cod" & source=="FY25 actual regulations - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+count if metric=="removals_weight" & species=="cod" & source=="FY25 proposed regulations - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+count if metric=="removals_weight" & species=="cod" & source=="KLB8 (close September) - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+count if metric=="removals_weight" & species=="cod" & source=="WRTIII5 (close private) - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+vioplot value if metric=="removals_weight" & species=="cod", over(source) yline(118) ///
+title("Projected cod removal weight (mt)", size(medium))  name(`d', replace) ///
+				yline(118,  lcolor(navy)   lpattern(dash)) ///
+				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
+				text(125 0.5 "cod ACL", place(e) size(small)) ///
+			 xlab(1 "FY25 actual" 2 "FY25 actual - updated" 3 "FY25 proposed" ///
+			 4 "FY25 proposed - updated" 5 "Close September - updated" 6 "Close private - updated", ///
+			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small) name(cod_removals, replace))
+
+replace value=value+40 if metric=="removals_weight" & species=="cod" & inlist(source, "FY25 proposed regulations", "FY25 proposed regulations - updated MRIP")
+replace value=max(0, value-18) if metric=="removals_weight" & species=="cod"  & inlist(source, "KLB8 (close September) - updated MRIP")
+*replace value=max(0, value-18) if metric=="removals_weight" & species=="cod"  & mode=="pr" & inlist(source, "KLB8 (close September) - updated MRIP")
+
+vioplot value if metric=="removals_weight" & species=="cod", over(source) yline(118) ///
+title("Projected cod removal weight (mt)", size(medium))  name(`d', replace) ///
+				yline(118,  lcolor(navy)   lpattern(dash)) ///
+				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
+				text(125 0.5 "cod ACL", place(e) size(small)) ///
+			 xlab(1 "FY25 actual" 2 "FY25 actual - updated" 3 "FY25 proposed*" ///
+			 4 "FY25 proposed - updated*" 5 "Close September - updated*" 6 "Close private - updated", ///
+			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small))
+			 
+			 
 tempfile base
 save `base', replace
 *centile value if domain=="cod_removals_weight_FY25 actual regulations", centile(2.5 5 50 95 97.5)
 
 *vioplot value if metric=="removals_weight" & species=="cod", lcolor(navy) over(source)
+
+
 
 
 levelsof domain, local(doms)
@@ -113,6 +179,7 @@ local p5   = r(c_2)
 local p50   = r(c_3)
 local p95   = r(c_4)
 local p97_5   = r(c_5)
+
 
 su value if domain=="`d'" & value>=`p2_5' & value<=`p97_5'
 local lb95=`r(min)'
@@ -157,13 +224,17 @@ foreach v of local vars{
 
 }
 
-twoway  (rcap lb90 ub90 source2  if domain=="cod_removals_weight", lcolor(navy) ) ///
+
+
+twoway  (rcap lb95 ub95 source2  if domain=="cod_removals_weight", lcolor(navy) ) ///
 			(scatter p50 source2 if domain=="cod_removals_weight",  msymbol(O) msize(small)  mcolor(black)   ///
-			title("`sp', `md'", size(medium))  name(`d', replace) ///
+			title("Projected cod removal weight (mt)", size(medium))  name(`d', replace) ///
 				yline(118,  lcolor(navy)   lpattern(dash)) ///
-	ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
-    text(125 0.5 "cod ACL", place(e) size(small)) ///
-			 xlab(1 "FY25 actual regulations" 2 "FY25 actual regulations - updated MRIP" 3 "FY25 proposed regulations" 4 "FY25 proposed regulations - updated MRIP" 5 "KLB8 (close September) - updated MRIP" 6 "WRTIII5 (close private) - updated MRIP", noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small)) ///
+				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
+				text(125 0.5 "cod ACL", place(e) size(small)) ///
+			 xlab(1 "FY25 actual" 2 "FY25 actual - updated" 3 "FY25 proposed" ///
+			 4 "FY25 proposed - updated" 5 "Close September - updated" 6 "Close private - updated", ///
+			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small)) ///
 			 legend(order(1 "90% CI" 2 "95% CI" ) pos(6) rows(1) size(small) region(lstyle(none))) )
 
 vioplot value if domain=="cod_removals_weight", lcolor(navy) 
