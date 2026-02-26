@@ -263,12 +263,34 @@ if `r(N)'>0{
             restore
 			
             merge m:1 group_id using `costs', keep(3) nogen
+			
+			*  (v)  Angler preferences
+            preserve
+                use "$iterative_input_data_cd\preference_params.dta", clear
+				keep if draw==`i'
+				drop draw
+                count
+				return list
+				
+				if `r(N)'<`n_dems'{
+				local expand=round(`n_dems'/`r(N)')+1
+				expand `expand'
+					}
+					
+				sample `n_dems', count
+                gen group_id = _n
+                tempfile costs
+                save `costs', replace
+            restore
+			
+            merge m:1 group_id using `costs', keep(3) nogen
+			
 
             keep my_dom_id_string draw ///
                  cod_keep_sim cod_cat cod_rel_sim ///
                  hadd_keep_sim hadd_rel_sim hadd_cat ///
                  mode day dtrip  ///
-                 tripid catch_draw age total_trips_12 day cost
+                 tripid catch_draw age total_trips_12 day cost beta*
 
             order draw my_dom_id_string mode  day tripid catch_draw dtrip
 

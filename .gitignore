@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 .secrets
+.csv
 
 /Data
 /data-raw
