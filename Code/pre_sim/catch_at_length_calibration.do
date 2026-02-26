@@ -399,61 +399,95 @@ save `observed_prob', replace
 restore
 
 
-* Estimate gamma parameters for each distribution
-* note: I restrict the range of fitted values to within the min/max length of observed catch
 
+* new code using MOM to avoid non-convergence 
 tempfile new
 save `new', replace
 global fitted_sizes
 
-levelsof domain , local(regs)
-foreach r of local regs{
-		u `new', clear
+levelsof domain, local(regs)
 
-		keep if domain=="`r'"
-		keep length n_fish
-		su length if n_fish!=0
-		local minL=`r(min)'
-		local maxL=`r(max)'
+foreach r of local regs {
+    use `new', clear
+    keep if domain=="`r'"
+    di "`r'"
 
-		su n_fish
-			if `r(sum)'<10000{
-				egen sumfish=sum(n_fish)
-				gen expand=10000/sumfish
-				replace n_fish=n_fish*expand
-				drop sumfish expand
-			}
+    keep length n_fish
+    drop if missing(length) | missing(n_fish)
+    drop if n_fish<=0
+	replace n_fish=round(n_fish)
+	su n_fish
+	local tot_n_fish=`r(sum)'
+    * Gamma needs strictly positive support
+    drop if length<=0
 
-			else{
-				}
+    * observed range (weighted or unweighted; here unweighted over remaining bins)
+    quietly summarize length
+    local minL = r(min)
+    local maxL = r(max)
 
-		replace n_fish=round(n_fish)
-		expand n_fish
-		drop if n_fish==0
-		gammafit length
-		local alpha=e(alpha)
-		local beta=e(beta)
+    * --------
+    * (A) Estimate gamma parameters robustly (MOM with freq weights)
+    * --------
+    quietly summarize length [fw=n_fish], meanonly
+    local mu = r(mean)
+    local Nw = r(sum_w)
 
-		gen gammafit=rgamma(`alpha', `beta')
-		replace gammafit=round(gammafit)
+    * Weighted variance: Var = E[x^2] - (E[x])^2 using the same freq weights
+    gen double length2 = length^2
+    quietly summarize length2 [fw=n_fish], meanonly
+    local ex2 = r(mean)
+    local v   = `ex2' - (`mu'^2)
 
-		gen nfish=1
+    * Guard: if variance is 0 or numerically tiny, make it a near-degenerate gamma
+    if (`v'<=1e-10 | missing(`v') | missing(`mu') | `mu'<=0) {
+        * Put essentially all mass at mu by using huge alpha
+        local alpha = 1e6
+        local beta  = `mu'/`alpha'
+    }
+    else {
+        local alpha = (`mu'^2)/`v'
+        local beta  = `v'/`mu'
+    }
 
-		*restrict catch to within range of observed values
-		keep if gammafit>=`minL' & gammafit<=`maxL'
+    * --------
+    * (B) Simulate a truncated gamma sample via rejection sampling
+    * --------
+    local ndraw = `tot_n_fish'   // sample size for the simulated distribution
+    clear
+    set obs `ndraw'
 
-		collapse (sum) nfish, by(gammafit)
-		egen sumnfish=sum(nfish)
-		gen fitted_prob=nfish/sumnfish
-		gen domain="`r'"
+    * draw
+    gen double gammafit = rgamma(`alpha', `beta')
+    replace gammafit = round(gammafit)
 
-		tempfile fitted_sizes`r'
-		save `fitted_sizes`r'', replace
-		global fitted_sizes "$fitted_sizes "`fitted_sizes`r''" " 
-	}		
+    * truncate to observed range
+    keep if gammafit>=`minL' & gammafit<=`maxL'
+
+    * If rejection killed everything, try again with more draws (once)
+    if _N==0 {
+        clear
+        set obs `=5*`ndraw''
+        gen double gammafit = rgamma(`alpha', `beta')
+        replace gammafit = round(gammafit)
+        keep if gammafit>=`minL' & gammafit<=`maxL'
+        if _N==0 continue
+    }
+
+    gen nfish = 1
+    collapse (sum) nfish, by(gammafit)
+    egen sumnfish = total(nfish)
+    gen double fitted_prob = nfish/sumnfish
+    gen domain = "`r'"
+
+    tempfile fitted_sizes_`=_N'   
+    save `fitted_sizes_`=_N'', replace
+    global fitted_sizes "$fitted_sizes `fitted_sizes_`=_N''"
+}
+
 clear
 dsconcat $fitted_sizes
-rename gammafit fitted_length		   
+rename gammafit fitted_length
 
 merge 1:1 fitted_length domain using `observed_prob'
 sort domain fitted_length 
@@ -472,14 +506,15 @@ drop _merge domain1 domain2 domain3
 /*
 * Graphs of the fitted observed/fitted probabilities
 * Create a local macro for unique draws 
-levelsof draw if draw < 20, local(draws)
+
+levelsof draw if draw < 2, local(draws)
 
 * Initialize an empty plot command
 local plots
 
 * Build up one line per draw
 foreach d of local draws {
-    local plots `plots' (line fitted_prob fitted_length if draw==`d' & species=="hadd" & season=="closed", ///
+    local plots `plots' (line fitted_prob fitted_length if draw==`d' & species=="hadd" & season=="summer", ///
         lcolor(gs10) lwidth(thin) lpattern(solid))
 }
 
@@ -490,8 +525,9 @@ twoway `plots', ///
     ylabel(, labsize(small)) ///
     title("Fitted catch-at-length probabilities by length (Haddock, closed season)", size(medium)) ///
     ytitle("Probability", size(medium)) xtitle("Length (cm)", size(medium)) xlab(#40)
+
 */
-	
+drop if fitted_prob==0
 keep fitted_length fitted_prob draw season species observed_prob
 order draw season species fitted_length fitted_prob observed_prob	
 rename fitted_length length 
