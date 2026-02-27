@@ -303,6 +303,7 @@ egen nal2=sum(NaL_from_smooth_trawl), by(domain2 length2)
 
 gen tab2=1 if cal2>nal2 & cal2!=0
 egen sumtab2=sum(tab2), by(domain2)
+
 drop if cal==0
 gen cal_proportion=cal/cal2
 
@@ -431,6 +432,7 @@ replace NaL_from_smooth_trawl=NaL_from_smooth_trawl*1000
 
 merge 1:1 species season length2 draw using `ql', keep(3) nogen 
 
+
 sort species season draw length 
 order species season draw length 
 
@@ -443,12 +445,15 @@ tostring draw, gen(draw2)
 gen domain2=season+"_"+species+"_"+draw2	
 	
 merge 1:m domain2 length2 using `cal_proportion'
+
 sort draw species season length
-browse
+*browse
 replace cal_2026=cal_2026*cal_proportion
 drop if cal_2026==. | cal_2026==0
 	
-keep draw season species length cal_* *replicate
+
+
+keep draw season species length cal_* *replicate naa*
 egen sum_cal=sum(cal_2026), by(draw season species)
 gen fitted_prob=cal_2026/sum_cal
 drop sum	
@@ -458,21 +463,96 @@ gen fitted_prob_2025=cal_2025/sum_cal
 drop sum	
 
 
+rename fitted_prob fitted_prob_2026
 
-* Plot catch-at-length probability distributions 2025 versus 2026
-* 5cm length bins 
 preserve
-drop fitted_prob_2025
+drop fitted_prob_2025 naa_2025 
+rename fitted_prob_2026 fitted_prob
+rename naa_2026 nal
 gen year=2026
 tempfile base
 save `base'
 restore
 
-drop fitted_prob
+drop fitted_prob_2026 naa_2026
 rename  fitted_prob_2025 fitted_prob
+rename  naa_2025 nal
+
 gen year=2025
 append using `base'
 
+
+* Graphs of the fitted observed/fitted probabilities
+* Create a local macro for unique draws 
+/*
+levelsof draw , local(draws)
+
+* Initialize an empty plot command
+local plots
+
+* Build up one line per draw
+foreach d of local draws {
+    local plots `plots' (line fitted_prob_2026 length if draw==`d' & species=="hadd" & season=="winter", ///
+        lcolor(gs10) lwidth(thin) lpattern(solid))
+}
+
+* Draw combined graph
+twoway `plots', ///
+    legend(off) ///
+    xlabel(, labsize(small)) ///
+    ylabel(, labsize(small)) ///
+    title("Fitted catch-at-length probabilities by length (Haddock, closed season)", size(medium)) ///
+    ytitle("Probability", size(medium)) xtitle("Length (cm)", size(medium)) xlab(#40)
+
+*/
+
+/*
+* Plot catch-at-length probability distributions 2025 versus 2026
+* 5cm length bins 
+
+
+
+
+
+gen cod_legal=1 if species=="cod" & length>=58.42
+gen hadd_legal=1 if species=="hadd" & length>=45.72
+
+egen sumproplegal_cod=sum(fitted_prob), by(year  species season draw cod_legal)
+egen sumproplegal_hadd=sum(fitted_prob), by(year  species season draw hadd_legal)
+
+su sumproplegal_cod if year==2025 & species=="cod" & length>=58.42 & season=="summer"
+return list
+local cod2025_sum=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2026 & species=="cod" & length>=58.42 & season=="summer"
+return list
+local cod2026_sum=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2025 & species=="cod" & length>=58.42 & season=="winter"
+return list
+local cod2025_win=round(`r(mean)', .01)
+
+su sumproplegal_cod if year==2026 & species=="cod" & length>=58.42 & season=="winter"
+return list
+local cod2026_win=round(`r(mean)', .01)
+
+
+
+su sumproplegal_hadd if year==2025 & species=="hadd" & length>=45.72 & season=="summer"
+return list
+local hadd2025_sum=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2026 & species=="hadd" & length>=45.72 & season=="summer"
+return list
+local hadd2026_sum=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2025 & species=="hadd" & length>=45.72 & season=="winter"
+return list
+local hadd2025_win=round(`r(mean)', .01)
+
+su sumproplegal_hadd if year==2026 & species=="hadd" & length>=45.72 & season=="winter"
+return list
+local hadd2026_win=round(`r(mean)', .01)
 
 gen length5_lo = floor(length/5)*5
 gen length5_hi = length5_lo + 4
@@ -480,30 +560,67 @@ gen length5_hi = length5_lo + 4
 * String label: "20-24", "25-29", etc.
 gen str20 length5_bin = string(length5_lo) + "-" + string(length5_hi)
 label var length5_bin "Length bin (cm)"
+collapse (sum)	 fitted_prob*, by(species season length5_bin year draw)
+collapse (mean)	 fitted_prob*, by(species season length5_bin year )
 
-levelsof species, local(splist)
-levelsof season,  local(seaslist)
+encode len, gen(length2)
 
-foreach sp of local splist {
-    foreach se of local seaslist {
+*haddock min size 18 inch = 45.72cm
+*cod min size 23 inch = 58.42cm
 
-        graph box fitted_prob if species=="`sp'" & season=="`se'", ///
-            over(length5_bin, sort(length5_lo)) ///
-            by(year, col(1) ///
-                title("Catch-at-length probabilities: `sp', `se'") ///
-                note("Boxplots of replicate probabilities by 5-cm length bin")) ///
-            ytitle("Probability") ///
-            name(box_`sp'_`se', replace)
+twoway(scatter fitted_prob length2 if species =="cod" & season=="summer" & year==2025, connect(direct)) ///
+			(scatter fitted_prob length2 if species =="cod" & season=="summer" & year==2026, connect(direct) ///
+    title("cod proportions catch at length May - Aug. (cm)", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `cod2025_sum' (2025), `cod2026_sum' (2026)", size(small) yoffset(-3)) ///
+	name(cod_sum, replace))
 
-        graph export "$figure_cd/CAL_`sp'_`se'_byyear.png", replace
-    }
-}
+twoway(scatter fitted_prob length2 if species =="cod" & season=="winter" & year==2025,  connect(direct)) ///
+			(scatter fitted_prob length2 if species =="cod" & season=="winter" & year==2026, connect(direct) ///
+    title("cod proportions catch at length (cm) Sept. - Apr", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `cod2025_win' (2025), `cod2026_win' (2026)", size(small) yoffset(-3)) ///
+	name(cod_win, replace))
 
-drop length5_lo length5_hi length5_bin	
+twoway(scatter fitted_prob length2 if species =="hadd" & season=="summer" & year==2025, connect(direct)) ///
+			(scatter fitted_prob length2 if species =="hadd" & season=="summer" & year==2026, connect(direct) ///
+    title("haddock proportions catch at length May - Aug. (cm)", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of cod at or above 23 inches:  `hadd2025_sum' (2025), `hadd2026_sum' (2026)", size(small) yoffset(-3)) ///
+	name(hadd_sum, replace))
+	
+twoway(scatter fitted_prob length2 if species =="hadd" & season=="winter" & year==2025, connect(direct)) ///
+			(scatter fitted_prob length2 if species =="hadd" & season=="winter" & year==2026, connect(direct) ///
+    title("haddock proportions catch at length (cm) Sept. - Apr", size(medium)) ///
+	xlabel(#10, valuelabel labsize(small)) ///
+	xtitle("") ///
+	ytitle(Proportion of fish that are length-{it:l}) ///
+    ylab(#10, labsize(small)) ////
+    legend(order(1 "2025" 2 "2026") position(3) cols(1)) ///
+	caption("Proportion of haddock at or above 23 inches:  `hadd2025_win' (2025), `hadd2026_win' (2026)", size(small) yoffset(-3)) ///
+	name(hadd_win, replace))
+	
+*graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
+*graph export "$figure_cd/prop_nal_cod_by_year.png", as(png) replace
+restore
+*/
 drop cal*
 keep if year==2026
 egen replicate=rowtotal(hadd_replicate - cod_replicate)
 drop hadd_replicate cod_replicate
 drop year 
+drop nal
 export delimited using "$input_data_cd/projected_catch_at_length.csv", replace 
 

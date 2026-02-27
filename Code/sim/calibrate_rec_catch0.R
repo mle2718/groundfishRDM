@@ -40,13 +40,13 @@ for (s in season_draw) {
         dplyr::left_join(dtripz, by=c("mode", "date"))
 
       angler_dems<-catch_data %>%
-        dplyr::select(date, mode, tripid, total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost) %>%
+        dplyr::select(date, mode, tripid, total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost, starts_with("beta")) %>%
         dplyr::filter(mode==md)
 
       angler_dems<-dplyr::distinct(angler_dems)
 
       catch_data<-catch_data %>%
-        dplyr::select(-total_trips_12, -fish_pref_more, -educ1, -educ2, -educ3, -own_boat, -cost, -age, -day, -dtrip)
+        dplyr::select(-total_trips_12, -fish_pref_more, -educ1, -educ2, -educ3, -own_boat, -cost, -age, -day, -dtrip, starts_with("beta"))
 
       cod_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE) %>%
         dplyr::filter(species=="cod", draw==i, season==s) %>%
@@ -226,31 +226,8 @@ for (s in season_draw) {
         dplyr::mutate(tot_hadd_catch = tot_keep_hadd_new + tot_rel_hadd_new,
                       tot_cod_catch = tot_keep_cod_new + tot_rel_cod_new)
 
-      parameters <- trip_data %>%
-        dplyr::select(date, mode, tripid)
-
-      parameters <- dplyr::distinct(parameters)
-
-      # utility params
-      parameters<-  parameters %>%
-        #dplyr::arrange(date, mode, tripid) %>%
-        dplyr::mutate(beta_sqrt_cod_keep= rnorm(nrow(parameters), mean = 1.212, sd = .466),
-                      beta_sqrt_cod_release = rnorm(nrow(parameters), mean = 0.127 , sd = 0) ,
-                      beta_sqrt_hadd_keep = rnorm(nrow(parameters), mean = 0.842, sd = 0.940),
-                      beta_sqrt_hadd_release = rnorm(nrow(parameters), mean = 0.261 , sd = 0.370),
-                      beta_sqrt_cod_hadd_keep = rnorm(nrow(parameters), mean=-0.199  , sd = 0.503 ),
-                      beta_opt_out = rnorm(nrow(parameters), mean =0 , sd = 3.463),
-                      beta_opt_out_trips12 = rnorm(nrow(parameters), mean =0.020 , sd = 0),
-                      beta_opt_out_fish_pref = rnorm(nrow(parameters), mean =-0.912 , sd = 0),
-                      beta_opt_out_educ2 = rnorm(nrow(parameters), mean =-1.944 , sd = 0),
-                      beta_opt_out_educ3 = rnorm(nrow(parameters), mean =-2.622 , sd = 0),
-                      beta_opt_out_ownboat = rnorm(nrow(parameters), mean =0.977 , sd = 0),
-                      beta_cost = -0.011)
-
-
+      # merge the trip data with angler demographics
       trip_data<- trip_data %>%
-        dplyr::left_join(parameters, by = c("date", "mode", "tripid")) %>%
-        dplyr::arrange(date, mode, tripid, tripid, catch_draw) %>%
         dplyr::left_join(angler_dems, by = c("date", "mode", "tripid"))
 
       # base_outcomes_s_i data sets will retain trip outcomes from the baseline scenario.

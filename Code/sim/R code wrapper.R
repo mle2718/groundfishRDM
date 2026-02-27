@@ -56,7 +56,7 @@ final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscella
 #options("RStata.StataVersion" = 17)
 
 #Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-100
+n_simulations<-201
 
 n_draws<-50 #Number of simulated trips per day
 

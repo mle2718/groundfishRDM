@@ -4,7 +4,7 @@
 #outcomes until simulated harvest in numbers of fish is within 5% or 500 fish of the MRIP estimate.
 
 #Set number of original draws. We use 125 for the final run. Choose a lot fewer for test runs
-n_simulations<-100
+n_simulations<-201
 
 n_draws<-50 #Number of simulated trips per day
 
@@ -24,6 +24,7 @@ baseline_output0<-fst::read_fst(file.path(iterative_input_data_cd, "calibration_
 mode_draw <- c("pr", "fh")
 draws <- 1:n_simulations
 season_draw <- c("summer", "winter")
+
 
 # s<-"open"
 # md<-"pr"
@@ -120,14 +121,14 @@ for (s in season_draw) {
         if(cod_achieved!=1){
           if(rel_to_keep_cod==1){
             if(harv_diff_cod>0){
-              p_rel_to_keep_cod<-p_rel_to_keep_cod - p_rel_to_keep_cod*.15
+              p_rel_to_keep_cod<-p_rel_to_keep_cod - p_rel_to_keep_cod*.19
             }
 
             # If baseline cod harvest is less than MRIP, and in the new run
             # cod harvest is still less than MRIP, increase p_rel_to_keep
 
             if(harv_diff_cod<0) {
-              p_rel_to_keep_cod<-p_rel_to_keep_cod + p_rel_to_keep_cod*.16
+              p_rel_to_keep_cod<-p_rel_to_keep_cod + p_rel_to_keep_cod*.21
             }
           }
 
@@ -137,12 +138,12 @@ for (s in season_draw) {
 
           if(keep_to_rel_cod==1 & all_keep_to_rel_cod!=1) {
             if(harv_diff_cod>0){
-              p_keep_to_rel_cod<-p_keep_to_rel_cod + p_keep_to_rel_cod*.16
+              p_keep_to_rel_cod<-p_keep_to_rel_cod + p_keep_to_rel_cod*.21
             }
             # If in the baseline run, harvest is less than MRIP, and in the new run
             # harvest is still less than MRIP, increase p_keep_to_rel
             if(harv_diff_cod<0){
-              p_keep_to_rel_cod<-p_keep_to_rel_cod - p_keep_to_rel_cod*.15
+              p_keep_to_rel_cod<-p_keep_to_rel_cod - p_keep_to_rel_cod*.19
             }
           }
 
@@ -157,14 +158,14 @@ for (s in season_draw) {
         if(hadd_achieved!=1){
           if(rel_to_keep_hadd==1){
             if(harv_diff_hadd>0){
-              p_rel_to_keep_hadd<-p_rel_to_keep_hadd - p_rel_to_keep_hadd*.15
+              p_rel_to_keep_hadd<-p_rel_to_keep_hadd - p_rel_to_keep_hadd*.19
             }
 
             # If baseline hadd harvest is less than MRIP, and in the new run
             # hadd harvest is still less than MRIP,increase p_rel_to_keep
 
             if(harv_diff_hadd<0) {
-              p_rel_to_keep_hadd<-p_rel_to_keep_hadd + p_rel_to_keep_hadd*.16
+              p_rel_to_keep_hadd<-p_rel_to_keep_hadd + p_rel_to_keep_hadd*.21
             }
           }
 
@@ -174,14 +175,14 @@ for (s in season_draw) {
 
           if(keep_to_rel_hadd==1 & all_keep_to_rel_hadd!=1) {
             if(harv_diff_hadd>0){
-              p_keep_to_rel_hadd<-p_keep_to_rel_hadd + p_keep_to_rel_hadd*.16
+              p_keep_to_rel_hadd<-p_keep_to_rel_hadd + p_keep_to_rel_hadd*.21
             }
 
             # If in the baseline run, harvest is less than MRIP, and in the new run
             # harvest is still less than MRIP,increase p_keep_to_rel
 
             if(harv_diff_hadd<0){
-              p_keep_to_rel_hadd<-p_keep_to_rel_hadd - p_keep_to_rel_hadd*.15
+              p_keep_to_rel_hadd<-p_keep_to_rel_hadd - p_keep_to_rel_hadd*.19
             }
           }
 
@@ -261,13 +262,30 @@ for (s in season_draw) {
                       prop_sub_hadd_kept=prop_sub_hadd_kept,
                       prop_legal_hadd_rel=prop_legal_hadd_rel)
 
+      fst::write_fst(calibrated[[k]], file.path(iterative_input_data_cd, paste0("calib_metrics_", s,"_", md, "_", i, ".fst")))
 
     }
   }
 }
 
 
-calibrated_combined <- do.call(rbind, calibrated)
+file_list<-list()
+mode_draw <- c("pr", "fh")
+season_draw <- c("summer", "winter")
+k<-1
+for(i in 1:n_simulations){
+  for (md in mode_draw) {
+    for(s in season_draw) {
+
+      calib_metrics<-fst::read_fst(file.path(iterative_input_data_cd, paste0("calib_metrics_", s,"_", md, "_", i, ".fst")))
+      file_list[[k]]<-calib_metrics
+      k<-k+1
+    }
+  }
+}
+
+calibrated_combined <- do.call(rbind, file_list)
+
 fst::write_fst(calibrated_combined, file.path(iterative_input_data_cd,"calibrated_model_stats_raw.fst"))
 
 

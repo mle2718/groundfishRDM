@@ -11,7 +11,8 @@ set seed $seed
 	* Do you own a boat? - I get this from the choice experiment sample
 	
 
-* Set up the population education information: 
+* random draws of edication levels 
+* set up the population education information: 
 local p1  = 5.1869    // percent in education level 1
 local se1 = 0.7127    // SE of percent in education level 1
 
@@ -30,10 +31,10 @@ local se5 = 1.3107
 foreach i in 1 2 3 4 5 {
     scalar p`i'  = `p`i''/100
     scalar v`i'  = (`se`i''/100)^2   // variance of proportion
-    scalar a0`i' = p`i'*(1-p`i')/v`i' - 1   // α0 candidate from var(p_i)=p_i(1-p_i)/(α0+1)
+    scalar a0`i' = p`i'*(1-p`i')/v`i' - 1   // alpha0 candidate from var(p_i)=p_i(1-p_i)/(α0+1)
 }
 
-* Inverse-variance–weighted estimate of α0 (ignore any nonpositive candidates)
+* Inverse-variance–weighted estimate of alpha0 (ignore any nonpositive candidates)
 scalar w1 = 1/v1
 scalar w2 = 1/v2
 scalar w3 = 1/v3
@@ -41,12 +42,12 @@ scalar w4 = 1/v4
 scalar w5 = 1/v5
 scalar a0 = (w1*a01 + w2*a02 + w3*a03 + w4*a04 + w5*a05) / (w1 + w2 + w3 + w4 + w5)
 
-* 5-category Dirichlet α's
+* 5-category Dirichlet alpha's
 forvalues i=1/5 {
     scalar a`i' = p`i' * a0
 }
 
-* Group to your 3 bins: (1–2), (3–4), (5)
+* Group to 3 bins: (1-2), (3-4), (5)
 scalar a12 = a1 + a2
 scalar a34 = a3 + a4
 scalar a5g = a5     // rename to avoid clash with a5 scalar
@@ -107,7 +108,5 @@ forvalues i = 1/$ndraws {
 
 
 			
-	
-u "$input_data_cd\choice_exp_angler_dems.dta", clear 
 	
 
