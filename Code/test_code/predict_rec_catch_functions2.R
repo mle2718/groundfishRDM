@@ -52,13 +52,24 @@ directed_trips_draw[, `:=`(
 
 # pr mode → cod fully closed (already set by defaults)
 # fh mode → open September and October
+# directed_trips_draw[
+#   mode == "fh" & lubridate::month(date) %in% c(9, 10),
+#   `:=`(
+#     cod_bag_y2_new = 1L,                     # change if needed
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+
+# pr mode → open September and October
+# fh mode → open September and October
 directed_trips_draw[
-  mode == "fh" & lubridate::month(date) %in% c(9, 10),
+  lubridate::month(date) %in% c(9, 10),
   `:=`(
     cod_bag_y2_new = 1L,                     # change if needed
     cod_min_y2_new = inch_to_cm(23)
   )
 ]
+
 # -----------------------------
 # HADDOCK: open 5/1–2/28 and 4/1–4/30
 # bag: 5
@@ -105,8 +116,18 @@ get_lowest_min_size_draw[, `:=`(
 # pr mode → cod fully closed (already set by defaults)
 # fh mode → open September and October
 
+# get_lowest_min_size_draw[
+#   mode == "fh" & lubridate::month(date) %in% c(9, 10),
+#   `:=`(
+#     cod_bag_y2_new = 1L,                     # change if needed
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+
+# pr mode → open September and October
+# fh mode → open September and October
 get_lowest_min_size_draw[
-  mode == "fh" & lubridate::month(date) %in% c(9, 10),
+  lubridate::month(date) %in% c(9, 10),
   `:=`(
     cod_bag_y2_new = 1L,                     # change if needed
     cod_min_y2_new = inch_to_cm(23)
