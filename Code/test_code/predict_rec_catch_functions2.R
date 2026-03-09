@@ -380,19 +380,36 @@ trip_data[, `:=`(
 #  utility
 # Compute vA and v0
 trip_data[, `:=`(
-  vA = beta_sqrt_cod_keep*sqrt_keep_cod_new +
+
+
+  vA_trip = beta_sqrt_cod_keep*sqrt_keep_cod_new +
     beta_sqrt_cod_release*sqrt_rel_cod_new +
     beta_sqrt_hadd_keep*sqrt_keep_hadd_new +
     beta_sqrt_hadd_release*sqrt_rel_hadd_new +
     beta_sqrt_cod_hadd_keep*(sqrt_keep_cod_new*sqrt_keep_hadd_new) +
     beta_cost*cost,
 
-  v0 = beta_sqrt_cod_keep*sqrt_keep_cod_base +
+  vA_optout = beta_opt_out +
+    beta_opt_out_trips12 * total_trips_12 +
+    beta_opt_out_fish_pref * fish_pref_more +
+    beta_opt_out_educ2 * educ2 +
+    beta_opt_out_educ3 * educ3 +
+    beta_opt_out_ownboat * own_boat,
+
+  v0_trip = beta_sqrt_cod_keep*sqrt_keep_cod_base +
     beta_sqrt_cod_release*sqrt_rel_cod_base +
     beta_sqrt_hadd_keep*sqrt_keep_hadd_base +
     beta_sqrt_hadd_release*sqrt_rel_hadd_base +
     beta_sqrt_cod_hadd_keep*(sqrt_keep_cod_base*sqrt_keep_hadd_base) +
-    beta_cost*cost
+    beta_cost*cost,
+
+  v0_optout = beta_opt_out +
+    beta_opt_out_trips12 * total_trips_12 +
+    beta_opt_out_fish_pref * fish_pref_more +
+    beta_opt_out_educ2 * educ2 +
+    beta_opt_out_educ3 * educ3 +
+    beta_opt_out_ownboat * own_boat
+
 )]
 
 
@@ -401,67 +418,47 @@ trip_data[, c("sqrt_keep_cod_new", "sqrt_rel_cod_new", "sqrt_keep_hadd_new", "sq
               "sqrt_keep_cod_base", "sqrt_rel_cod_base", "sqrt_keep_hadd_base", "sqrt_rel_hadd_base") := NULL]
 
 
-# Expand to 2 alternatives per choice situation
 mean_trip_data <- data.table::as.data.table(trip_data)
-mean_trip_data[, group_index := .GRP, by = .(date_parsed, mode, catch_draw, tripid)]
-mean_trip_data <- mean_trip_data[rep(seq_len(.N), each = 2L)]
-mean_trip_data[, alt := rep(1:2, times = .N / 2L)]
-mean_trip_data[, opt_out := as.integer(alt == 2L)]
 
 
-# Calculate the expected utility of alts 2 parameters of the utility function,
-# put the two values in the same column, exponentiate, and calculate their sum (vA_col_sum)
+# remove big cols
+drop_cols <- c("beta_opt_out","beta_opt_out_educ2", "beta_opt_out_educ3",
+               "beta_opt_out_fish_pref", "beta_opt_out_ownboat", "beta_opt_out_trips12" ,
+               "beta_sqrt_cod_hadd_keep", "beta_sqrt_cod_keep", "beta_sqrt_cod_release",
+               "beta_sqrt_hadd_keep", "beta_sqrt_hadd_release",
+               "opt_out", "cost","total_trips_12", "educ1","educ2","educ3",
+               "fish_pref_more","own_boat", "domain2")
 
-# Filter only alt == 2 once, and calculate vA and v0
-mean_trip_data[alt == 2, c("vA", "v0") := .(
-  beta_opt_out * opt_out +
-    beta_opt_out_trips12 * (total_trips_12 * opt_out) +
-    beta_opt_out_fish_pref * (fish_pref_more * opt_out)+
-    beta_opt_out_educ2 * (educ2 * opt_out)+
-    beta_opt_out_educ3 * (educ3 * opt_out)+
-    beta_opt_out_ownboat * (own_boat * opt_out)
+drop_cols <- intersect(drop_cols, names(mean_trip_data))
+if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
+
+
+# average across catch_draw
+keep_vars <- setdiff(names(mean_trip_data), c("date_parsed","mode","tripid"))
+mean_trip_data <- mean_trip_data[, lapply(.SD, mean),
+                                 by = .(date_parsed, mode,tripid),
+                                 .SDcols = keep_vars]
+
+mean_trip_data[, `:=`(
+  prob0 = exp(v0_trip) / (exp(v0_trip) + exp(v0_optout)),
+  probA = exp(vA_trip) / (exp(vA_trip) + exp(vA_optout)),
+  log_sum_alt = log((exp(vA_trip) + exp(vA_optout))),
+  log_sum_base = log((exp(v0_trip) + exp(v0_optout)))
 )]
 
-# Pre-compute exponential terms
-mean_trip_data[, `:=`(exp_vA = exp(vA), exp_v0 = exp(v0))]
-
-# Group by group_index and calculate probabilities and log-sums
-mean_trip_data[, `:=`(
-  probA = exp_vA / sum(exp_vA),
-  prob0 = exp_v0 / sum(exp_v0),
-  log_sum_alt = log(sum(exp_vA)),
-  log_sum_base = log(sum(exp_v0))
-), by = group_index]
-
-# Calculate consumer surplus
-# mean_trip_data[, `:=`(
-#   CS_base = log_sum_base / -beta_cost,
-#   CS_alt = log_sum_alt / -beta_cost
-# )]
-
-# Calculate change consumer surplus
+#CS
 # Here I take the negative of the CS formula for easier interpretability of model output
 mean_trip_data[, `:=`(
   CV = -(1/beta_cost)*(log_sum_alt - log_sum_base)
 )]
 
+
 # Get rid of things we don't need.
 mean_trip_data <- mean_trip_data %>%
-  dplyr::filter(alt==1) %>%
-  dplyr::select(-matches("beta")) %>%
-  dplyr::select(-"alt", -"opt_out", -"vA" , -"v0",-"exp_v0", -"exp_vA",
-                -"cost", -"total_trips_12", -"catch_draw", -"group_index",
-                -"log_sum_alt", -"log_sum_base",  -"educ1", -"educ2", -"educ3",
-                -"fish_pref_more", -"own_boat",
-                -"tot_keep_cod_base",  -"tot_rel_cod_base",
-                -"tot_keep_hadd_base",  -"tot_rel_hadd_base")
+  dplyr::select(-"vA_trip" ,-"vA_optout", -"v0_trip" ,-"v0_optout", -"catch_draw",
+                -"log_sum_base",-"log_sum_alt", -"beta_cost") %>%
+  dplyr::arrange(date_parsed, mode, tripid)
 
-all_vars<-c()
-all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c("date_parsed","mode", "tripid")]
-
-# average outcomes across draws
-mean_trip_data<-mean_trip_data  %>%
-  .[,lapply(.SD, mean), by = c("date_parsed","mode", "tripid"), .SDcols = all_vars]
 
 # multiply the average trip probability in the new scenario (probA) by each catch variable to get probability-weighted catch
 list_names <- c("tot_keep_cod_new",   "tot_rel_cod_new",  "tot_cat_cod_new",
