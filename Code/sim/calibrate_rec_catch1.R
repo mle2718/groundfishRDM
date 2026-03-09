@@ -496,71 +496,58 @@ baseline_outcomes<- trip_data %>%
                 tot_rel_hadd_base = tot_rel_hadd_new,
                 tot_rel_cod_base = tot_rel_cod_new)
 
-#write_rds(baseline_outcomes, file.path(iterative_input_data_cd, paste0("base_outcomes_", s,"_", md, "_", i,".rds")))
 fst::write_fst(baseline_outcomes, file.path(iterative_input_data_cd, paste0("base_outcomes_", s,"_", md, "_", i, ".fst")))
 
-#  utility
-trip_data <-trip_data %>%
+#  compute utility
+mean_trip_data <-trip_data %>%
   dplyr::mutate(
-    vA = beta_sqrt_cod_keep*sqrt(tot_keep_cod_new) +
+    vA_trip = beta_sqrt_cod_keep*sqrt(tot_keep_cod_new) +
       beta_sqrt_cod_release*sqrt(tot_rel_cod_new) +
       beta_sqrt_hadd_keep*sqrt(tot_keep_hadd_new) +
       beta_sqrt_hadd_release*sqrt(tot_rel_hadd_new) +
       beta_sqrt_cod_hadd_keep*(sqrt(tot_keep_cod_new)*sqrt(tot_keep_hadd_new)) +
-      beta_cost*cost)
+      beta_cost*cost,
+
+    vA_optout = beta_opt_out +
+      beta_opt_out_trips12 * total_trips_12 +
+      beta_opt_out_fish_pref * fish_pref_more +
+      beta_opt_out_educ2 * educ2 +
+      beta_opt_out_educ3 * educ3 +
+      beta_opt_out_ownboat * own_boat)
 
 
-mean_trip_data <- trip_data %>% data.table::data.table() %>%
-  .[, group_index := .GRP, by = .(date, mode, catch_draw, tripid)]
-
-# expand the data to create two alternatives, representing the alternatives available in choice survey
-mean_trip_data <- mean_trip_data %>%
-  dplyr::mutate(n_alt = rep(2,nrow(.))) %>%
-  tidyr::uncount(n_alt) %>%
-  dplyr::mutate(alt = rep(1:2,nrow(.)/2),
-                opt_out = ifelse(alt == 2, 1, 0))
-
-# calculate the expected utility of alts 2 parameters of the utility function,
-# put the two values in the same column, exponentiate, and calculate their sum (vA_col_sum)
+#Calculate the expected utility of alts 2 parameters of the utility function,
+#put the two values in the same column, exponentiate, and calculate their sum (vA_col_sum)
 
 setDT(mean_trip_data)
 
-# filter only alt == 2 once, and calculate vA
-mean_trip_data[alt == 2, "vA" := .(
-  beta_opt_out * opt_out +
-    beta_opt_out_trips12 * (total_trips_12 * opt_out) +
-    beta_opt_out_fish_pref * (fish_pref_more * opt_out)+
-    beta_opt_out_educ2 * (educ2 * opt_out)+
-    beta_opt_out_educ3 * (educ3 * opt_out)+
-    beta_opt_out_ownboat * (own_boat * opt_out)
-)]
 
-# pre-compute exponential terms
-mean_trip_data[, `:=`(exp_vA = exp(vA))]
+# remove big cols
+drop_cols <- c("beta_opt_out","beta_opt_out_educ2", "beta_opt_out_educ3",
+               "beta_opt_out_fish_pref", "beta_opt_out_ownboat", "beta_opt_out_trips12" ,
+               "beta_sqrt_cod_hadd_keep", "beta_sqrt_cod_keep", "beta_sqrt_cod_release",
+               "beta_sqrt_hadd_keep", "beta_sqrt_hadd_release", "beta_cost",
+               "opt_out", "cost","total_trips_12", "educ1","educ2","educ3",
+               "fish_pref_more","own_boat", "domain2")
 
-# group by group_index and calculate probabilities and log-sums
-mean_trip_data[, `:=`(
-  prob0 = exp_vA / sum(exp_vA)
-), by = group_index]
+drop_cols <- intersect(drop_cols, names(mean_trip_data))
+if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
+
+# average across catch_draw
+keep_vars <- setdiff(names(mean_trip_data), c("date","mode","tripid"))
+mean_trip_data <- mean_trip_data[, lapply(.SD, mean),
+                                 by = .(date, mode,tripid),
+                                 .SDcols = keep_vars]
+
+# calculate probabilities
+mean_trip_data[, prob0 := exp(vA_trip) / (exp(vA_trip) + exp(vA_optout))]
 
 
-mean_trip_data<- subset(mean_trip_data, alt==1) %>%
-  dplyr::select(-domain2, -group_index, -exp_vA)
-
-# get rid of things we don't need.
+# Get rid of things we don't need.
 mean_trip_data <- mean_trip_data %>%
-  dplyr::filter(alt==1) %>%
-  dplyr::select(-matches("beta")) %>%
-  dplyr::select(-"alt", -"opt_out", -"vA" ,-"cost", -"total_trips_12", -"catch_draw",
-                -"educ1", -"educ2", -"educ3", -"fish_pref_more", -"own_boat")
+  dplyr::select(-"vA_trip" ,-"vA_optout", -"catch_draw") %>%
+  dplyr::arrange(date, mode, tripid)
 
-all_vars<-c()
-all_vars <- names(mean_trip_data)[!names(mean_trip_data) %in% c("date","mode", "tripid")]
-all_vars
-
-# average outcomes across draws
-mean_trip_data<-mean_trip_data  %>% as.data.table() %>%
-  .[,lapply(.SD, mean), by = c("date","mode", "tripid"), .SDcols = all_vars]
 
 # multiply the average trip probability (probA) by each catch variable to get probability-weighted catch
 list_names <- c("tot_keep_cod_new","tot_rel_cod_new","tot_cod_catch",
@@ -571,8 +558,6 @@ mean_trip_data <- mean_trip_data %>%
   .[,as.vector(list_names) := lapply(.SD, function(x) x * prob0), .SDcols = list_names] %>%
   .[]
 
-
-# compute how many trips each simulated trip represents
 mean_trip_data<-mean_trip_data %>%
   left_join(dtripz, by = c("mode", "date"))
 
@@ -584,7 +569,7 @@ mean_trip_data <-mean_trip_data %>%
                 expand=sims/50, #number of trips per day,
                 n_choice_occasions=1)
 
-# expand trip outcomes
+# Expand outcomes
 list_names <- c("tot_keep_cod_new",   "tot_rel_cod_new",  "tot_cod_catch",
                 "tot_keep_hadd_new",  "tot_rel_hadd_new", "tot_hadd_catch",
                 "n_choice_occasions", "prob0" )
@@ -595,6 +580,10 @@ mean_trip_data <- mean_trip_data %>%
   data.table::as.data.table() %>%
   .[,as.vector(all_vars) := lapply(.SD, function(x) x * expand), .SDcols = all_vars] %>%
   .[]
+
+for (j in names(mean_trip_data)) {
+  attr(mean_trip_data[[j]], "label") <- NULL
+}
 
 aggregate_trip_data <- mean_trip_data %>%
   data.table::as.data.table() %>%
@@ -620,7 +609,6 @@ summed_results <- aggregate_trip_data %>%
 aggregate_trip_data<-aggregate_trip_data %>%
   dplyr::select(date, mode, n_choice_occasions, estimated_trips)
 
-# write_rds(aggregate_trip_data, file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s,"_", md, "_", i, ".rds")))
 fst::write_fst(aggregate_trip_data, file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s,"_", md, "_", i, ".fst")))
 
 # compare calibration output to MRIP by state-mode

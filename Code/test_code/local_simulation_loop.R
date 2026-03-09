@@ -102,7 +102,8 @@ predictions_all <- purrr::map_dfr(
 #write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_2_19.csv")))
 #write_csv(predictions_all, file.path(code_cd, paste0("SQalt_updated_2_19.csv")))
 #write_csv(predictions_all, file.path(code_cd, paste0("KLB8_updated_2_19.csv")))
-write_csv(predictions_all, file.path(code_cd, paste0("WRTIII5_updated_2_19.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("WRTIII5_updated_2_19.csv")))
+write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_hadd17_2_19.csv")))
 
 summary_predictions<-predictions_all %>%
   as.data.table() %>%

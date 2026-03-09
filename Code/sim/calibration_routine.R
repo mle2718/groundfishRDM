@@ -26,7 +26,7 @@ draws <- 1:n_simulations
 season_draw <- c("summer", "winter")
 
 
-# s<-"open"
+# s<-"summer"
 # md<-"pr"
 # i<-1
 
