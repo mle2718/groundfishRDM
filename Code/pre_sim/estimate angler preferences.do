@@ -10,6 +10,8 @@ mixlogit choice cost ///
 				nofish_age nofish_male nofish_total_days12 nofish_likely_to_fish nofish_fish_pref_more nofish_inc_med nofish_inc_high ///
 				nofish_educ_coll nofish_educ_grad nofish_own_boat if no_choice!=1, ///
 				group(gid) id(qtid) rand(codkpt codrel hadkpt hadrel cod_hadd_kpt nofish) nrep(250)			
+		
+				
 				
 *Final specification used for 2026 mgt. cycle
 mixlogit choice cost ///
@@ -46,6 +48,7 @@ mat iid_err=J(`K',1,0)
 		clear 
 		set obs 5000
 		
+		*original non-linear in catch spec
 		gen beta_cost=beta_draw[1,1]
 		gen beta_nofish_age=0
 		gen beta_nofish_male=0
@@ -64,8 +67,25 @@ mat iid_err=J(`K',1,0)
 		gen beta_cod_hadd_keep=rnormal(beta_draw[16,1], abs(beta_draw[22,1]))
 		gen beta_nofish=rnormal(0, abs(beta_draw[23,1]))
 		
-		su beta_cod_keep
-		return list
+		/*supplementary linear in catch spec
+		gen beta_cost=beta_draw[1,1]
+		gen beta_nofish_age=0
+		gen beta_nofish_male=0
+		gen beta_opt_out_trips12=beta_draw[4,1]
+		gen beta_nofish_likely=0
+		gen beta_nofish_fish_pref=beta_draw[6,1]
+		gen beta_nofish_inc_med=0
+		gen beta_nofish_inc_high=0
+		gen beta_nofish_educ_coll=beta_draw[9,1]
+		gen beta_nofish_educ_grad=beta_draw[10,1]
+		gen beta_nofish_own_boat=beta_draw[11,1]
+		gen beta_cod_keep=rnormal(beta_draw[12,1], abs(beta_draw[18,1]))
+		gen beta_cod_rel=rnormal(beta_draw[13,1], 0)
+		gen beta_hadd_keep=rnormal(beta_draw[14,1], abs(beta_draw[20,1]))
+		gen beta_hadd_rel=rnormal(beta_draw[15,1], abs(beta_draw[21,1]))
+		gen beta_cod_hadd_keep=rnormal(beta_draw[16,1], abs(beta_draw[22,1]))
+		gen beta_nofish=rnormal(0, abs(beta_draw[23,1]))*/
+		
 			
 	gen draw=`x'
 		
