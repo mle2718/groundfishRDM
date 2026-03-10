@@ -24,6 +24,7 @@ global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==202
 
 
 * This file computes predictions of harvest in weight in 2026 under acual status quo regulations (SQ) and proposed status quo regulations (SQ_alt)
+/*
 cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\test_code"
 import delimited using "cod_hadd_SQ_output_monthly_1_13.csv", clear
 gen source = "FY25 actual regulations"
@@ -34,14 +35,14 @@ import delimited using "cod_hadd_SQalt_output_monthly_1_13.csv", clear
 gen source = "FY25 proposed regulations"
 tempfile prop
 save `prop', replace
-
+*/
 import delimited using "SQ_updated_2_19.csv", clear
-gen source = "FY25 actual regulations - updated MRIP"
+gen source = "FY25 actual - updated MRIP"
 tempfile sq_updated
 save `sq_updated', replace
 
 import delimited using "SQalt_updated_2_19.csv", clear
-gen source = "FY25 proposed regulations - updated MRIP"
+gen source = "FY25 proposed - updated MRIP"
 tempfile prop_updated
 save `prop_updated', replace
 
@@ -50,10 +51,15 @@ gen source = "KLB8 (close September) - updated MRIP"
 tempfile KLB8_updated
 save `KLB8_updated', replace
 
-import delimited using "WRTIII5_updated_2_9.csv", clear
+import delimited using "WRTIII5_updated_2_19.csv", clear
 gen source = "WRTIII5 (close private) - updated MRIP"
 tempfile WRTIII5_updated
 save `WRTIII5_updated', replace
+
+import delimited using "SQ_updated_hadd17_2_19.csv", clear
+gen source = "FY25 actual cod; haddock 17 - updated MRIP"
+tempfile hadd17
+save `hadd17', replace
 
 preserve
 u `WRTIII5_updated', clear 
@@ -73,19 +79,53 @@ drop if mode=="all modes"
 restore
 
 
-append using `sq'
-append using `prop'
+*append using `sq'
+*append using `prop'
 append using `sq_updated'
 append using `prop_updated'
 append using `KLB8_updated'
+append using `WRTIII5_updated'
 
 
 format value* %12.02gc
 sort source metric species month mode draw
 keep if mode=="all modes"
+
+
 *keep if inlist(month, 9, 10)
 *drop if month==11
 collapse (sum) value, by(metric species draw source)
+replace value=value/2205 if strmatch(metric, "*weight*")==1
+replace value=value*-1 if metric=="CV" 	
+replace value=value/1000000 if metric=="CV" 	
+
+
+*incorporate reduced from estimates 
+*a) add 40 mt to open may
+expand 2 if metric=="removals_weight" & species=="cod" & inlist(source, "FY25 proposed", "FY25 proposed - updated MRIP"), gen(dup)
+replace source=source+"*" if dup==1
+replace value=value+40 if metric=="removals_weight" & species=="cod" & inlist(source, "FY25 proposed*", "FY25 proposed - updated MRIP*")
+drop dup
+
+* assess how our model predicts the impact of closing September on cod
+preserve 
+keep if metric=="removals_weight" & species=="cod"  & inlist(source, "FY25 actual regulations - updated MRIP") 
+drop source
+rename value value_actual 
+tempfile actual
+save `actual', replace
+restore
+
+preserve 
+keep if metric=="removals_weight" & species=="cod"  & inlist(source,"KLB8 (close September) - updated MRIP") 
+rename value value_close_sep 
+drop source
+merge 1:1 metric species draw using `actual', nogen 
+
+gen diff=value_actual -value_close_sep
+su diff //17.3 metric tons, very close to the reduced form estimate, so no adjustment
+restore
+
 
 * create a total catch statistic
 preserve
@@ -97,7 +137,6 @@ save `catch', replace
 restore
 append using `catch'
 
-replace value=value/2205 if strmatch(metric, "*weight*")==1
 collapse (sum) value, by(metric species  draw source)
 sort metric species source draw
 *keep if metric=="removals_weight"
@@ -108,6 +147,136 @@ FY2026 sub-ACLs:
 	GOM haddock – 1,146 mt
 	WGOM cod – 118 mt
 */
+
+
+/*
+keep if inlist(source, "FY25 actual regulations - updated MRIP", "FY25 proposed regulations - updated MRIP", "FY25 proposed regulations - updated MRIP*", ///
+"KLB8 (close September) - updated MRIP", "WRTIII5 (close private) - updated MRIP")
+*/
+
+keep if inlist(source, "FY25 actual - updated MRIP", "KLB8 (close September) - updated MRIP", "WRTIII5 (close private) - updated MRIP", "FY25 actual cod; haddock 17 - updated MRIP")
+
+*cod
+count if metric=="removals_weight" & species=="cod" & source=="FY25 actual - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="cod" & source=="FY25 actual - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+
+count if metric=="removals_weight" & species=="cod" & source=="WRTIII5 (close private) - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="cod" & source=="WRTIII5 (close private) - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+
+count if metric=="removals_weight" & species=="cod" & source=="KLB8 (close September) - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="cod" & source=="KLB8 (close September) - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+
+count if metric=="removals_weight" & species=="cod" & source=="FY25 actual cod; haddock 17 - updated MRIP" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="cod" & source=="FY25 actual cod; haddock 17 - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+count if metric=="removals_weight" & species=="cod" & source=="FY25 proposed - updated MRIP*" & value<=118
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="cod" & source=="FY25 proposed - updated MRIP*", detail 
+di "median value   " round(`r(p50)', .01)
+
+*haddock
+count if metric=="removals_weight" & species=="hadd" & source=="FY25 actual - updated MRIP" & value<=1146
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="hadd" & source=="FY25 actual - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+count if metric=="removals_weight" & species=="hadd" & source=="WRTIII5 (close private) - updated MRIP" & value<=1146
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="hadd" & source=="WRTIII5 (close private) - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+
+count if metric=="removals_weight" & species=="hadd" & source=="KLB8 (close September) - updated MRIP" & value<=1146
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="hadd" & source=="KLB8 (close September) - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+
+count if metric=="removals_weight" & species=="hadd" & source=="FY25 actual cod; haddock 17 - updated MRIP" &  value<=1146
+di "percent below ACL   " round((`r(N)'/201)*100, .01)
+
+su value if metric=="removals_weight" & species=="hadd" & source=="FY25 actual cod; haddock 17 - updated MRIP", detail 
+di "median value   " round(`r(p50)', .01)
+
+
+vioplot value if metric=="removals_weight" & species=="cod", over(source) yline(118) ///
+title("Projected cod removal weight (mt)", size(medium))  name(`d', replace) ///
+				yline(118,  lcolor(navy)   lpattern(dash)) ///
+				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
+				text(128 4.1 "cod ACL", place(e) size(vsmall)) ///
+			 xlab(1 "FY25 actual" ///
+			 		2 "FY25 actual cod, haddock 17" ///
+					3 "Close September" ///
+					4 "Close private", ///
+			 noticks labsize(vsmall) ) xtitle("") note("") ytitle("total removals (mt)", size(small)) ylab(,labsize(small))
+			 
+vioplot value if metric=="removals_weight" & species=="hadd", over(source) ///
+title("Projected haddock removal weight (mt)", size(medium))  name(`d', replace) ///
+				yline(1146,  lcolor(navy)   lpattern(dash)) ///
+				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
+				text(1200 3.1 "haddock ACL", place(e) size(vsmall)) ///
+			 xlab(1 "FY25 actual" ///
+			 		2 "FY25 actual cod, haddock 17" ///
+					3 "Close September" ///
+					4 "Close private", ///
+			 noticks labsize(vsmall) ) xtitle("") note("") ytitle("total removals (mt)", size(small)) ylab(,labsize(small))
+	
+
+vioplot value if metric=="CV" , over(source)  ///
+title("Compensating variation ($)", size(medium))  name(`d', replace) ///
+				ylab(#14, labsize(small) )  ///
+			 xlab(1 "FY25 actual" ///
+			 		2 "FY25 actual cod, haddock 17" ///
+					3 "Close September" ///
+					4 "Close private", ///
+			 noticks labsize(vsmall) ) xtitle("") note("") ytitle("Millions of dollars", size(small)) ylab(,labsize(small))
+			 
+vioplot value if metric=="catch_numbers" , over(source)  ///
+title("Compensating variation ($)", size(medium))  name(`d', replace) ///
+				ylab(#8, labsize(small) )  ///
+			 xlab(1 "FY25 actual" ///
+			 2 "Close September" ///
+			 3 "Close private", ///
+			 noticks labsize(vsmall) ) xtitle("") note("") ytitle("CV ($)", size(small)) ylab(,labsize(small))		 
+vioplot value if metric=="keep_weight" & species=="cod", over(source)  ///
+title("Projected cod harvest weight (mt)", size(medium))  name(`d', replace) ///
+				ylab(#8, labsize(small) ) ytitle("total harvest (mt)") ///
+			 xlab(1 "FY25 actual - updated" ///
+			 2 "FY25 proposed - updated" ///
+			 3 "Close September - updated" ///
+			 4 "Close private - updated", ///
+			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small))
+			 
+vioplot value if metric=="discmort_weight_weight" & species=="cod", over(source)  ///
+title("Projected cod harvest weight (mt)", size(medium))  name(`d', replace) ///
+				ylab(#8, labsize(small) ) ytitle("total harvest (mt)") ///
+			 xlab(1 "FY25 actual - updated" ///
+			 2 "FY25 proposed - updated" ///
+			 3 "Close September - updated" ///
+			 4 "Close private - updated", ///
+			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small))			 
+			 
+			 
+vioplot value if metric=="discmort_weight" & species=="cod" & source=="WRTIII5 (close private) - updated MRIP"
 
 
 gen domain=species+"_"+metric+"_"+source
@@ -135,15 +304,22 @@ title("Projected cod removal weight (mt)", size(medium))  name(`d', replace) ///
 				yline(118,  lcolor(navy)   lpattern(dash)) ///
 				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///
 				text(125 0.5 "cod ACL", place(e) size(small)) ///
-			 xlab(1 "FY25 actual" 2 "FY25 actual - updated" 3 "FY25 proposed" ///
-			 4 "FY25 proposed - updated" 5 "Close September - updated" 6 "Close private - updated", ///
-			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small) name(cod_removals, replace))
+			 xlab(1 "FY25 actual" 
+			 2 "FY25 actual - updated" 
+			 3 "FY25 proposed" ///
+			 4 "FY25 proposed - updated" 
+			 5 "FY25 proposed - updated*" 
+			 5 "Close September - updated" 
+			 6 "Close private - updated", ///
+			 noticks labsize(vsmall) angle(45)) xtitle("") note("") ytitle("", size(small)) ylab(,labsize(small) )
+			 
+			 name(cod_removals, replace))
 
 replace value=value+40 if metric=="removals_weight" & species=="cod" & inlist(source, "FY25 proposed regulations", "FY25 proposed regulations - updated MRIP")
 replace value=max(0, value-18) if metric=="removals_weight" & species=="cod"  & inlist(source, "KLB8 (close September) - updated MRIP")
 *replace value=max(0, value-18) if metric=="removals_weight" & species=="cod"  & mode=="pr" & inlist(source, "KLB8 (close September) - updated MRIP")
 
-vioplot value if metric=="removals_weight" & species=="cod", over(source) yline(118) ///
+vioplot value if metric=="catch_numbers" & species=="cod", over(source) yline(118) ///
 title("Projected cod removal weight (mt)", size(medium))  name(`d', replace) ///
 				yline(118,  lcolor(navy)   lpattern(dash)) ///
 				ylab(#8, labsize(small) ) ytitle("total removals (mt)") ///

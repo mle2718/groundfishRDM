@@ -4,12 +4,20 @@ set seed 03211990
 
 u "$input_data_cd\CE_survey_data.dta", clear 
 
+*test specification - linear in preferences	
+gen cod_hadd_kpt=codkpt*hadkpt
+mixlogit choice cost ///
+				nofish_age nofish_male nofish_total_days12 nofish_likely_to_fish nofish_fish_pref_more nofish_inc_med nofish_inc_high ///
+				nofish_educ_coll nofish_educ_grad nofish_own_boat if no_choice!=1, ///
+				group(gid) id(qtid) rand(codkpt codrel hadkpt hadrel cod_hadd_kpt nofish) nrep(250)			
+				
+*Final specification used for 2026 mgt. cycle
 mixlogit choice cost ///
 				nofish_age nofish_male nofish_total_days12 nofish_likely_to_fish nofish_fish_pref_more nofish_inc_med nofish_inc_high ///
 				nofish_educ_coll nofish_educ_grad nofish_own_boat if no_choice!=1, ///
 				group(gid) id(qtid) rand(sqrt_codkpt sqrt_codrel sqrt_hadkpt sqrt_hadrel sqrt_cod_hadd_kpt nofish) nrep(250)
 
-					
+		
 
 global params
 forv x=1/$ndraws{
