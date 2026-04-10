@@ -294,6 +294,15 @@ drop area domain dom_id dtrip_not tab sum_neg sum_non_neg prop mean_sum_neg adju
 rename month1 month 
 
 sort mode month kod draw 
+
+preserve 
+drop dtrip se
+rename dtrip dtrip
+order year month kod mode draw
+export delimited using "E:\Lou_projects\groundfishRDM\input_data\directed_trips.csv", replace 
+restore
+
+
 tempfile new1
 save `new1'
 

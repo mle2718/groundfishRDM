@@ -31,7 +31,7 @@ conflicts_prefer(dplyr::summarise)
 conflicts_prefer(dplyr::count)
 
 n_draws<-50
-
+#n_draws<-25
 # Data read for non-shiny run of predict_rec_catch.R
 ## Run this script prior to predict rec catch
 
@@ -60,7 +60,9 @@ param_grid <- expand.grid(
 )
 
 
-ndraws=50 #number of choice occasions to simulate per strata
+#ndraws=50 #number of choice occasions to simulate per strata
+#ndraws=25 #number of choice occasions to simulate per strata
+ndraws=10 #number of choice occasions to simulate per strata
 
 #l_w_conversion parameters =
 cod_lw_a = 0.000005132
@@ -103,7 +105,10 @@ predictions_all <- purrr::map_dfr(
 #write_csv(predictions_all, file.path(code_cd, paste0("SQalt_updated_2_19.csv")))
 #write_csv(predictions_all, file.path(code_cd, paste0("KLB8_updated_2_19.csv")))
 #write_csv(predictions_all, file.path(code_cd, paste0("WRTIII5_updated_2_19.csv")))
-write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_hadd17_2_19.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_hadd17_2_19.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_hadd17_4_6_26_draws25.csv")))
+#write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_hadd17_4_6_26_draws50.csv")))
+write_csv(predictions_all, file.path(code_cd, paste0("SQ_updated_hadd17_4_6_26_draws10.csv")))
 
 summary_predictions<-predictions_all %>%
   as.data.table() %>%
