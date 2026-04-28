@@ -226,7 +226,7 @@ server <- function(input, output, session){
     shinyjs::js$refresh_page();
   })
 
-  outputs <- function(){
+  outputs <- reactive({
     fnames <- list.files(path=here::here("output/"),pattern = "*.csv",full.names = T)
 
     fnames2<- as.data.frame(fnames) %>%
@@ -236,11 +236,10 @@ server <- function(input, output, session){
                     run_name = dplyr::case_when(b != "NA" ~ b, TRUE ~ as.character(c))) %>%
       dplyr::select(run_name)
 
-    df <- fnames %>%
+    fnames %>%
       purrr::map_df(~data.table::fread(.,stringsAsFactors=F,check.names=T,strip.white=T))
 
-    return(df)
-  }
+  })
 
   cod_acl <- function(){
     cod_acl = 118
@@ -741,7 +740,7 @@ server <- function(input, output, session){
     print("before function is made")
     enqueue_simple_sas <- function(run_name, queue_url_sas = Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL")) {
       stopifnot(nzchar(run_name), nzchar(queue_url_sas))
-      
+
       # Clean and ensure /messages endpoint
       queue_url_sas <- trimws(queue_url_sas, whitespace = "\" ")
       post_url <- if (grepl("/messages/?$", queue_url_sas)) {
@@ -749,7 +748,7 @@ server <- function(input, output, session){
       } else {
         paste0(sub("/$", "", queue_url_sas), "/messages")
       }
-      
+
       payload <- list(
         runName = run_name,
         submissionId = UUIDgenerate(),
