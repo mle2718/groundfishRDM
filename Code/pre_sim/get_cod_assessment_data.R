@@ -58,7 +58,7 @@ library(tidyverse)
 library(TMB)
 library(haven)
 library(glue)
-
+library(googledrive)
 cod_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "cod_wham_install")
 library(wham,lib.loc = cod_wham_lib)
 
@@ -66,26 +66,74 @@ library(wham,lib.loc = cod_wham_lib)
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
-output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
-dir.create(file.path(output_folder), showWarnings = FALSE)
+#BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
+#input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
+#output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
+#dir.create(file.path(output_folder), showWarnings = FALSE)
 
 
 data_version<-as.character(Sys.Date())
 
-
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
 ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
 HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
 
-# Read in accepted model
-mod_accepted <-
-  readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
+
+# Read the assessment file from google drive
+# Where is this file is the file:
+# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","cod_assessment",assessment_file_in)
+# id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+#
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".rds")
+
+# Download
+drive_download(
+  file = as_id("1A6p4yKLqL8vs0cTGz_3KWCpwi71ltbER"),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in using  into your environment
+mod_accepted <- read_rds(temp_path)
+
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
 
 mod_accepted$model_name <- "Accepted"
 mod_list <- list(mod_accepted)
+
+
+
+
+# Read the ASAP file from google drive
+# Where is this file is the file:
+# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","cod_assessment",ASAP_file_in)
+# id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+#
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".rds")
+
+# Download
+drive_download(
+  file = as_id("1UYtTNGeK35DbIK70XH5cVDHltcHI4LN1"),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in
+asap3 <- read_asap3_dat(temp_path)
+
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
 
 ###################################################################################
 ###################################################################################
@@ -114,10 +162,9 @@ cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
 
 ################################################################################
 ################################################################################
-# Read in ASAP3 dat file and pick parameters
+# Handle ASAP3 Dat file
 ################################################################################
 ################################################################################
-asap3 <- read_asap3_dat(file.path(input_folder,ASAP_file_in))
 
 
 # Placeholders and parameters
