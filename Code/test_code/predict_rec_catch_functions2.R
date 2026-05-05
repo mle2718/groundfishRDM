@@ -1,82 +1,318 @@
 
 
-predict_rec_catch <- function(dr, directed_trips, catch_data,
-                              cod_size_data, hadd_size_data,
-                              calib_comparison, n_choice_occasions,
-                              calendar_adjustments, base_outcomes, discard_mortality_dat, param_grid){
+############# To Run Individual
+# # Variables to change
+ # s<-"winter"
+ # md<-"pr"
+ # dr<-1
+#
+# mode_draw <- c("pr", "fh")
+# draws <- 1:15
+# season_draw <- c("summer", "winter")
+
+set.seed(915)
+
+run_one_draw <- function(dr) {
+  message("Running draw ", dr)
+
+
+directed_trips_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
+  tibble::tibble() %>%
+  dplyr::select(mode, day,  dtrip, draw,
+                starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+  dplyr::filter(draw == dr) %>%
+  data.table::as.data.table() %>%
+  dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
+                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
+  as.data.table()
+
+inch_to_cm <- function(x) x * 2.54
+
+# Initialize “closed” defaults
+directed_trips_draw[, `:=`(
+  cod_bag_y2_new = 0L,
+  cod_min_y2_new = 100,   # effectively closed (very high min)
+  hadd_bag_y2_new = 0L,
+  hadd_min_y2_new = 100
+)]
+
+# -----------------------------
+# COD: open only in October
+# bag: (set to 1 here; change if you want a different bag)
+# min size: 23 inches -> cm
+# -----------------------------
+# directed_trips_draw[
+#   lubridate::month(date) == 10,
+#   `:=`(
+#     cod_bag_y2_new = 1L,
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+
+
+# pr mode → cod fully closed (already set by defaults)
+# fh mode → open September and October
+# directed_trips_draw[
+#   mode == "fh" & lubridate::month(date) %in% c(9, 10),
+#   `:=`(
+#     cod_bag_y2_new = 1L,                     # change if needed
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+
+# pr mode → open September and October
+# fh mode → open September and October
+directed_trips_draw[
+  lubridate::month(date) %in% c(9, 10),
+  `:=`(
+    cod_bag_y2_new = 1L,                     # change if needed
+    cod_min_y2_new = inch_to_cm(23)
+  )
+]
+
+# -----------------------------
+# HADDOCK: open 5/1–2/28 and 4/1–4/30
+# bag: 5
+# min size: 17 inches -> cm
+# -----------------------------
+
+directed_trips_draw[
+  lubridate::month(date) %in% c(5,6,7,8,9,10,11,12,1,2,4),
+  `:=`(
+    hadd_bag_y2_new = 15L,
+    hadd_min_y2_new = inch_to_cm(17)
+  )
+]
+
+
+
+get_lowest_min_size_draw<-read_fst(file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst"))) %>%
+  dplyr::select(mode, day,  dtrip, draw,
+                starts_with("cod_bag"), starts_with("cod_min"), starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+  data.table::as.data.table() %>%
+  dplyr::mutate(date=as.Date(day, format = "%d%b%Y")) %>%
+  as.data.table()
+
+# Initialize “closed” defaults
+get_lowest_min_size_draw[, `:=`(
+  cod_bag_y2_new = 0L,
+  cod_min_y2_new = 100,   # effectively closed (very high min)
+  hadd_bag_y2_new = 0L,
+  hadd_min_y2_new = 100
+)]
+
+# -----------------------------
+# COD: open only in October
+# bag: (set to 1 here; change if you want a different bag)
+# min size: 23 inches -> cm
+# -----------------------------
+# get_lowest_min_size_draw[
+#   lubridate::month(date) == 10,
+#   `:=`(
+#     cod_bag_y2_new = 1L,
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+# pr mode → cod fully closed (already set by defaults)
+# fh mode → open September and October
+
+# get_lowest_min_size_draw[
+#   mode == "fh" & lubridate::month(date) %in% c(9, 10),
+#   `:=`(
+#     cod_bag_y2_new = 1L,                     # change if needed
+#     cod_min_y2_new = inch_to_cm(23)
+#   )
+# ]
+
+# pr mode → open September and October
+# fh mode → open September and October
+get_lowest_min_size_draw[
+  lubridate::month(date) %in% c(9, 10),
+  `:=`(
+    cod_bag_y2_new = 1L,                     # change if needed
+    cod_min_y2_new = inch_to_cm(23)
+  )
+]
+
+# -----------------------------
+# HADDOCK: open 5/1–2/28 and 4/1–4/30
+# bag: 5
+# min size: 17 inches -> cm
+# -----------------------------
+get_lowest_min_size_draw[
+  lubridate::month(date) %in% c(5,6,7,8,9,10,11,12,1,2,4),
+  `:=`(
+    hadd_bag_y2_new = 15L,
+    hadd_min_y2_new = inch_to_cm(17)
+  )
+]
+
+cod_min_size_FY_draw<-min(get_lowest_min_size_draw$cod_min_y2_new)
+hadd_min_size_FY_draw<-min(get_lowest_min_size_draw$hadd_min_y2_new)
+
+catch_data0 <- list()
+base_outcomes_angler_dems0 <- list()
+n_choice_occasions0 <- list()
+
+mode_draw <- c("pr", "fh")
+season_draw <- c("summer", "winter")
+
+k<-1
+
+for (md in mode_draw) {
+  for (s in season_draw){
+
+    catch_data0[[k]] <- fst::read_fst(file.path(final_process_outcomes_cd, paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
+      dplyr::left_join(directed_trips_draw, by=c("mode", "date")) %>%
+      dplyr::rename(tot_cod_catch_base = tot_cod_catch,
+                    tot_hadd_catch_base = tot_hadd_catch) %>%
+      dplyr::mutate(cod_cat=tot_cod_catch_base,
+                    hadd_cat=tot_hadd_catch_base) %>%
+      dplyr::select(date, mode, draw,  tripid, catch_draw, season,
+                    cod_cat, hadd_cat, starts_with("cod_bag"), starts_with("cod_min"),
+                    starts_with("hadd_bag"),starts_with("hadd_min")) %>%
+      as.data.table()
+
+    base_outcomes_angler_dems0[[k]] <- fst::read_fst(file.path(final_process_outcomes_cd, paste0("base_outcomes_final_",s, "_", md, "_", dr,".fst"))) %>%
+      dplyr::select(date, mode,  tripid, catch_draw,
+                    tot_keep_cod_base, tot_rel_cod_base,
+                    tot_keep_hadd_base, tot_rel_hadd_base,
+                    starts_with("beta"),
+                    total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost) %>%
+      dplyr::rename(date_parsed=date) %>%
+      as.data.table()
+
+    n_choice_occasions0[[k]] <- fst::read_fst(file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_",s, "_", md, "_", dr,".fst"))) %>%
+      dplyr::rename(date_parsed=date)  %>%
+      as.data.table()
+
+    k<-k+1
+
+  }
+}
+
+catch_data_draw <- bind_rows(catch_data0)
+base_outcomes_angler_dems_draw <- bind_rows(base_outcomes_angler_dems0)
+n_choice_occasions_draw <- bind_rows(n_choice_occasions0)
+
+rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
+
+# Size data used in projections is "proj_catch_at_length.fst"
+# For testing, change the size data file to "baseline_catch_at_length.fst"
+cod_size_data_draw <- read_fst(file.path(final_process_misc_cd, "proj_catch_at_length.fst"))  %>%
+  dplyr::filter(species=="cod", draw==dr) %>%
+  dplyr::filter(!is.na(fitted_prob)) %>%
+  dplyr::select(fitted_prob, length, season) %>%
+  as.data.table()
+
+hadd_size_data_draw <- read_fst(file.path(final_process_misc_cd, "proj_catch_at_length.fst"))  %>%
+  dplyr::filter(species=="hadd", draw==dr) %>%
+  dplyr::filter(!is.na(fitted_prob)) %>%
+  dplyr::select(fitted_prob, length, season) %>%
+  as.data.table()
+
+calendar_adjustments_draw <- read_fst(file.path(final_process_misc_cd, paste0("calendar_adj_final.fst"))) %>%
+  dplyr::filter(draw==dr) %>%
+  dplyr::select(-dtrip, -dtrip_y2, -draw, -good_draw) %>%
+  as.data.table()
+
+# Pull in calibration comparison information about trip-level harvest/discard re-allocations
+calib_comparison_draw<-read_fst(file.path(final_process_misc_cd, "calibrated_model_stats_final.fst")) %>%
+  dplyr::filter(draw==dr) %>%
+  as.data.table()
+
+calib_comparison_draw<-calib_comparison_draw %>%
+  dplyr::rename(n_legal_rel_hadd=n_legal_hadd_rel,
+                n_legal_rel_cod=n_legal_cod_rel,
+                n_sub_kept_hadd=n_sub_hadd_kept,
+                n_sub_kept_cod=n_sub_cod_kept,
+                prop_legal_rel_hadd=prop_legal_hadd_rel,
+                prop_legal_rel_cod=prop_legal_cod_rel,
+                prop_sub_kept_hadd=prop_sub_hadd_kept,
+                prop_sub_kept_cod=prop_sub_cod_kept,
+                convergence_cod=cod_convergence,
+                convergence_hadd=hadd_convergence)
+
+##########
+# List of species suffixes
+species_suffixes <- c("cod", "hadd")
+
+# Get all variable names
+all_vars <- names(calib_comparison_draw)
+
+# Identify columns that are species-specific (contain _cod or _hadd)
+species_specific_vars <- all_vars[
+  str_detect(all_vars, paste0("(_", species_suffixes, ")$", collapse = "|"))
+]
+
+id_vars <- setdiff(all_vars, species_specific_vars)
+
+## --- build draw-specific inputs ---
+calib_comparison_draw<-calib_comparison_draw %>%
+  dplyr::select(mode, season, all_of(species_specific_vars))
+
+# Extract base variable names (without __cod or _hadd)
+base_names <- unique(str_replace(species_specific_vars, "_(cod|hadd)$", ""))
+
+# Pivot the data longer on the species-specific columns
+calib_comparison_draw <- calib_comparison_draw %>%
+  pivot_longer(
+    cols = all_of(species_specific_vars),
+    names_to = c(".value", "species"),
+    names_pattern = "(.*)_(cod|hadd)"
+  ) %>%
+  dplyr::distinct()
+
+## --- make draw-specific inputs visible to simulate_cod/hadd by assigning to global names ---
+
+cod_size_data           <<- cod_size_data_draw
+hadd_size_data          <<- hadd_size_data_draw
+calendar_adjustments    <<- calendar_adjustments_draw
+calib_comparison        <<- calib_comparison_draw
+directed_trips          <<- directed_trips_draw
+catch_data              <<- catch_data_draw
+base_outcomes_angler_dems <<- base_outcomes_angler_dems_draw
+n_choice_occasions      <<- n_choice_occasions_draw
+cod_min_size_FY         <<- cod_min_size_FY_draw
+hadd_min_size_FY        <<- hadd_min_size_FY_draw
+#
 # Cod trip simulation
-# furrr
+#furrr
 # results_list <- furrr::future_pmap(param_grid, simulate_cod,
 #                                 .options = furrr::furrr_options(seed = TRUE))
 #purrr
-
-ndraws=50 #number of choice occasions to simulate per strata
-
-#l_w_conversion parameters =
-cod_lw_a = 0.000005132
-cod_lw_b = 3.1625
-had_lw_a = 0.000009298
-had_lw_b = 3.0205
-
-#results_list <- purrr::pmap(param_grid, simulate_cod(calib_comparison = calib_comparison))
-results_list <- purrr::pmap(
-    param_grid,
-    function(md, s) {
-      simulate_cod(
-        md = md,
-        s  = s,
-        calib_comparison = calib_comparison,
-        directed_trips = directed_trips,
-        cod_size_data = cod_size_data,
-        catch_data = catch_data
-      )
-    }
-  )
-
-
+results_list <- purrr::pmap(param_grid, simulate_cod)
 
 names(results_list) <- paste(param_grid$md, param_grid$s, sep = "_")
 
-trip_data_cod <- data.table::rbindlist(lapply(results_list, `[[`, "trip_data"))
+trip_data_cod <- rbindlist(lapply(results_list, `[[`, "trip_data"))
 
 data.table::setkey(trip_data_cod, domain2)
 
-zero_catch_cod <- data.table::rbindlist(lapply(results_list, `[[`, "zero_catch"))
+zero_catch_cod <- rbindlist(lapply(results_list, `[[`, "zero_catch"))
 
-size_data_cod <- data.table::rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
+size_data_cod <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
-print("Out cod")
+
 # Haddock trip simulation
-# furrr
+#furrr
 # results_list <- furrr::future_pmap(param_grid, simulate_hadd,
 #                                      .options = furrr::furrr_options(seed = TRUE))
 
 #purrr
-results_list <- purrr::pmap(
-  param_grid,
-  function(md, s) {
-    simulate_hadd(
-      md = md,
-      s  = s,
-      calib_comparison = calib_comparison,
-      directed_trips = directed_trips,
-      hadd_size_data = hadd_size_data,
-      catch_data = catch_data
-    )
-  }
-)
+results_list <- purrr::pmap(param_grid, simulate_hadd)
 
 names(results_list) <- paste(param_grid$md, param_grid$s, sep = "_")
 
-trip_data_hadd <- data.table::rbindlist(lapply(results_list, `[[`, "trip_data")) %>%
+trip_data_hadd <- rbindlist(lapply(results_list, `[[`, "trip_data")) %>%
   dplyr::select(-date, -mode, -catch_draw, -tripid)
 
 data.table::setkey(trip_data_hadd, domain2)
 
-zero_catch_hadd <- data.table::rbindlist(lapply(results_list, `[[`, "zero_catch"))
+zero_catch_hadd <- rbindlist(lapply(results_list, `[[`, "zero_catch"))
 
-size_data_hadd <- data.table::rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
+size_data_hadd <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) %>%
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
 # merge the trip data
@@ -121,12 +357,12 @@ trip_data[, `:=`(
 
 length_data[, date_parsed := lubridate::ymd(date)][, date := NULL]
 
-trip_data <- trip_data[base_outcomes, on = .(date_parsed, mode, tripid, catch_draw), nomatch = 0L]
+trip_data <- trip_data[base_outcomes_angler_dems, on = .(date_parsed, mode, tripid, catch_draw), nomatch = 0L]
 trip_data[, domain2 := NULL]
 
 rm(trip_data_cod,trip_data_hadd ,
    size_data_cod, size_data_hadd,
-   results_list, catch_data)
+   results_list)
 
 # compute utility/choice probabilites/welfare
 # Precompute square roots once
@@ -223,6 +459,7 @@ mean_trip_data <- mean_trip_data %>%
                 -"log_sum_base",-"log_sum_alt", -"beta_cost") %>%
   dplyr::arrange(date_parsed, mode, tripid)
 
+
 # multiply the average trip probability in the new scenario (probA) by each catch variable to get probability-weighted catch
 list_names <- c("tot_keep_cod_new",   "tot_rel_cod_new",  "tot_cat_cod_new",
                 "tot_keep_hadd_new",  "tot_rel_hadd_new", "tot_cat_hadd_new")
@@ -239,8 +476,8 @@ mean_trip_data <- mean_trip_data %>%
 # then multiply this expansion factor by the projection-year calendar adjustment to account for
 # different numbers of weekend vs. weekday in the projection year versus the calibration
 
-data.table::setDT(n_choice_occasions)
-data.table::setDT(calendar_adjustments)
+setDT(n_choice_occasions)
+setDT(calendar_adjustments)
 
 mean_trip_data <- n_choice_occasions[mean_trip_data, on = .(mode, date_parsed)]
 mean_trip_data[, month := lubridate::month(date_parsed)]
@@ -279,8 +516,8 @@ mean_trip_data <- mean_trip_data %>%
 pattern_vars <- grep("^keep_(cod_|hadd_)[0-9.]*$|^release_(cod_|hadd_)[0-9.]*$",
                      names(length_data), value = TRUE)
 
-data.table::setDT(length_data)
-data.table::setDT(expansion_factors)
+setDT(length_data)
+setDT(expansion_factors)
 
 length_data <- length_data[
   , lapply(.SD, mean),
@@ -308,7 +545,7 @@ list_names <- c("CV","predicted_trips", "base_trips")
 aggregate_trip_data_mode <- mean_trip_data[, lapply(.SD, sum), by = .(mode, month), .SDcols = list_names]
 
 # Aggregate for all modes
-aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum), by = .(month), .SDcols = list_names][
+aggregate_trip_data_allmodes <- mean_trip_data[, lapply(.SD, sum),  by = .(month), .SDcols = list_names][
   , mode := "all modes"
 ]
 
@@ -445,7 +682,7 @@ length_data1[, removals_number :=  keep_numbers + discmort_number]
 
 length_data_long <- data.table::melt(
   length_data1,
-  id.vars = c("species", "mode","month"),   # keep these as identifiers
+  id.vars = c("species", "mode", "month"),   # keep these as identifiers
   measure.vars = c("keep_numbers", "release_numbers",
                    "keep_weight", "release_weight",
                    "discmort_weight", "discmort_number",
@@ -478,7 +715,21 @@ predictions[, draw := dr]
 #})
 
 return(predictions)
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
