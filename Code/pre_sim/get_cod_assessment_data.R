@@ -72,10 +72,13 @@ output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","o
 dir.create(file.path(output_folder), showWarnings = FALSE)
 
 
+data_version<-as.character(Sys.Date())
+
+
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
-FullProjectionsSaveFile<-"WGOMCod_Projections.rds"
-ProjectedNAASaveFile<-"WGOM_Cod_projected_NAA_from_2024Assessment.dta"
-HistoricalNAASaveFile<-"WGOM_Cod_historical_NAA_from_2024Assessment.dta"
+FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
+ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
+HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
 
 # Read in accepted model
 mod_accepted <-
@@ -280,7 +283,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
-saveRDS(proj_list, file = file.path(output_folder,FullProjectionsSaveFile))
+write_rds(proj_list, file = file.path(output_folder,glue("{FullProjectionsSaveFile}.Rds")))
 ################################################################################
 ################################################################################
 
@@ -314,9 +317,12 @@ colnames(historical_NAA)<-names
 historical_NAA<-as.data.frame(cbind(year,historical_NAA))
 
 historical_NAA <- historical_NAA %>%
-  dplyr::filter(year<YearProj)
+  dplyr::filter(year<YearProj) %>%
+  mutate(data_version=data_version)
 
-write_dta(historical_NAA, path=file.path(output_folder,HistoricalNAASaveFile))
+
+write_dta(historical_NAA, path=file.path(output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA, file=file.path(output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
 
 
@@ -345,13 +351,18 @@ for (ageclass in 1:length(NAA_logmean)){
 
 
 #smush the list to a Dataframe, give it nice names, add on the year and a replicate number.
+
 NAA<-list2DF(NAA)
 colnames(NAA)<-names
 NAA <-NAA %>%
   mutate(replicate= row_number(),
-         year=YearProj) %>%
+         year=YearProj,
+         data_version=data_version
+  ) %>%
   relocate(replicate,year)
 
-write_dta(NAA, path=file.path(output_folder,ProjectedNAASaveFile))
+
+write_dta(NAA, path=file.path(output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA, file=file.path(output_folder,glue("{ProjectedNAASaveFile}.Rds")))
 
 

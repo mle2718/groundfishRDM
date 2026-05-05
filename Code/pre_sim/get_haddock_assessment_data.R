@@ -52,11 +52,12 @@ input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","haddock",
 output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","haddock","output",Sys.Date())
 dir.create(file.path(output_folder), showWarnings = FALSE)
 
+data_version<-as.character(Sys.Date())
 
 
 FullProjectionsSaveFile<-"GOM_Haddock_Projections.rds"
 
-ProjectedNAASaveFile<-"GOM_Haddock_projected_NAA_2024Assessment.dta"
+ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
 HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment.dta"
 
 # Read in accepted model
@@ -249,7 +250,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
- saveRDS(proj_list, file = file.path(output_folder,FullProjectionsSaveFile))
+write_rds(proj_list, file = file.path(output_folder,glue("{FullProjectionsSaveFile}.Rds")))
 ################################################################################
 ################################################################################
 
@@ -322,20 +323,21 @@ TerminalAssess<-tail(mod_accepted$years_full,1)
 
 # Construct a dataframe of historical Numbers at Age
 historical_NAA<-exp(NAA_logmean)
-#historical_NAA2<-exp(NAA_logmean)*exp((NAA_logsd^2)/2)
 
 
 colnames(historical_NAA)<-names
 historical_NAA<-as.data.frame(cbind(year,historical_NAA))
-# colnames(historical_NAA2)<-names
-#historical_NAA2<-as.data.frame(cbind(year,historical_NAA2))
-
 
 
 historical_NAA <- historical_NAA %>%
-  dplyr::filter(year<YearProj)
+  dplyr::filter(year<YearProj) %>%
+  mutate(data_version=data_version)
 
-write_dta(historical_NAA, path=file.path(output_folder,HistoricalNAASaveFile))
+
+
+write_dta(historical_NAA, path=file.path(output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA, file=file.path(output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+
 
 
 
@@ -367,9 +369,14 @@ NAA<-list2DF(NAA)
 colnames(NAA)<-names
 NAA <-NAA %>%
   mutate(replicate= row_number(),
-         year=YearProj) %>%
+         year=YearProj,
+         data_version=data_version
+  ) %>%
   relocate(replicate,year)
 
 
 
-write_dta(NAA, path=file.path(output_folder,ProjectedNAASaveFile))
+
+write_dta(NAA, path=file.path(output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA, file=file.path(output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+
