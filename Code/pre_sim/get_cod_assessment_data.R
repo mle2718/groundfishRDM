@@ -103,7 +103,7 @@ HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_from_2024Assessment_{data_v
 # Connect to Google Drive
 drive_auth(cache = here(".secrets"), email = TRUE)
 # Output folder on google drive
-groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment")
+groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
 folder_info <- drive_get(
   path = groundfish_processed_path,
   shared_drive = "NMFS NEC READ SSB"
@@ -413,6 +413,14 @@ drive_upload(
   overwrite = TRUE
 )
 
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.dta"),
+  overwrite = TRUE
+)
+
+
 
 # Pick exactly 1 year. See the header.
 RowPick<-which(year==YearProj)
@@ -466,7 +474,11 @@ drive_upload(
   overwrite = TRUE
 )
 
-readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data",glue("{ProjectedNAASaveFile}.Rds"))
-file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.dta"),
+  overwrite = TRUE
+)
 
 
