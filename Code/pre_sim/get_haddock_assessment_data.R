@@ -40,20 +40,31 @@ library(TMB)
 library(haven)
 library(glue)
 library(googledrive)
-
+library(here)
 #load the haddock specific version of WHAM.
 haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
 library(wham,lib.loc = haddock_wham_lib)
 
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-#input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
-output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
-dir.create(file.path(output_folder), showWarnings = FALSE)
+assessment_output_folder<-here("input_data")
+dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
 
 
-data_version<-as.character(Sys.Date())
+data_version<-Sys.Date()
+
+# create a small dataframe that holds the stock "characteristics".
+stock_stats_df<-tibble(
+  common = "HADDOCK",
+  species_itis =164712 ,
+  stock_abbrev = "GOM",
+  state=NA,
+  wave=NA,
+  metric="Numbers At Age",
+  units = "Individuals",
+  data_version= data_version
+)
+
 
 
 FullProjectionsSaveFile<-"GOM_Haddock_Projections.rds"
@@ -295,7 +306,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
-write_rds(proj_list, file = file.path(output_folder,glue("{FullProjectionsSaveFile}.Rds")))
+write_rds(proj_list, file = file.path(assessment_output_folder,glue("{FullProjectionsSaveFile}.Rds")))
 ################################################################################
 ################################################################################
 
@@ -375,13 +386,17 @@ historical_NAA<-as.data.frame(cbind(year,historical_NAA))
 
 
 historical_NAA <- historical_NAA %>%
-  dplyr::filter(year<YearProj) %>%
-  mutate(data_version=data_version)
+  dplyr::filter(year<YearProj)
+
+# add in stock statistics
+
+historical_NAA <-historical_NAA %>%
+  cross_join(stock_stats_df)%>%
+  mutate(metric="projected Numbers At Age")
 
 
-
-write_dta(historical_NAA, path=file.path(output_folder,glue("{HistoricalNAASaveFile}.dta")))
-write_rds(historical_NAA, file=file.path(output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
 
 
@@ -414,14 +429,18 @@ NAA<-list2DF(NAA)
 colnames(NAA)<-names
 NAA <-NAA %>%
   mutate(replicate= row_number(),
-         year=YearProj,
-         data_version=data_version
+         year=YearProj
   ) %>%
   relocate(replicate,year)
 
 
+# add in stock statistics
+
+NAA <-NAA %>%
+  cross_join(stock_stats_df)%>%
+  mutate(metric="projected Numbers At Age")
 
 
-write_dta(NAA, path=file.path(output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA, file=file.path(output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
 
