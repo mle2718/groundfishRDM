@@ -3,9 +3,11 @@
 
 # Author: Charles Perretti (2024-NOV)
 # Mod : Min-Yang Lee (2025-Nov)
-
+####################################################################################
 # Depends "wham_version_installer.R" will install the proper version of the WHAM
 # package that matches the WHAM model.
+####################################################################################
+# Reads files from google drive, you'll need access to those files.
 
 # This code does 2 projections, but uses the first projection
 # 1) Fmsy 2025-2027 (this is the projection in the MT report) which also produces the ofl in 2025
@@ -49,6 +51,8 @@ library(wham,lib.loc = haddock_wham_lib)
 #Set paths, input names, and savefile names.
 
 # Assessment folders
+here::i_am("Code/pre_sim/get_haddock_assessment_data.R")
+
 assessment_output_folder<-here("input_data")
 dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
 
@@ -72,28 +76,26 @@ stock_stats_df<-tibble(
 FullProjectionsSaveFile<-"GOM_Haddock_Projections"
 ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_2024Assessment_{data_version}")
 HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_2024Assessment_{data_version}")
-# Connect to Google Drive
-drive_auth(cache = here(".secrets"), email = TRUE)
-
-# I have hard-coded the id of this folder to save some time.  But if you want to search for the file, uncomment the subsequent block of code
-# Output folder on google drive
-groundfish_processed_path<-"1H-PZ2Ntm9ZIMeKMWFka-TDAY0c8gSfdC"
-#groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
-# folder_info <- drive_get(
-#   path = groundfish_processed_path,
-#   shared_drive = "NMFS NEC READ SSB"
-# )
-# groundfish_processed_path<-folder_info$id
 
 # input save files
 assessment_file_in<-"mod_nola_dcpe_blls2.rds"
 waa_file_in<-"waa_pred_2024-08-25.xlsx"
 
 
-# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
-file_id<-"1pPGqMBJXUnFxnc17JlVjetkRKONTxEM-"
-# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
-# file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+# Connect to Google Drive
+drive_auth(cache = here(".secrets"), email = TRUE)
+
+# Output folder on google drive
+groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment")
+folder_info <- drive_get(
+  path = groundfish_processed_path,
+  shared_drive = "NMFS NEC READ SSB"
+)
+groundfish_processed_path<-folder_info$id
+
+# Read in the assessment file
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
 # Create a path for a temporary file
 temp_path <- tempfile(fileext = ".rds")
@@ -113,10 +115,9 @@ if (file.exists(temp_path)) {
 }
 
 
-# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
-file_id<-"1NZkXfM7kyE9GBga1P3X-HfS9g5zynMMR"
-#readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",waa_file_in)
-#file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+# readin the WAA file
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",waa_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 temp_path <- tempfile(fileext = ".xlsx")
 
 drive_download(
