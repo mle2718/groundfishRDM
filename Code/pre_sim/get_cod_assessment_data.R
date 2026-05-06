@@ -103,7 +103,7 @@ drive_auth(cache = here(".secrets"), email = TRUE)
 #read in the projection file
 # I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
 file_id<-"1A6p4yKLqL8vs0cTGz_3KWCpwi71ltbER"
-# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","cod_assessment",assessment_file_in)
+# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
 # id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 #
 # Create a path for a temporary file
@@ -134,7 +134,7 @@ mod_list <- list(mod_accepted)
 # Read the ASAP file from google drive
 # I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
 file_id<-"1UYtTNGeK35DbIK70XH5cVDHltcHI4LN1"
-# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","cod_assessment",ASAP_file_in)
+# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",ASAP_file_in)
 # id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 #
 # Create a path for a temporary file

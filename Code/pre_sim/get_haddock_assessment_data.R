@@ -80,7 +80,7 @@ waa_file_in<-"waa_pred_2024-08-25.xlsx"
 
 # I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
 file_id<-"1pPGqMBJXUnFxnc17JlVjetkRKONTxEM-"
-# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","haddock_assessment",assessment_file_in)
+# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
 # file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
 # Create a path for a temporary file
@@ -103,7 +103,7 @@ if (file.exists(temp_path)) {
 
 # I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
 file_id<-"1NZkXfM7kyE9GBga1P3X-HfS9g5zynMMR"
-#readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","haddock_assessment",waa_file_in)
+#readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",waa_file_in)
 #file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 temp_path <- tempfile(fileext = ".xlsx")
 
