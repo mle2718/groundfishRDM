@@ -67,9 +67,9 @@ stock_stats_df<-tibble(
 
 
 
-FullProjectionsSaveFile<-"GOM_Haddock_Projections.rds"
+FullProjectionsSaveFile<-"GOM_Haddock_Projections"
 ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
-HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment.dta"
+HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment"
 
 
 assessment_file_in<-"mod_nola_dcpe_blls2.rds"
@@ -392,7 +392,7 @@ historical_NAA <- historical_NAA %>%
 
 historical_NAA <-historical_NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="projected Numbers At Age")
+  mutate(metric="historical mean Numbers At Age")
 
 
 write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
