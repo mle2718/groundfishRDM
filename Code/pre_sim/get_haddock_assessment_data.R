@@ -34,7 +34,7 @@
 # Haddock NAA are assumed to be lognormally distributed with a mean and sd parameters.
 # I use rlnorm() to generate a distribution
 ############ End description###################################################
-
+#Load libraries
 library(tidyverse)
 library(TMB)
 library(haven)
@@ -71,6 +71,8 @@ FullProjectionsSaveFile<-"GOM_Haddock_Projections"
 ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
 HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment"
 
+# Connect to Google Drive
+drive_auth(cache = here(".secrets"), email = TRUE)
 
 assessment_file_in<-"mod_nola_dcpe_blls2.rds"
 waa_file_in<-"waa_pred_2024-08-25.xlsx"

@@ -53,7 +53,7 @@
 # I use rlnorm() to generate a distribution
 
 ############ End description###################################################
-
+#Load libraries
 library(tidyverse)
 library(TMB)
 library(haven)
@@ -97,6 +97,8 @@ stock_stats_df<-tibble(
 
 
 
+# Connect to Google Drive
+drive_auth(cache = here(".secrets"), email = TRUE)
 
 #read in the projection file
 # I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
