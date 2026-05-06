@@ -66,10 +66,10 @@ library(wham,lib.loc = cod_wham_lib)
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
-#BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
+BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
 #input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
-#output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
-#dir.create(file.path(output_folder), showWarnings = FALSE)
+output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
+dir.create(file.path(output_folder), showWarnings = FALSE)
 
 
 data_version<-as.character(Sys.Date())
@@ -80,9 +80,9 @@ FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
 ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
 HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
 
-
-# Read the assessment file from google drive
-# Where is this file is the file:
+#read in the projection file
+# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
+file_id<-"1A6p4yKLqL8vs0cTGz_3KWCpwi71ltbER"
 # readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","cod_assessment",assessment_file_in)
 # id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 #
@@ -91,7 +91,7 @@ temp_path <- tempfile(fileext = ".rds")
 
 # Download
 drive_download(
-  file = as_id("1A6p4yKLqL8vs0cTGz_3KWCpwi71ltbER"),
+  file = as_id(file_id),
   path = temp_path,
   overwrite = TRUE
 )
@@ -112,7 +112,8 @@ mod_list <- list(mod_accepted)
 
 
 # Read the ASAP file from google drive
-# Where is this file is the file:
+# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
+file_id<-"1UYtTNGeK35DbIK70XH5cVDHltcHI4LN1"
 # readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","cod_assessment",ASAP_file_in)
 # id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 #
@@ -121,7 +122,7 @@ temp_path <- tempfile(fileext = ".rds")
 
 # Download
 drive_download(
-  file = as_id("1UYtTNGeK35DbIK70XH5cVDHltcHI4LN1"),
+  file = as_id(file_id),
   path = temp_path,
   overwrite = TRUE
 )
