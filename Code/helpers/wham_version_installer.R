@@ -11,6 +11,7 @@ library(TMB)
 library(haven)
 library(glue)
 library(googledrive)
+library(here)
 here::i_am("Code/helpers/wham_version_installer.R")
 
 drive_auth(cache = here(".secrets"), email = TRUE)
@@ -28,7 +29,10 @@ dir.create(file.path(haddock_wham_lib), showWarnings = FALSE)
 # Read in accepted cod model
 
 # this is the google drive location of the cod model
-file_id<-"1A6p4yKLqL8vs0cTGz_3KWCpwi71ltbER"
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+
 temp_path <- tempfile(fileext = ".rds")
 
 # Download
@@ -59,12 +63,11 @@ remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=cod_wha
 
 
 
+# read in the haddock assessment
+assessment_file_in<-"mod_nola_dcpe_blls2.rds"
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
-
-# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
-file_id<-"1pPGqMBJXUnFxnc17JlVjetkRKONTxEM-"
-# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
-# file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
 # Create a path for a temporary file
 temp_path <- tempfile(fileext = ".rds")
