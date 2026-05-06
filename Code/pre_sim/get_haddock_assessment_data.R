@@ -39,6 +39,7 @@ library(tidyverse)
 library(TMB)
 library(haven)
 library(glue)
+library(googledrive)
 
 #load the haddock specific version of WHAM.
 haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
@@ -46,23 +47,79 @@ library(wham,lib.loc = haddock_wham_lib)
 
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
-
 BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","haddock","input")
-output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","haddock","output",Sys.Date())
+#input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
+output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
 dir.create(file.path(output_folder), showWarnings = FALSE)
+
 
 data_version<-as.character(Sys.Date())
 
 
 FullProjectionsSaveFile<-"GOM_Haddock_Projections.rds"
-
 ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
 HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment.dta"
 
-# Read in accepted model
-mod_accepted <-
-	readRDS(file = file.path(input_folder,"mod_nola_dcpe_blls2.rds"))
+
+assessment_file_in<-"mod_nola_dcpe_blls2.rds"
+waa_file_in<-"waa_pred_2024-08-25.xlsx"
+
+
+# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
+file_id<-"1pPGqMBJXUnFxnc17JlVjetkRKONTxEM-"
+# readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","haddock_assessment",assessment_file_in)
+# file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".rds")
+
+# Download
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in using  into your environment
+mod_accepted <- read_rds(temp_path)
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
+
+# I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
+file_id<-"1NZkXfM7kyE9GBga1P3X-HfS9g5zynMMR"
+#readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","haddock_assessment",waa_file_in)
+#file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+temp_path <- tempfile(fileext = ".xlsx")
+
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+
+# Load WAA projections (specific to GOM haddock) ###############################
+waa_proj_ssb <-
+  readxl::read_excel(path=temp_path,
+                     sheet = "SSB WAA") %>%
+  filter(YEAR %in% 2024:2027) %>%
+  select(-YEAR)
+
+waa_proj_catch <-
+  readxl::read_excel(path=temp_path,
+                     sheet = "Catch WAA") %>%
+  filter(YEAR %in% 2024:2027) %>%
+  select(-YEAR)
+
+
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
 
 stock_name <- "GOM haddock"
 model_name <- "2024MT"
@@ -128,20 +185,8 @@ actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 # actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
 
 
-################################################################################
+#Handle WAA ###############################################################################
 
-# Load WAA projections (specific to GOM haddock) ###############################
-waa_proj_ssb <-
-  readxl::read_excel(file.path(input_folder,"waa_pred_2024-08-25.xlsx"),
-                     sheet = "SSB WAA") %>%
-  filter(YEAR %in% 2024:2027) %>%
-  select(-YEAR)
-
-waa_proj_catch <-
-  readxl::read_excel(file.path(input_folder,"waa_pred_2024-08-25.xlsx"),
-                     sheet = "Catch WAA") %>%
-  filter(YEAR %in% 2024:2027) %>%
-  select(-YEAR)
 
 waa_input_blls <- array(dim = c(6,4,9)) #new wham wants the waa doubled for some reason
 for(i in 1:9){ # the order of the sources matches input$data$waa_pointers
