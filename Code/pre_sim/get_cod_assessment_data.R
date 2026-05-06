@@ -67,16 +67,13 @@ library(wham,lib.loc = cod_wham_lib)
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
+# Assessment folders
 assessment_output_folder<-here("input_data")
 dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
 
+# data version
 data_version<-Sys.Date()
 
-assessment_file_in<-"mod_base_2023_noBLLS.rds"
-ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
-FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
-ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
-HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
 
 
 
@@ -94,17 +91,34 @@ stock_stats_df<-tibble(
 )
 
 
+#names of output save files
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
+ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
+FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
+ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_from_2024Assessment_{data_version}")
+HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_from_2024Assessment_{data_version}")
 
 
 
 # Connect to Google Drive
 drive_auth(cache = here(".secrets"), email = TRUE)
+# I have hard-coded the id of this folder to save some time.  But if you want to search for the file, uncomment the subsequent block of code
+# Output folder on google drive
+groundfish_processed_path<-"1H-PZ2Ntm9ZIMeKMWFka-TDAY0c8gSfdC"
+#groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
+# folder_info <- drive_get(
+#   path = groundfish_processed_path,
+#   shared_drive = "NMFS NEC READ SSB"
+# )
+# groundfish_processed_path<-folder_info$id
 
-#read in the projection file
+# input save files
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
+ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 # I have hard-coded the id, just to save some time.  But if you want to search for the file, uncomment the two lines immediately following.
 file_id<-"1A6p4yKLqL8vs0cTGz_3KWCpwi71ltbER"
 # readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
-# id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+# file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 #
 # Create a path for a temporary file
 temp_path <- tempfile(fileext = ".rds")
@@ -351,7 +365,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
-write_rds(proj_list, file = file.path(assessment_output_folder,glue("{FullProjectionsSaveFile}.Rds")))
+write_rds(proj_list, file = file.path(assessment_output_folder,FullProjectionsSaveFile))
 ################################################################################
 ################################################################################
 
@@ -395,6 +409,13 @@ historical_NAA<-historical_NAA %>%
 write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
 write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
 
 
 # Pick exactly 1 year. See the header.
@@ -441,4 +462,11 @@ NAA <-NAA %>%
 write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
 write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
 
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
 

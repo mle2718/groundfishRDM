@@ -47,10 +47,12 @@ library(wham,lib.loc = haddock_wham_lib)
 
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
+
+# Assessment folders
 assessment_output_folder<-here("input_data")
 dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
 
-
+# data version
 data_version<-Sys.Date()
 
 # create a small dataframe that holds the stock "characteristics".
@@ -66,14 +68,24 @@ stock_stats_df<-tibble(
 )
 
 
-
+#names of output save files
 FullProjectionsSaveFile<-"GOM_Haddock_Projections"
-ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
-HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment"
-
+ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_2024Assessment_{data_version}")
+HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_2024Assessment_{data_version}")
 # Connect to Google Drive
 drive_auth(cache = here(".secrets"), email = TRUE)
 
+# I have hard-coded the id of this folder to save some time.  But if you want to search for the file, uncomment the subsequent block of code
+# Output folder on google drive
+groundfish_processed_path<-"1H-PZ2Ntm9ZIMeKMWFka-TDAY0c8gSfdC"
+#groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
+# folder_info <- drive_get(
+#   path = groundfish_processed_path,
+#   shared_drive = "NMFS NEC READ SSB"
+# )
+# groundfish_processed_path<-folder_info$id
+
+# input save files
 assessment_file_in<-"mod_nola_dcpe_blls2.rds"
 waa_file_in<-"waa_pred_2024-08-25.xlsx"
 
@@ -308,7 +320,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
-write_rds(proj_list, file = file.path(assessment_output_folder,glue("{FullProjectionsSaveFile}.Rds")))
+write_rds(proj_list, file = file.path(assessment_output_folder,glue("{FullProjectionsSaveFile}_{data_version}.Rds")))
 ################################################################################
 ################################################################################
 
@@ -400,14 +412,17 @@ historical_NAA <-historical_NAA %>%
 write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
 write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
-
-
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
 
 # Pick exactly 1 year. See the header.
 RowPick<-which(year==YearProj)
 stopifnot(length(RowPick)==1)
-
-
 
 
 #extract just 1 row
@@ -445,4 +460,12 @@ NAA <-NAA %>%
 
 write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
 write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
 
