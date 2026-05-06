@@ -29,7 +29,7 @@ file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 # Download
 drive_download(
   file = as_id(file_id),
-  path = here("input_data2",glue("{HistoricalNAASaveFile}.Rds")),
+  path = here("input_data",glue("{HistoricalNAASaveFile}.Rds")),
   overwrite = TRUE
 )
 
@@ -41,7 +41,7 @@ file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 # Download
 drive_download(
   file = as_id(file_id),
-  path = here("input_data2",glue("{ProjectedNAASaveFile}.Rds")),
+  path = here("input_data",glue("{ProjectedNAASaveFile}.Rds")),
   overwrite = TRUE
 )
 
@@ -60,7 +60,7 @@ file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 # Download
 drive_download(
   file = as_id(file_id),
-  path = here("input_data2",glue("{HistoricalNAASaveFile}.Rds")),
+  path = here("input_data",glue("{HistoricalNAASaveFile}.Rds")),
   overwrite = TRUE
 )
 
@@ -75,7 +75,7 @@ file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 # Download
 drive_download(
   file = as_id(file_id),
-  path = here("input_data2",glue("{ProjectedNAASaveFile}.Rds")),
+  path = here("input_data",glue("{ProjectedNAASaveFile}.Rds")),
   overwrite = TRUE
 )
 
