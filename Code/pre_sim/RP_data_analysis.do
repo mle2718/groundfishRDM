@@ -154,6 +154,7 @@ use `tl1'
 merge 1:m year strat_id psu_id id_code using `cl1', keep(1 3) nogenerate /*Keep all trips including catch==0*/
 replace var_id=strat_id if strmatch(var_id,"")
 
+keep if year==2022
 
 * Format MRIP data for estimation 
 gen state="MA" if st==25
@@ -304,7 +305,7 @@ merge m:1 tab using `params'
 gen Q_gf= beta_sqrt_cod_keep*sqrt(cod_keep) +beta_sqrt_cod_release*sqrt(cod_rel) ///
 				+beta_sqrt_hadd_keep*sqrt(hadd_keep) + beta_sqrt_hadd_release*sqrt(hadd_rel) ///
 				+beta_sqrt_cod_hadd_keep*sqrt(cod_keep)*sqrt(hadd_keep) ///
-				+beta_cost*total_exp
+				+beta_cost*total_exp if trip_type=="groundfish"
 
 gen exp_Q_gf=exp(Q_gf)
 egen sum_exp_Q_gf= sum(exp_Q_gf), by(month)
@@ -314,8 +315,7 @@ gen log_exp_Q_gf= log(sum_exp_Q_gf)
 gen cod_open =1 if inlist(month, 9, 10)
 mvencode cod_open, mv(0)
 
-reg groundfish log_exp_Q_gf i.month cod_open
-
+reg groundfish log_exp_Q_gf cod_open
 
 				
 

@@ -89,18 +89,18 @@ global wavelist 1 2 3 4 5 6
 
 **************************************************Model calibration ************************************************** 
 // 1) Pull the MRIP data
-do "$input_code_cd\MRIP data wrapper.do"
+do "$input_code_cd\MRIP_data_wrapper.do"
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
 do "$input_code_cd\directed_trips_calibration.do"
-		*This file calls "set regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
+		*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
 		*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
-*do "$input_code_cd\survey trip costs.do"
+*do "$input_code_cd\survey_trip_costs.do"
 
 // 4) Create draw of angler preference parameters 
-*do "$input_code_cd\estimate angler preferences.do" - only needs to be run once
+*do "$input_code_cd\estimate_angler_preferences.do" - only needs to be run once
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
@@ -113,7 +113,7 @@ do "$input_code_cd\directed_trips_calibration.do"
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-		do "$input_code_cd\compare calibration data to MRIP.do" 
+		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
 
 // 7) add additonal angler demographics based on results of utilty model
 		do "$input_code_cd\additional_angler_dems.do" 
