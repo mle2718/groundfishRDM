@@ -3,9 +3,11 @@
 
 # Author: Charles Perretti (2024-NOV)
 # Mod : Min-Yang Lee (2025-Nov)
-
+####################################################################################
 # Depends "wham_version_installer.R" will install the proper version of the WHAM
 # package that matches the WHAM model.
+####################################################################################
+# Reads files from google drive, you'll need access to those files.
 
 # This code does 2 projections, but uses the first projection
 # 1) Fmsy 2025-2027 (this is the projection in the MT report) which also produces the ofl in 2025
@@ -34,12 +36,13 @@
 # Haddock NAA are assumed to be lognormally distributed with a mean and sd parameters.
 # I use rlnorm() to generate a distribution
 ############ End description###################################################
-
+#Load libraries
 library(tidyverse)
 library(TMB)
 library(haven)
 library(glue)
-
+library(googledrive)
+library(here)
 #load the haddock specific version of WHAM.
 haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
 library(wham,lib.loc = haddock_wham_lib)
@@ -47,22 +50,102 @@ library(wham,lib.loc = haddock_wham_lib)
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","haddock","input")
-output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","haddock","output",Sys.Date())
-dir.create(file.path(output_folder), showWarnings = FALSE)
+# Assessment folders
+here::i_am("Code/pre_sim/get_haddock_assessment_data.R")
 
-data_version<-as.character(Sys.Date())
+assessment_output_folder<-here("input_data")
+dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
+
+# data version
+data_version<-Sys.Date()
+
+# create a small dataframe that holds the stock "characteristics".
+stock_stats_df<-tibble(
+  common = "HADDOCK",
+  species_itis =164712 ,
+  stock_abbrev = "GOM",
+  state=NA,
+  wave=NA,
+  metric="Numbers At Age",
+  units = "Individuals",
+  data_version= data_version
+)
 
 
-FullProjectionsSaveFile<-"GOM_Haddock_Projections.rds"
+#names of output save files
+FullProjectionsSaveFile<-"GOM_Haddock_Projections"
+ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_2024Assessment_{data_version}")
+HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_2024Assessment_{data_version}")
 
-ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
-HistoricalNAASaveFile<-"GOM_Haddock_historical_NAA_2024Assessment.dta"
+# input save files
+assessment_file_in<-"mod_nola_dcpe_blls2.rds"
+waa_file_in<-"waa_pred_2024-08-25.xlsx"
 
-# Read in accepted model
-mod_accepted <-
-	readRDS(file = file.path(input_folder,"mod_nola_dcpe_blls2.rds"))
+
+# Connect to Google Drive
+drive_auth(cache = here(".secrets"), email = TRUE)
+
+# Output folder on google drive
+groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
+folder_info <- drive_get(
+  path = groundfish_processed_path,
+  shared_drive = "NMFS NEC READ SSB"
+)
+groundfish_processed_path<-folder_info$id
+
+# Read in the assessment file
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".rds")
+
+# Download
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in using  into your environment
+mod_accepted <- read_rds(temp_path)
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
+
+# readin the WAA file
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",waa_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+temp_path <- tempfile(fileext = ".xlsx")
+
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+
+# Load WAA projections (specific to GOM haddock) ###############################
+waa_proj_ssb <-
+  readxl::read_excel(path=temp_path,
+                     sheet = "SSB WAA") %>%
+  filter(YEAR %in% 2024:2027) %>%
+  select(-YEAR)
+
+waa_proj_catch <-
+  readxl::read_excel(path=temp_path,
+                     sheet = "Catch WAA") %>%
+  filter(YEAR %in% 2024:2027) %>%
+  select(-YEAR)
+
+
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
 
 stock_name <- "GOM haddock"
 model_name <- "2024MT"
@@ -128,20 +211,8 @@ actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 # actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
 
 
-################################################################################
+#Handle WAA ###############################################################################
 
-# Load WAA projections (specific to GOM haddock) ###############################
-waa_proj_ssb <-
-  readxl::read_excel(file.path(input_folder,"waa_pred_2024-08-25.xlsx"),
-                     sheet = "SSB WAA") %>%
-  filter(YEAR %in% 2024:2027) %>%
-  select(-YEAR)
-
-waa_proj_catch <-
-  readxl::read_excel(file.path(input_folder,"waa_pred_2024-08-25.xlsx"),
-                     sheet = "Catch WAA") %>%
-  filter(YEAR %in% 2024:2027) %>%
-  select(-YEAR)
 
 waa_input_blls <- array(dim = c(6,4,9)) #new wham wants the waa doubled for some reason
 for(i in 1:9){ # the order of the sources matches input$data$waa_pointers
@@ -250,7 +321,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
-write_rds(proj_list, file = file.path(output_folder,glue("{FullProjectionsSaveFile}.Rds")))
+write_rds(proj_list, file = file.path(assessment_output_folder,glue("{FullProjectionsSaveFile}_{data_version}.Rds")))
 ################################################################################
 ################################################################################
 
@@ -330,22 +401,37 @@ historical_NAA<-as.data.frame(cbind(year,historical_NAA))
 
 
 historical_NAA <- historical_NAA %>%
-  dplyr::filter(year<YearProj) %>%
-  mutate(data_version=data_version)
+  dplyr::filter(year<YearProj)
+
+# add in stock statistics
+
+historical_NAA <-historical_NAA %>%
+  cross_join(stock_stats_df)%>%
+  mutate(metric="historical mean Numbers At Age")
 
 
+write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
-write_dta(historical_NAA, path=file.path(output_folder,glue("{HistoricalNAASaveFile}.dta")))
-write_rds(historical_NAA, file=file.path(output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
 
-
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.dta"),
+  overwrite = TRUE
+)
 
 
 # Pick exactly 1 year. See the header.
 RowPick<-which(year==YearProj)
 stopifnot(length(RowPick)==1)
-
-
 
 
 #extract just 1 row
@@ -369,14 +455,32 @@ NAA<-list2DF(NAA)
 colnames(NAA)<-names
 NAA <-NAA %>%
   mutate(replicate= row_number(),
-         year=YearProj,
-         data_version=data_version
+         year=YearProj
   ) %>%
   relocate(replicate,year)
 
 
+# add in stock statistics
+
+NAA <-NAA %>%
+  cross_join(stock_stats_df)%>%
+  mutate(metric="projected Numbers At Age")
 
 
-write_dta(NAA, path=file.path(output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA, file=file.path(output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
 
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
+
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.dta"),
+  overwrite = TRUE
+)

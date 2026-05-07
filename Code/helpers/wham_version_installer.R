@@ -10,13 +10,14 @@ library(tidyverse)
 library(TMB)
 library(haven)
 library(glue)
+library(googledrive)
+library(here)
+here::i_am("Code/helpers/wham_version_installer.R")
+
+drive_auth(cache = here(".secrets"), email = TRUE)
 
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
-
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-cod_input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
-haddock_input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","haddock","input")
 
 cod_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "cod_wham_install")
 haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
@@ -26,8 +27,23 @@ dir.create(file.path(haddock_wham_lib), showWarnings = FALSE)
 
 
 # Read in accepted cod model
-mod_accepted <-
-  readRDS(file = file.path(cod_input_folder,"mod_base_2023_noBLLS.rds"))
+
+# this is the google drive location of the cod model
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+
+temp_path <- tempfile(fileext = ".rds")
+
+# Download
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in using  into your environment
+mod_accepted <- read_rds(temp_path)
 
 ###################################################################################
 ###################################################################################
@@ -47,14 +63,28 @@ remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=cod_wha
 
 
 
+# read in the haddock assessment
+assessment_file_in<-"mod_nola_dcpe_blls2.rds"
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
 
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".rds")
 
+# Download
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
 
-# Read in accepted haddock  model
-haddock_accepted <-
-  readRDS(file = file.path(haddock_input_folder,"mod_nola_dcpe_blls2.rds"))
-
+# Read in using  into your environment
+haddock_accepted <- read_rds(temp_path)
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
 ###################################################################################
 ###################################################################################
 #Make sure that the version of WHAM that was used to generate the model is installed

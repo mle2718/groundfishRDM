@@ -13,8 +13,6 @@
 # Depends "wham_version_installer.R" will install the proper version of the WHAM
 # package that matches the WHAM model.
 
-
-
 # Some inputs to ASAP are scalars, some are vectors, and some are matrices.
 # I use tail(.x, 1) to pick the last "thing" of a vector or matrix, which is usually the final year of data.
 
@@ -53,12 +51,13 @@
 # I use rlnorm() to generate a distribution
 
 ############ End description###################################################
-
+#Load libraries
 library(tidyverse)
 library(TMB)
 library(haven)
 library(glue)
-
+library(googledrive)
+library(here)
 cod_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "cod_wham_install")
 library(wham,lib.loc = cod_wham_lib)
 
@@ -66,26 +65,106 @@ library(wham,lib.loc = cod_wham_lib)
 ###########Begin Housekeeping##################################################
 #Set paths, input names, and savefile names.
 
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-input_folder<-file.path(BLAST_root,"cod_haddock_fy2025","source_data","cod","input")
-output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data","cod","output",Sys.Date())
-dir.create(file.path(output_folder), showWarnings = FALSE)
+# Assessment folders
+
+here::i_am("Code/pre_sim/get_cod_assessment_data.R")
+assessment_output_folder<-here("input_data")
+dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
+
+# data version
+data_version<-Sys.Date()
 
 
-data_version<-as.character(Sys.Date())
 
 
+# create a small dataframe that holds the stock "characteristics".
+
+stock_stats_df<-tibble(
+  common = "ATLANTIC COD",
+  species_itis =164712 ,
+  stock_abbrev = "WGOM",
+  state=NA,
+  wave=NA,
+  metric="Numbers At Age",
+  units = "Individuals",
+  data_version= data_version
+)
+
+
+#names of output save files
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
-ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
-HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
+ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_from_2024Assessment_{data_version}")
+HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_from_2024Assessment_{data_version}")
 
-# Read in accepted model
-mod_accepted <-
-  readRDS(file = file.path(input_folder,"mod_base_2023_noBLLS.rds"))
+
+
+# Connect to Google Drive
+drive_auth(cache = here(".secrets"), email = TRUE)
+# Output folder on google drive
+groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
+folder_info <- drive_get(
+  path = groundfish_processed_path,
+  shared_drive = "NMFS NEC READ SSB"
+)
+groundfish_processed_path<-folder_info$id
+
+# input save files
+assessment_file_in<-"mod_base_2023_noBLLS.rds"
+ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
+
+#read in the assessment file
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+#
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".rds")
+
+# Download
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in using  into your environment
+mod_accepted <- read_rds(temp_path)
+
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
 
 mod_accepted$model_name <- "Accepted"
 mod_list <- list(mod_accepted)
+
+
+
+
+# Read the ASAP file from google drive
+readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",ASAP_file_in)
+file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+#
+# Create a path for a temporary file
+temp_path <- tempfile(fileext = ".DAT")
+
+# Download
+drive_download(
+  file = as_id(file_id),
+  path = temp_path,
+  overwrite = TRUE
+)
+
+# Read in
+asap3 <- read_asap3_dat(temp_path)
+
+# cleanup
+if (file.exists(temp_path)) {
+  file.remove(temp_path)
+}
+
 
 ###################################################################################
 ###################################################################################
@@ -114,10 +193,9 @@ cat("Installed wham commit is", packageDescription("wham")$RemoteSha,"\n")
 
 ################################################################################
 ################################################################################
-# Read in ASAP3 dat file and pick parameters
+# Handle ASAP3 Dat file
 ################################################################################
 ################################################################################
-asap3 <- read_asap3_dat(file.path(input_folder,ASAP_file_in))
 
 
 # Placeholders and parameters
@@ -283,7 +361,7 @@ proj_out <-
 ################################################################################
 ################################################################################
 # Save the full set of projections
-write_rds(proj_list, file = file.path(output_folder,glue("{FullProjectionsSaveFile}.Rds")))
+write_rds(proj_list, file = file.path(assessment_output_folder,FullProjectionsSaveFile))
 ################################################################################
 ################################################################################
 
@@ -317,12 +395,30 @@ colnames(historical_NAA)<-names
 historical_NAA<-as.data.frame(cbind(year,historical_NAA))
 
 historical_NAA <- historical_NAA %>%
-  dplyr::filter(year<YearProj) %>%
-  mutate(data_version=data_version)
+  dplyr::filter(year<YearProj)
 
+# add in stock statistics
+historical_NAA<-historical_NAA %>%
+  cross_join(stock_stats_df)%>%
+  mutate(metric="historical mean Numbers At Age")
 
-write_dta(historical_NAA, path=file.path(output_folder,glue("{HistoricalNAASaveFile}.dta")))
-write_rds(historical_NAA, file=file.path(output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
+
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{HistoricalNAASaveFile}.dta"),
+  overwrite = TRUE
+)
 
 
 
@@ -356,13 +452,33 @@ NAA<-list2DF(NAA)
 colnames(NAA)<-names
 NAA <-NAA %>%
   mutate(replicate= row_number(),
-         year=YearProj,
-         data_version=data_version
+         year=YearProj
   ) %>%
   relocate(replicate,year)
 
+# add in stock statistics
 
-write_dta(NAA, path=file.path(output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA, file=file.path(output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+NAA <-NAA %>%
+  cross_join(stock_stats_df)%>%
+  mutate(metric="projected Numbers At Age")
+
+
+write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+
+#Put the historical NAA on google drive
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.Rds"),
+  overwrite = TRUE
+)
+
+drive_upload(
+  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")),
+  path = as_id(groundfish_processed_path),
+  name = glue("{ProjectedNAASaveFile}.dta"),
+  overwrite = TRUE
+)
 
 
