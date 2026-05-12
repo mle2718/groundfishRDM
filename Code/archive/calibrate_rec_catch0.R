@@ -6,6 +6,17 @@
 # md<-"pr"
 # i<-3
 
+# MRIP (simulated) total harvest and discard
+MRIP_comparison = read_dta(file.path(input_data_cd,"simulated_catch_totals.dta")) %>%
+  dplyr::rename(estimated_trips=tot_dtrip_sim,
+                cod_catch=tot_cod_cat_sim,
+                hadd_catch=tot_hadd_cat_sim,
+                cod_keep=tot_cod_keep_sim,
+                hadd_keep=tot_hadd_keep_sim,
+                cod_rel=tot_cod_rel_sim,
+                hadd_rel=tot_hadd_rel_sim)
+
+
 mode_draw <- c("pr", "fh")
 draws <- 1:n_simulations
 season_draw <- c("summer", "winter")
