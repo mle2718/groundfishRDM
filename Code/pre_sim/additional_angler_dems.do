@@ -56,11 +56,11 @@ scalar a5g = a5     // rename to avoid clash with a5 scalar
 
 forvalues i = 1/$ndraws {
 	
-		*local i=1
-	   use "$iterative_input_data_cd\calib_catch_draws_`i'.dta", clear 
+	*local i=1
+	   use "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", clear 
 	   
 	   preserve 
-	   keep mode day tripid
+	   keep mode date tripid
 	   duplicates drop
 	   count
 	   local N_needed=`r(N)'
@@ -73,7 +73,23 @@ forvalues i = 1/$ndraws {
 	   tempfile base 
 	   save `base', replace 
 	   
-	   u "$input_data_cd\choice_exp_angler_dems.dta", clear 
+	   u "$misc_data_cd\preference_params.dta", clear 
+	   count
+	   local N=`r(N)'
+	   local expand = (`N_needed'/`N')+1
+	   expand `expand'
+	   sample `N_needed', count
+	   gen merge_id=_n
+
+	   merge 1:1 merge_id using `individuals'
+	   drop _merge  merge_id
+	   merge 1:m mode date tripid using `base'
+	   drop _merge
+	   
+	   tempfile base
+	   save `base', replace
+	   
+	   u "$misc_data_cd\choice_exp_angler_dems.dta", clear 
 	   count
 	   local N=`r(N)'
 	   local expand = (`N_needed'/`N')+1
@@ -99,11 +115,12 @@ forvalues i = 1/$ndraws {
 
 	   merge 1:1 merge_id using `individuals'
 	   drop _merge  merge_id
-	   merge 1:m mode day tripid using `base'
+	   merge 1:m mode date tripid using `base'
 	   drop _merge
-	   order draw mode day tripid catch_draw
+	   order draw mode date tripid catch_draw
+	   sort draw mode date tripid catch
 	   
-	   save  "$iterative_input_data_cd\calib_catch_draws_`i'.dta", replace
+	   save  "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", replace
 	}
 
 

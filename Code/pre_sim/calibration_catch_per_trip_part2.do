@@ -23,7 +23,7 @@ global dems
 local wvs 1 2 3 4 5 6
 foreach w of local wvs{
 	
-u  "$input_data_cd\fes_person_final_2023`w'.dta", clear 
+u  "$misc_data_cd\fes_person_final_2023`w'.dta", clear 
 
 gen state="MA" if st==25
 replace state="MD" if st==24
@@ -69,83 +69,45 @@ egen p9995 = pctile(total_trips_12), p(99.95) // drop total_trips_12 above the 9
 drop if total_trips_12>p9995
 
 keep age total_trips_12 wave state
-save "$input_data_cd\angler_dems.dta", replace 
-
-********************************
-
-/*
-* Check to make sure the copula model did not produce NAs
-local statez "MA RI"
-foreach s of local statez{
-	
-forv i=1/100{
-
-import excel using "$iterative_input_data_cd\catch_draws_`s'_`i'.xlsx", clear firstrow
-gen sf_cat=sf_keep_sim+sf_rel_sim
-gen bsb_cat=bsb_keep_sim+bsb_rel_sim
-gen scup_cat=scup_keep_sim+scup_rel_sim
-*di "`s'"
-*di `i'
-qui{
-	 count if sf_keep_sim==. | sf_rel_sim==. | bsb_keep_sim==. | bsb_rel_sim==. | scup_keep_sim==. | scup_rel_sim==. | sf_cat==. | bsb_cat ==. | scup_cat==. 
-}
-
-if `r(N)'>0{
-	di `r(N)'
-	levelsof my_dom if  sf_keep_sim==. | sf_rel_sim==. | bsb_keep_sim==. | bsb_rel_sim==. | scup_keep_sim==. | scup_rel_sim==. | sf_cat==. | bsb_cat ==. | scup_cat==. 
-	
-}
-}
-
-}
-*/
+keep if inlist(state, "ME", "NH", "MA")
+save "$misc_data_cd\angler_dems.dta", replace 
 
 
 ************** Generate catch draw files ******************
 
+import delimited using "$misc_data_cd\directed_trip_draws.csv", clear
 
-
-
-
- 
-* faster version 
-local regions "MA RI CT DE MD VA NC"
-local regions "NY NJ"
-
-set more off
-set rmsg off
-	
-foreach s of local regions {
-	
-	*local s "DE"
-    import delimited using "$iterative_input_data_cd\archive\directed_trips_calibration\directed_trips_calibration_`s'.csv", clear
-
-    gen double date_num = date(date, "DMY")
-	drop month month1
-    gen byte   month    = month(date_num)
-    gen str2   month1   = string(month, "%02.0f")
-    gen byte   wave     = cond(inlist(month,1,2),1, ///
+gen double date_num = date(day, "DMY")
+gen byte   month    = month(date_num)
+gen str2   month1   = string(month, "%02.0f")
+gen byte   wave     = cond(inlist(month,1,2),1, ///
                         cond(inlist(month,3,4),2, ///
                         cond(inlist(month,5,6),3, ///
                         cond(inlist(month,7,8),4, ///
                         cond(inlist(month,9,10),5,6)))))
-    drop date_num
-
-    drop if dtrip==0
-
-    *gen str2 state = substr(region,1,2)
-
-	drop  dtrip *_bag *_min *_y2
 	
-	tempfile base
-    save `base', replace
+format date %td
+gen date=date_num
+drop date_num day
+	
+gen double date_num_y2 = date(day_y2, "DMY")
+format date %td
+gen date_y2=date_num
+
+drop date_num_y2 day_y2
+drop if dtrip==0
+
+drop  dtrip *_bag* *_min* *_y2
+drop month1
+
+tempfile base
+save `base', replace
 
     *-----------------------------------------
     * 2) Loop draws
     *-----------------------------------------
-    *local i 1
-	forvalues i=1/$ndraws {
-		*local i 1
+forvalues i=1/$ndraws {
+		*local i 16
         use `base', clear
         keep if draw==`i'
 
@@ -164,9 +126,6 @@ foreach s of local regions {
 		qui distinct group if mode=="fh"
 		local n_fh = `r(ndistinct)'
 		
-		qui distinct group if mode=="sh"
-		local n_sh = `r(ndistinct)'
-		
 		preserve 
 		keep date mode tripid
 		duplicates drop 
@@ -176,6 +135,53 @@ foreach s of local regions {
 		restore 
 		
 		merge m:1 date mode tripid using `mode_id', keep(3) nogen  
+		
+		qui distinct group if month==1
+		local n_month1 = `r(ndistinct)'
+		
+		qui distinct group if month==2
+		local n_month2 = `r(ndistinct)'
+		
+		qui distinct group if month==3
+		local n_month3 = `r(ndistinct)'
+		
+		qui distinct group if month==4
+		local n_month4 = `r(ndistinct)'
+		
+		qui distinct group if month==5
+		local n_month5 = `r(ndistinct)'
+		
+		qui distinct group if month==6
+		local n_month6 = `r(ndistinct)'
+		
+		qui distinct group if month==7
+		local n_month7 = `r(ndistinct)'
+		
+		qui distinct group if month==8
+		local n_month8 = `r(ndistinct)'
+		
+		qui distinct group if month==9
+		local n_month9 = `r(ndistinct)'
+		
+		qui distinct group if month==10
+		local n_month10 = `r(ndistinct)'
+		
+		qui distinct group if month==11
+		local n_month11 = `r(ndistinct)'
+		
+		qui distinct group if month==12
+		local n_month12 = `r(ndistinct)'
+		
+		preserve 
+		keep date month tripid
+		duplicates drop 
+		sort date month tripid
+		bysort month: gen month_id=_n
+		tempfile month_id
+		save `month_id', replace
+		restore 
+		
+		merge m:1 date month tripid using `month_id', keep(3) nogen  
 		
 		qui distinct group if wave==1
 		local n_wave1 = `r(ndistinct)'
@@ -206,22 +212,13 @@ foreach s of local regions {
 		
 		merge m:1 date wave tripid using `wave_id', keep(3) nogen  
 		
-		
         *-------------------------------
         * Costs: resample ONCE per draw
         *-------------------------------
-        preserve
-            use "$input_data_cd\trip_costs.dta", clear
-            keep if state == substr("`s'",1,2)   // or use trips' state; see note below
-        restore
-        * Better: use state/waters from the trips file (more robust):
-        local st = state[1]
 
         preserve
-            use "$input_data_cd\trip_costs.dta", clear
-			rename mode1 mode
-            keep if state=="`st'"
-            keep state mode cost  // whatever your cost var is called
+            use "$misc_data_cd\trip_costs.dta", clear
+            keep  mode cost 
             tempfile costspool
             save `costspool', replace
         restore
@@ -231,12 +228,11 @@ foreach s of local regions {
             tempfile costs50
             save `costs50', emptyok replace
 			
-            foreach md in fh pr sh{   // use your actual 3 modes
+            foreach md in fh pr{   
                 use `costspool', clear
                 keep if mode=="`md'"
 				
-				local n_needed = cond("`md'"=="pr", `n_pr', ///
-                         cond("`md'"=="fh", `n_fh', `n_sh'))
+				local n_needed = cond("`md'"=="pr", `n_pr', `n_fh')
 
 				quietly count
 				local mult = ceil(`n_needed'/r(N))
@@ -257,8 +253,7 @@ foreach s of local regions {
         * Dems: resample ONCE per draw
         *--------------------------------
         preserve
-            use "$input_data_cd\angler_dems.dta", clear
-            keep if state=="`st'"
+            use "$misc_data_cd\angler_dems.dta", clear
             tempfile demspool
             save `demspool', replace
         restore
@@ -292,15 +287,14 @@ foreach s of local regions {
 
         merge m:1 wave wave_id using `dems50', keep(3) nogen
 
-
         preserve
-            import excel using "$iterative_input_data_cd\archive\calib_catch_draws\calib_catch_draws_`s'_`i'.xlsx", clear firstrow
+            import excel using "$calib_catch_draws_cd\calib_catch_draws_`i'.xlsx", clear firstrow
             split my_dom_id_string, parse(_)
-            rename my_dom_id_string1 state
-            rename my_dom_id_string2 wave
-            rename my_dom_id_string3 mode
-            drop my_dom_id_string4 
-            keep my_dom_id_string state wave mode  sf_* bsb_* scup_*
+            rename my_dom_id_string1 month
+            rename my_dom_id_string2 mode
+            drop my_dom_id_string3 
+            keep my_dom_id_string month mode  cod_* hadd_*
+			destring month, replace
             tempfile excelpool
             save `excelpool', replace
         restore
@@ -309,7 +303,7 @@ foreach s of local regions {
         * BIG SPEEDUP:
         * sample catch outcomes by (mode,wave)
         *---------------------------------------
-        egen long g = group(mode wave)
+        egen long g = group(mode month)
         bysort g: gen long gid = _n
         bysort g: gen long n_g = _N
         levelsof g, local(gs)
@@ -327,15 +321,15 @@ foreach s of local regions {
 		*local gg 10
             use `trips_expanded', clear
             keep if g==`gg'
-            keep mode wave 
+            keep mode month 
             local md  = mode[1]
-            local wv  = wave[1]
+            local mnth  = month[1]
             local n_needed = _N
 			di "`md'"
-			di "`wv'"
+			di "`mnth'"
 			di `n_needed'
             use `excelpool', clear
-            keep if wave=="`wv'" & mode=="`md'"
+            keep if month==`mnth' & mode=="`md'"
 
 			quietly count
 			local mult = ceil(`n_needed'/r(N))
@@ -345,63 +339,57 @@ foreach s of local regions {
             * If you need more control: ensure enough rows before sampling
             quietly count
             if (r(N) < `n_needed') {
-                di as error "Not enough catch rows for st=`st' draw=`i' mode=`md' wave=`wv' need=`n_needed' have=" r(N)
+                di as error "Not enough catch rows for  draw=`i' mode=`md' month=`mnth' need=`n_needed' have=" r(N)
                 continue
             }
 
             gen long g   = `gg'
             gen long gid = _n
-			destring wave, replace
 
             tempfile chunk
             save `chunk', replace
 
             if (`seeded'==0) {
                 use `chunk', clear
-				destring wave, replace
                 save `catchall', replace
                 local seeded 1
             }
             else {
                 use `catchall', clear
                 append using `chunk'
-				destring wave, replace
                 save `catchall', replace
             }
         }
 		
         * Merge sampled catch onto trips by (g,gid)
         use `trips_expanded', clear
-		destring wave, replace 
         merge 1:1 g gid using `catchall', keep(3) nogen
 
         drop g gid n_g
         compress
 		
 		sort date tripid catch_
-		gen sf_cat  = sf_keep_sim + sf_rel_sim
-        gen bsb_cat = bsb_keep_sim + bsb_rel_sim
-        gen scup_cat = scup_keep_sim + scup_rel_sim
+		gen cod_cat  = cod_keep + cod_rel
+        gen hadd_cat = hadd_keep + hadd_rel
 
-		keep state draw ///
-                 sf_keep_sim sf_cat sf_rel_sim ///
-                 bsb_keep_sim bsb_rel_sim bsb_cat ///
-                 scup_keep_sim scup_rel_sim scup_cat ///
-                 mode month date day_i  wave ///
-                 tripid catch_draw age total_trips_12 day cost dtrip
+		keep  draw ///
+                 cod_keep cod_cat cod_rel ///
+                 hadd_keep hadd_rel hadd_cat ///
+                 mode month date  ///
+                 tripid catch_draw age total_trips_12 cost 
 				 
-		gen double date_num = date(date, "DMY")
-		format date_num %td
-		order state mode date tripid catch 
+		renvarlab cod_keep cod_cat cod_rel hadd_keep hadd_rel hadd_cat, postfix(_sim)
+
+		order mode date tripid catch 
+		sort mode date tripid catch
 		compress
 	
-		save "$iterative_input_data_cd\archive\calib_catch_draws\calib_catch_draws_`s'_`i'.dta", replace
+		save "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", replace
 		
 }		
-}
+
 
 			
-*u "$iterative_input_data_cd\calib_catch_draws_CTALL1.dta", clear
 
 			
 			

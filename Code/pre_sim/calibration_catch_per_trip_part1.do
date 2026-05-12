@@ -20,7 +20,7 @@ set seed $seed
 
 * Pull in MRIP data
 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -93,7 +93,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -439,16 +439,19 @@ keep wp_int my_dom_id_string meancod_cat-id_code year common_dom cod_tot_cat-had
 
 mvencode se*, mv(0) override
 mvencode missing*, mv(0) override
+mvencode mean*, mv(0) override
+replace cod_no_catch=1 if meancod_rel==0 & meancod_keep==0
+replace hadd_no_catch=1 if meancod_rel==0 & meancod_keep==0
 
-export excel "$input_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
-import excel using "$input_data_cd\baseline_mrip_catch_processed.xlsx", clear first
+export excel "$misc_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
+import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first
 
 
 ************** Part B  **************
 * Compute MRIP estimates for comparison with simulated estimates 
 
 * Estimates by mode
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -520,7 +523,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -662,14 +665,14 @@ rename my_dom_id_string1 mode
 drop  my_dom_id_string2 
 order my_dom_id_string mode 
 
-save "$input_data_cd\mrip_catch_by_mode.dta", replace 
+save "$misc_data_cd\mrip_catch_by_mode.dta", replace 
 
 
 
 
 
 * Estimates by mode and month 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -742,7 +745,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -884,11 +887,11 @@ rename  my_dom_id_string2 mode
 drop my_dom_id_string3
 order my_dom_id_string month mode 
 
-save "$input_data_cd\mrip_catch_by_mode_month.dta", replace 
+save "$misc_data_cd\mrip_catch_by_mode_month.dta", replace 
 
 
 * Estimates by mode and season 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -961,7 +964,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -1106,6 +1109,6 @@ rename  my_dom_id_string2 mode
 drop my_dom_id_string3
 order my_dom_id_string season mode 
 
-save "$input_data_cd\mrip_catch_by_mode_season.dta", replace 
+save "$misc_data_cd\mrip_catch_by_mode_season.dta", replace 
 
 

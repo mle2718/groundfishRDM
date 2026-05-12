@@ -10,7 +10,7 @@
 		
 set seed $seed 
 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 global fluke_effort
@@ -102,7 +102,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -295,14 +295,6 @@ rename month1 month
 
 sort mode month kod draw 
 
-preserve 
-drop dtrip se
-rename dtrip dtrip
-order year month kod mode draw
-export delimited using "E:\Lou_projects\groundfishRDM\input_data\directed_trips.csv", replace 
-restore
-
-
 tempfile new1
 save `new1'
 
@@ -395,7 +387,7 @@ gen month1=month(day)
 
 
 *call the regulations file	
-do "$input_code_cd/set regulations.do"	
+do "$input_code_cd/set_regulations.do"	
 
 preserve
 keep if cod_bag!=0
@@ -403,7 +395,7 @@ keep day
 duplicates drop 
 rename day date
 gen cod_season_open=1
-save  "$input_data_cd\cod_open_season_dates.dta",  replace 
+save  "$misc_data_cd\cod_open_season_dates.dta",  replace 
 restore 
 
 preserve
@@ -411,7 +403,8 @@ keep mode day draw cod_bag cod_min hadd_bag hadd_min day_y2 dtrip ///
 			cod_bag_y2 cod_min_y2 hadd_bag_y2 hadd_min_y2 ///
 			cod_bag_y2_alt cod_min_y2_alt hadd_bag_y2_alt hadd_min_y2_alt
 compress
-export delimited using "$iterative_input_data_cd\directed_trip_draws.csv",  replace 
+
+export delimited using "$misc_data_cd\directed_trip_draws.csv",  replace 
 restore
 
 **Now adjust for the differences in directed trips due to changes in kod between calibration year y and  y+1 
@@ -474,7 +467,7 @@ drop check
 rename month month 
 destring month, replace
 compress
-export delimited using "$input_data_cd\next year calendar adjustments.csv",  replace 
+export delimited using "$misc_data_cd\next_year_calendar_adjustments.csv",  replace 
 
 
 
@@ -576,7 +569,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -644,13 +637,13 @@ rename my mode
 ds mode, not
 renvarlab `r(varlist)', postfix(_mrip)
 
-save "$input_data_cd\mrip_dtrip_by_mode.dta", replace 
+save "$misc_data_cd\mrip_dtrip_by_mode.dta", replace 
 
 
 
 
 * estimates by mode and month 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 global fluke_effort
@@ -745,7 +738,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -815,11 +808,11 @@ drop my
 ds month mode, not
 renvarlab `r(varlist)', postfix(_mrip)
 
-save "$input_data_cd\mrip_dtrip_by_mode_month.dta", replace 
+save "$misc_data_cd\mrip_dtrip_by_mode_month.dta", replace 
 
 
 * estimates by mode and summer/winter season
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 global fluke_effort
@@ -914,7 +907,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -987,4 +980,4 @@ drop my
 ds season mode, not
 renvarlab `r(varlist)', postfix(_mrip)
 
-save "$input_data_cd\mrip_dtrip_by_mode_season.dta", replace 
+save "$misc_data_cd\mrip_dtrip_by_mode_season.dta", replace 

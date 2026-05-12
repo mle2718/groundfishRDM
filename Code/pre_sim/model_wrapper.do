@@ -62,18 +62,17 @@ global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026)
 global leap_yr_days "td(29feb2024)" 
 
 * choose number of draws to create. Will ultimately select ~100 for final model
-global ndraws 201
+global ndraws 100
 
 * adjust 2022 survey trip costs to account for inflation (January 2022 - January 2025)
 * source =https://www.bls.gov/data/inflation_calculator.htm
 global inflation_expansion=1.13
 
 * adjust project paths based on user
-global project_path "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM" /* Lou's project path */
-global input_data_cd "E:\Lou_projects\groundfishRDM\input_data" /* Lou's local data path */
 global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
-global iterative_input_data_cd "E:\Lou_projects\groundfishRDM\process_data"
-global figure_cd  "E:\Lou_projects\groundfishRDM\figures"
+global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
+global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
+global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
 
 * set a global seed #
 global seed 03211990

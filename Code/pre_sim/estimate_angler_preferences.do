@@ -2,7 +2,7 @@
 
 set seed 03211990
 
-u "$input_data_cd\CE_survey_data.dta", clear 
+u "$misc_data_cd\CE_survey_data.dta", clear 
 
 *test specification - linear in preferences	
 gen cod_hadd_kpt=codkpt*hadkpt
@@ -114,22 +114,6 @@ rename beta_hadd_rel beta_sqrt_hadd_release
 rename beta_cod_hadd_keep beta_sqrt_cod_hadd_keep
 rename beta_nofish beta_opt_out
 
-save  "$iterative_input_data_cd\preference_params.dta", replace
+save  "$misc_data_cd\preference_params.dta", replace
 
 
-
-
-/*
-u "$iterative_input_data_cd\preference_params.dta", clear 
-
-ds draw, not
-return list
-local vars `r(varlist)'
-di `vars'
-foreach v of local vars {
-	di "`v'"
-	su `v'
-	di `r(mean)'
-	di `r(sd)'
-}
-*/

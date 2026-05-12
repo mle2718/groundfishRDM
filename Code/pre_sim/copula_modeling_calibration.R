@@ -35,16 +35,16 @@ conflicts_prefer(dplyr::summarise)
 
 # ---- controls ----
 n_sim   <- 5000
-n_draws <- 10
+n_draws <- 100
 n_reps  <- 200
 
 statez <- c("all") #holdover from SFRDM
 
-input_file <- "E:/Lou_projects/groundfishRDM/input_data/baseline_mrip_catch_processed.xlsx"
+input_file <- "E:/Lou_projects/groundfishRDM/2027_mgt_cycle/miscellaneous/baseline_mrip_catch_processed.xlsx"
 
 full_df <- readxl::read_xlsx(input_file)
 full_df <- full_df %>% dplyr::mutate(state="all")
-output_dir <- "E:/Lou_projects/groundfishRDM/process_data/calib_catch_draws"
+output_dir <- "E:/Lou_projects/groundfishRDM/2027_mgt_cycle/calib_catch_draws"
 
 # ---- helper functions ----
 
