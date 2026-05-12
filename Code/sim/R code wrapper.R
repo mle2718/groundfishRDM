@@ -34,31 +34,35 @@ conflicts_prefer(dplyr::count)
 
 #Need to ensure that the globals below are set up in both this file and the stata model_wrapper.do file.
 
-
 #Set up R globals for input/output data and code scripts
 code_cd=here("Code", "sim")
-input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
-iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+# input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
+# iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+#
+# final_process_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+# final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/process_data/base_outcomes"
+# final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/process_data/n_choice_occasions"
+# final_process_misc_cd="E:/Lou_projects/groundfishRDM/process_data/miscellaneous"
 
-final_process_data_cd="E:/Lou_projects/groundfishRDM/final_process_data"
-final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/final_process_data/base_outcomes"
-final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/final_process_data/n_choice_occasions"
-final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscellaneous"
 
-###################################################
-###############Pre-sim Stata code##################
-###################################################
+final_process_data_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle"
+final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/base_outcomes"
+final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/n_choice_occasions"
+final_process_misc_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/miscellaneous"
+final_process_calib_catch_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/calib_catch_draws"
 
-#Stata code extracts and prepares the data needed for the simulation
 
-#Connect Rstudio to Stata
-#options("RStata.StataPath" = "\"C:\\Program Files\\Stata17\\StataMP-64\"")
-#options("RStata.StataVersion" = 17)
+n_simulations<-100 # Number of model iterations
+n_draws<-50 # Number of simulated trips per day
 
-#Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-201
 
-n_draws<-50 #Number of simulated trips per day
+# helpers
+parse_date_any <- function(x) {
+  data.table::as.IDate(as.Date(
+    x,
+    tryFormats = c("%d%b%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y")
+  ))
+}
 
 #First, open "$code_cd\model wrapper.do" and set globals:
 #a) data years for different datasets
@@ -89,24 +93,24 @@ n_draws<-50 #Number of simulated trips per day
 #and angler preferences. I calibrate the model with 125 iterations, some of which are
 #excluded after Step 2. From the pool of remaining iterations, I use the first 100 in the projection.
 
-#Prior to running the model, transfer the catch_draw files from .csv to .feather to reduce computing time
-# statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-#
-# for(s in statez) {
-#
-#   dtrip0<-read.csv(file.path(iterative_input_data_cd, paste0("directed_trips_calibration_", s,".csv")))
-#   write_feather(dtrip0, file.path(iterative_input_data_cd, paste0("directed_trips_calibration_", s,".feather")))
-#
-#   for(i in 1:n_simulations) {
-#     catch<-read_dta(file.path(input_data_cd, paste0("calib_catch_draws_",s, "_", i,".dta")))
-#     write_feather(catch, file.path(iterative_input_data_cd, paste0("calib_catch_draws_",s, "_", i,".feather")))
-#
-#     # make fake projection draws
-#     # write_feather(catch, file.path(iterative_input_data_cd, paste0("projected_catch_draws_",s, "_", i,".feather")))
-#
-#   }
-# }
+#Prior to running the model, transfer the catch_draw files from .csv to .fst to reduce computing time
+dtrip0<-read.csv(file.path(final_process_misc_cd, paste0("directed_trip_draws.csv"))) %>%
+  dplyr::mutate(date_parsed = parse_date_any(day),
+                month=data.table::month(date_parsed)) %>%
+  dplyr::select(-day, -day_y2)
 
+write_fst(dtrip0, file.path(final_process_misc_cd, paste0("directed_trip_draws.fst")))
+
+for(i in 1:n_simulations) {
+
+    catch0<-read_dta(file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_", i,".dta"))) %>%
+      dplyr::mutate(date_parsed = parse_date_any(date),
+                    month=data.table::month(date_parsed)) %>%
+      dplyr::select(-date)
+
+    write_fst(catch0, file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_", i,".fst")))
+
+  }
 
 
 ##################### STEP 1 #####################
@@ -114,24 +118,10 @@ n_draws<-50 #Number of simulated trips per day
 # I do this for each stratum and each stratum's 125 draws of MRIP trips/catch/harvest.
 # This code retains for each stratum the percent/absolute difference between model-based harvest and MRIP-based harvest by species.
 
-MRIP_comparison = read_dta(file.path(input_data_cd,"simulated_catch_totals.dta")) %>%
-  dplyr::rename(estimated_trips=tot_dtrip_sim,
-                cod_catch=tot_cod_cat_sim,
-                hadd_catch=tot_hadd_cat_sim,
-                cod_keep=tot_cod_keep_sim,
-                hadd_keep=tot_hadd_keep_sim,
-                cod_rel=tot_cod_rel_sim,
-                hadd_rel=tot_hadd_rel_sim)
-
-#Files needed:
-
-#Scripts needed:
-
-
-source(file.path(code_cd,"calibrate_rec_catch0.R"))
+source(file.path(code_cd,"calibrate_rec_catch0_rewrite.R"))
 
 #Output files:
-#calibration_comparison.feather
+#calibration_comparison.fst
 
 
 
@@ -158,7 +148,7 @@ source(file.path(code_cd,"calibrate_rec_catch0.R"))
 #Scripts needed:
 #calibration_catch_weights.R - can be commented out to save time if calibration catch weight are not needed.
 
-source(file.path(code_cd,"calibration_routine.R"))
+source(file.path(code_cd,"calibration_routine_rewrite.R"))
 
 #Output files:
 #calibration_comparison.rds
