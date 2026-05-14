@@ -55,6 +55,8 @@ MRIP_comparison <- as.data.table(
   haven::read_dta(file.path(final_process_misc_cd, "simulated_catch_totals.dta"))
 )
 
+
+
 setnames(
   MRIP_comparison,
   old = c("tot_dtrip_sim",
@@ -71,6 +73,7 @@ setnames(
 
 baseline_output0 <- as.data.table(fst::read_fst(
   file.path(final_process_misc_cd, "calibration_comparison.fst")))
+
 
 cod_hadd_season <- function(date_parsed) {
   fifelse(data.table::month(date_parsed) %in% c(9, 10, 11, 12, 1, 2, 3, 4),
@@ -171,21 +174,24 @@ make_season <- function(base_row) {
   # zero-target case
   if (is.finite(mrip_keep) && mrip_keep == 0) {
 
-    # if model is also effectively zero, nothing to do
+    # If model is also zero, still run calibrate_rec_catch1 once
+    # with a no-op rel_to_keep adjustment so weights/discards are computed.
     if (is.finite(model_keep) && model_keep == 0) {
       return(list(
-        direction = "none",
+        direction = "rel_to_keep",
         p = 0,
         lo = 0,
-        hi = NA_real_,
-        achieved = TRUE,
+        hi = 0,
+        achieved = FALSE,
         convergence = 1L,
         best_score = Inf,
-        best_row = NULL
+        best_row = NULL,
+        frozen = FALSE,
+        best_p = 0,
+        no_realloc_needed = TRUE
       ))
     }
 
-    # if model_keep > 0 and MRIP_keep == 0, only keep->rel makes sense
     direction <- "keep_to_rel"
     p0 <- ifelse(is.finite(base_row$p_keep_to_rel), as.numeric(base_row$p_keep_to_rel), 0)
     p0 <- max(0, min(1, p0))
@@ -275,6 +281,14 @@ update_bracket <- function(season, row) {
 
   season$achieved <- is_achieved(diff_keep, pct_diff_keep, MRIP_keep)
 
+  if (isTRUE(season$no_realloc_needed)) {
+    season$best_row <- copy(row)
+    season$best_score <- -Inf
+    season$best_p <- 0
+    season$frozen <- TRUE
+    season$achieved <- TRUE
+    return(season)
+  }
   this_score <- score_species(
     diff_keep      = diff_keep,
     pct_diff_keep  = pct_diff_keep,

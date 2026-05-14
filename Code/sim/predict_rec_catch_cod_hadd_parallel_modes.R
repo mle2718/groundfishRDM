@@ -32,21 +32,28 @@ library(readr)
 conflicts_prefer(data.table::month)
 # Optional parallel backend is loaded only in the wrapper below.
 
+final_process_data_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle"
+final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/base_outcomes"
+final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/n_choice_occasions"
+final_process_misc_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/miscellaneous"
+final_process_calib_catch_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/calib_catch_draws"
+
+
 # -----------------------------------------------------------------------------
 # User-facing controls
 # -----------------------------------------------------------------------------
-
-mode_draw   <- if (exists("mode_draw")) mode_draw else c("pr", "fh")
-season_draw <- if (exists("season_draw")) season_draw else c("summer", "winter")
-draws       <- if (exists("draws")) draws else seq_len(n_simulations)
-n_draws     <- if (exists("n_draws")) n_draws else 30L
+draws         <- 1:5
+n_simulations <- 5
+mode_draw     <- c("pr", "fh")
+season_draw   <- c("summer", "winter")
+draws         <- if (exists("draws")) draws else seq_len(n_simulations)
+n_draws       <- 50L
 
 # Length-weight parameters from the calibration script.
 cod_lw_a <- if (exists("cod_lw_a")) cod_lw_a else 0.000005132
 cod_lw_b <- if (exists("cod_lw_b")) cod_lw_b else 3.1625
 had_lw_a <- if (exists("had_lw_a")) had_lw_a else 0.000009298
 had_lw_b <- if (exists("had_lw_b")) had_lw_b else 3.0205
-kg_to_lb <- 2.20462262185
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -155,7 +162,7 @@ read_projection_common_inputs_cod_hadd <- function(final_process_misc_cd,
     dplyr::rename(month=Month) %>%
     dplyr::filter(spp2!="cod")
 
-  calendar_adjustments <- read_fst(file.path(final_process_misc_cd,"calendar_adj_final.fst"))
+  calendar_adjustments <- read_fst(file.path(final_process_misc_cd,"calendar_adj.fst"))
 
   list(
     calib = calib,
@@ -177,7 +184,6 @@ simulate_species_project_cod_hadd <- function(catch_dt,
                                               min_col,
                                               size_dt,
                                               species_prefix = c("cod", "hadd"),
-                                              floor_below_min_in = 3,
                                               rel_to_keep = 0,
                                               keep_to_rel = 0,
                                               p_rel_to_keep = 0,
@@ -185,6 +191,7 @@ simulate_species_project_cod_hadd <- function(catch_dt,
                                               all_keep_to_rel = 0,
                                               cod_disc_mort = data.table(),
                                               hadd_disc_mort = data.table(),
+                                              floor_sublegal_abs = NULL,
                                               utility_adjust = TRUE) {
 
   species_prefix <- as.character(species_prefix)[1]
@@ -246,7 +253,9 @@ simulate_species_project_cod_hadd <- function(catch_dt,
   fish_dt[, release := data.table::fifelse(keep == 0L, 1L, 0L)]
   fish_dt[, kept_to_released_flag := 0L]
 
-  floor_sublegal <- min(fish_dt$min_sz, na.rm = TRUE) - floor_below_min_in * 2.54
+
+  floor_sublegal <- floor_sublegal_abs
+
   fish_dt[, subl_harv_indicator := data.table::fifelse(release == 1L & fitted_length >= floor_sublegal, 1L, 0L)]
 
   rel_to_keep <- ifelse(is.na(rel_to_keep), 0, rel_to_keep)
@@ -304,9 +313,10 @@ simulate_species_project_cod_hadd <- function(catch_dt,
     fish_dt[, release_util := release]
   }
 
+
   fish_dt[, keep_weight_lb := keep * fish_weight_lb]
   fish_dt[, release_weight_lb := release * fish_weight_lb]
-  fish_dt[, discmort_weight_lb := release * fish_weight_lb * disc_mort_rate]
+  fish_dt[, discmort_weight_lb := release_weight_lb * Discard_mortality]
 
   trip_pos <- fish_dt[, .(
     keep_n = sum(keep),
@@ -333,228 +343,6 @@ simulate_species_project_cod_hadd <- function(catch_dt,
   data.table::setkeyv(out, key_cols)
   out[]
 }
-
-# # -----------------------------------------------------------------------------
-# # One season-mode-draw projection
-# # -----------------------------------------------------------------------------
-#
-# project_one_cod_hadd <- function(s, md, dr, common_inputs) {
-#
-#   directed_trips <- common_inputs$directed_trips[list(dr, s, md)]
-#   if (!nrow(directed_trips)) return(NULL)
-#
-#   catch_path <- file.path(final_process_calib_catch_cd,paste0("calib_catch_draws_", dr, ".fst"))
-#
-#   catch_data <- data.table::as.data.table(fst::read_fst(catch_path))
-#
-#   data.table::setnames(
-#     catch_data,
-#     old = c("cod_cat_sim", "hadd_cat_sim", "cost_sim"),
-#     new = c("cod_cat", "hadd_cat", "cost"),
-#     skip_absent = TRUE
-#   )
-#   if (!"season" %in% names(catch_data)) catch_data[, season := cod_hadd_season(date_parsed)]
-#   catch_data <- catch_data[mode == md & season == s]
-#
-#   catch_data <- merge(
-#     catch_data,
-#     directed_trips[, .(mode, date_parsed, dtrip, cod_bag, cod_min, hadd_bag, hadd_min)],
-#     by = c("mode", "date_parsed"),
-#     all.x = TRUE
-#   )
-#
-#   check_required_cols(catch_data,
-#                       c("date_parsed", "mode", "tripid", "catch_draw", "cod_cat", "hadd_cat",
-#                         "cod_bag", "cod_min", "hadd_bag", "hadd_min", "cost"),
-#                       "catch_data")
-#
-#   angler_cols <- intersect(
-#     c("date_parsed", "mode", "tripid", "total_trips_12", "fish_pref_more",
-#       "educ1", "educ2", "educ3", "own_boat", "cost", "age",
-#       grep("^beta", names(catch_data), value = TRUE)),
-#     names(catch_data)
-#   )
-#   angler_dems <- unique(catch_data[, ..angler_cols])
-#
-#   size_lookup <- common_inputs$size_lookup
-#
-#   cod_size_data  <- size_lookup[list("cod", dr, s), .(fitted_prob, length)]
-#   hadd_size_data <- size_lookup[list("hadd", dr, s), .(fitted_prob, length)]
-#
-#   calib <- common_inputs$calib
-#   cod_calib <- calib[list(s, md, dr, "cod")]
-#   hadd_calib <- calib[list(s, md, dr, "hadd")]
-#   if (!nrow(cod_calib)) cod_calib <- data.table(rel_to_keep = 0, keep_to_rel = 0, p_rel_to_keep = 0, p_keep_to_rel = 0, all_keep_to_rel = 0, floor_used_in = 3)
-#   if (!nrow(hadd_calib)) hadd_calib <- data.table(rel_to_keep = 0, keep_to_rel = 0, p_rel_to_keep = 0, p_keep_to_rel = 0, all_keep_to_rel = 0, floor_used_in = 3)
-#
-#   cod_res <- simulate_species_project_cod_hadd(
-#     catch_dt = catch_data,
-#     catch_col = "cod_cat",
-#     bag_col = "cod_bag",
-#     min_col = "cod_min",
-#     size_dt = cod_size_data,
-#     species_prefix = "cod",
-#     floor_below_min_in = ifelse(is.na(cod_calib$floor_used_in[1]), 3, cod_calib$floor_used_in[1]),
-#     rel_to_keep = cod_calib$rel_to_keep[1],
-#     keep_to_rel = cod_calib$keep_to_rel[1],
-#     p_rel_to_keep = cod_calib$p_rel_to_keep[1],
-#     p_keep_to_rel = cod_calib$p_keep_to_rel[1],
-#     all_keep_to_rel = cod_calib$all_keep_to_rel[1],
-#     cod_disc_mort = common_inputs$cod_disc_mort,
-#     hadd_disc_mort = common_inputs$hadd_disc_mort,
-#     utility_adjust = TRUE
-#   )
-#
-#   hadd_res <- simulate_species_project_cod_hadd(
-#     catch_dt = catch_data,
-#     catch_col = "hadd_cat",
-#     bag_col = "hadd_bag",
-#     min_col = "hadd_min",
-#     size_dt = hadd_size_data,
-#     species_prefix = "hadd",
-#     floor_below_min_in = ifelse(is.na(hadd_calib$floor_used_in[1]), 3, hadd_calib$floor_used_in[1]),
-#     rel_to_keep = hadd_calib$rel_to_keep[1],
-#     keep_to_rel = hadd_calib$keep_to_rel[1],
-#     p_rel_to_keep = hadd_calib$p_rel_to_keep[1],
-#     p_keep_to_rel = hadd_calib$p_keep_to_rel[1],
-#     all_keep_to_rel = hadd_calib$all_keep_to_rel[1],
-#     cod_disc_mort = common_inputs$cod_disc_mort,
-#     hadd_disc_mort = common_inputs$hadd_disc_mort,
-#     utility_adjust = TRUE
-#   )
-#
-#   key_cols <- c("date_parsed", "mode", "tripid", "catch_draw")
-#   trip_data <- merge(cod_res, hadd_res, by = key_cols, all = TRUE)
-#   fill_cols <- setdiff(names(trip_data), key_cols)
-#   zero_missing_cols(trip_data, fill_cols)
-#
-#   data.table::setkey(angler_dems, date_parsed, mode, tripid)
-#   trip_data <- merge(trip_data, angler_dems, by = c("date_parsed", "mode", "tripid"), all.x = TRUE)
-#
-#   # Bring in baseline outcomes from the calibration year. These are used for
-#   # baseline utility and baseline trip probability in the CV calculation.
-#   base_path <- file.path(final_process_outcomes_cd, paste0("base_outcomes_", s, "_", md, "_", dr, ".fst"))
-#   base_outcomes <- data.table::as.data.table(fst::read_fst(base_path))
-#
-#   base_keep <- intersect(c("date_parsed", "mode", "tripid", "catch_draw",
-#                            "tot_keep_cod_base", "tot_rel_cod_base", "tot_cat_cod_base",
-#                            "tot_keep_hadd_base", "tot_rel_hadd_base", "tot_cat_hadd_base",
-#                            "util_keep_cod_base", "util_rel_cod_base",
-#                            "util_keep_hadd_base", "util_rel_hadd_base"),
-#                          names(base_outcomes))
-#   base_outcomes <- base_outcomes[, ..base_keep]
-#
-#   data.table::setkeyv(base_outcomes, key_cols)
-#   data.table::setkeyv(trip_data, key_cols)
-#   trip_data <- base_outcomes[trip_data]
-#   fill_cols <- grep("^tot_|^util_", names(trip_data), value = TRUE)
-#   zero_missing_cols(trip_data, fill_cols)
-#
-#   trip_data[, `:=`(
-#     v0_trip =
-#       beta_sqrt_cod_keep     * sqrt(util_keep_cod_base) +
-#       beta_sqrt_cod_release  * sqrt(util_rel_cod_base) +
-#       beta_sqrt_hadd_keep    * sqrt(util_keep_hadd_base) +
-#       beta_sqrt_hadd_release * sqrt(util_rel_hadd_base) +
-#       beta_sqrt_cod_hadd_keep * (sqrt(util_keep_cod_base) * sqrt(util_keep_hadd_base)) +
-#       beta_cost * cost,
-#
-#     vA_trip =
-#       beta_sqrt_cod_keep     * sqrt(util_keep_cod_new) +
-#       beta_sqrt_cod_release  * sqrt(util_rel_cod_new) +
-#       beta_sqrt_hadd_keep    * sqrt(util_keep_hadd_new) +
-#       beta_sqrt_hadd_release * sqrt(util_rel_hadd_new) +
-#       beta_sqrt_cod_hadd_keep * (sqrt(util_keep_cod_new) * sqrt(util_keep_hadd_new)) +
-#       beta_cost * cost,
-#
-#     v_optout =
-#       beta_opt_out +
-#       beta_opt_out_trips12   * total_trips_12 +
-#       beta_opt_out_fish_pref * fish_pref_more +
-#       beta_opt_out_educ2     * educ2 +
-#       beta_opt_out_educ3     * educ3 +
-#       beta_opt_out_ownboat   * own_boat
-#   )]
-#
-#   trip_data[, `:=`(
-#     probA = calc_prob_trip(vA_trip, v_optout),
-#     prob0 = calc_prob_trip(v0_trip, v_optout),
-#     log_sum_alt  = log(exp(vA_trip) + exp(v_optout)),
-#     log_sum_base = log(exp(v0_trip) + exp(v_optout))
-#   )]
-#
-#   trip_data[, CV := -1 * ((log_sum_alt - log_sum_base) / beta_cost)]
-#
-#   mean_trip_data <- copy(trip_data)
-#   drop_cols <- intersect(
-#     c(grep("^beta", names(mean_trip_data), value = TRUE),
-#       "opt_out", "cost", "total_trips_12", "educ1", "educ2", "educ3",
-#       "fish_pref_more", "own_boat", "age"),
-#     names(mean_trip_data)
-#   )
-#   if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
-#
-#   keep_vars <- setdiff(names(mean_trip_data), c("date_parsed", "mode", "tripid"))
-#   mean_trip_data <- mean_trip_data[, lapply(.SD, mean, na.rm = TRUE),
-#                                    by = .(date_parsed, mode, tripid),
-#                                    .SDcols = keep_vars]
-#
-#   # Probability-weight catch and welfare outcomes before expanding by choice occasions.
-#   outcome_cols <- intersect(c(
-#     "tot_keep_cod_new", "tot_rel_cod_new", "tot_cat_cod_new",
-#     "tot_keep_hadd_new", "tot_rel_hadd_new", "tot_cat_hadd_new",
-#     "tot_keep_cod_weight_lb_new", "tot_rel_cod_weight_lb_new", "tot_discmort_cod_weight_lb_new",
-#     "tot_keep_hadd_weight_lb_new", "tot_rel_hadd_weight_lb_new", "tot_discmort_hadd_weight_lb_new"
-#   ), names(mean_trip_data))
-#
-#   mean_trip_data[, (outcome_cols) := lapply(.SD, function(x) x * probA), .SDcols = outcome_cols]
-#
-#   nchoice_path <- file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_", s, "_", md, "_", dr, ".fst"))
-#   n_choice_occasions <- data.table::as.data.table(fst::read_fst(nchoice_path))
-#   n_choice_occasions <- n_choice_occasions[, .(date_parsed, mode, n_choice_occasions)]
-#
-#   mean_trip_data <- merge(mean_trip_data, n_choice_occasions, by = c("date_parsed", "mode"), all.x = TRUE)
-#   mean_trip_data[is.na(n_choice_occasions), n_choice_occasions := 0]
-#   mean_trip_data[, month := data.table::month(date_parsed)]
-#
-#   cal_adj <- copy(common_inputs$calendar_adjustments) %>%
-#     dplyr::filter(draw==dr) %>%
-#     dplyr::select(mode, month, expansion_factor)
-#   by_cols <- intersect(c("mode", "month"), names(cal_adj))
-#   mean_trip_data <- merge(mean_trip_data, cal_adj, by = by_cols, all.x = TRUE)
-#
-#
-#   if (!"expansion_factor" %in% names(mean_trip_data)) mean_trip_data[, expansion_factor := 1]
-#   mean_trip_data[is.na(expansion_factor), expansion_factor := 1]
-#   mean_trip_data[, expand := (n_choice_occasions * expansion_factor) / n_draws]
-#
-#   scale_cols <- intersect(c(outcome_cols, "probA", "prob0", "CV"), names(mean_trip_data))
-#   mean_trip_data[, (scale_cols) := lapply(.SD, function(x) x * expand), .SDcols = scale_cols]
-#   data.table::setnames(mean_trip_data, c("probA", "prob0"), c("n_trips_alt", "n_trips_base"), skip_absent = TRUE)
-#
-#   trip_metrics <- intersect(c(
-#     "CV", "n_trips_alt", "n_trips_base",
-#     "tot_keep_cod_new", "tot_rel_cod_new", "tot_cat_cod_new",
-#     "tot_keep_hadd_new", "tot_rel_hadd_new", "tot_cat_hadd_new",
-#     "tot_keep_cod_weight_lb_new", "tot_rel_cod_weight_lb_new", "tot_discmort_cod_weight_lb_new",
-#     "tot_keep_hadd_weight_lb_new", "tot_rel_hadd_weight_lb_new", "tot_discmort_hadd_weight_lb_new"
-#   ), names(mean_trip_data))
-#
-#   # Return only the requested mode here. The "all modes" rows are built after
-#   # all modes have been processed so that they are true cross-mode totals.
-#   model_output <- mean_trip_data[, lapply(.SD, sum, na.rm = TRUE), by = .(mode), .SDcols = trip_metrics]
-#   model_output_long <- data.table::melt(
-#     model_output,
-#     id.vars = c("mode"),
-#     measure.vars = trip_metrics,
-#     variable.name = "metric",
-#     value.name = "value"
-#   )
-#   model_output_long[, iteration := dr]
-#   model_output_long[, season := s]
-#   model_output_long[]
-# }
-
 
 # -----------------------------------------------------------------------------
 # Combined season-draw projection: both modes are processed from one catch read
@@ -620,6 +408,16 @@ project_one_cod_hadd_both_modes <- function(s,
 
     cod_calib <- calib[list(s, md, dr, "cod")]
     hadd_calib <- calib[list(s, md, dr, "hadd")]
+
+    cod_floor_used_in <- ifelse(is.na(cod_calib$floor_used_in[1]), 3, cod_calib$floor_used_in[1])
+    hadd_floor_used_in <- ifelse(is.na(hadd_calib$floor_used_in[1]), 3, hadd_calib$floor_used_in[1])
+
+    cod_floor_sublegal_abs <- min(common_inputs$directed_trips$cod_min, na.rm = TRUE) -
+      cod_floor_used_in * 2.54
+
+    hadd_floor_sublegal_abs <- min(common_inputs$directed_trips$hadd_min, na.rm = TRUE) -
+      hadd_floor_used_in * 2.54
+
     if (!nrow(cod_calib)) {
       cod_calib <- data.table(rel_to_keep = 0, keep_to_rel = 0, p_rel_to_keep = 0,
                               p_keep_to_rel = 0, all_keep_to_rel = 0, floor_used_in = 3)
@@ -636,7 +434,6 @@ project_one_cod_hadd_both_modes <- function(s,
       min_col = "cod_min",
       size_dt = cod_size_data,
       species_prefix = "cod",
-      floor_below_min_in = ifelse(is.na(cod_calib$floor_used_in[1]), 3, cod_calib$floor_used_in[1]),
       rel_to_keep = cod_calib$rel_to_keep[1],
       keep_to_rel = cod_calib$keep_to_rel[1],
       p_rel_to_keep = cod_calib$p_rel_to_keep[1],
@@ -644,6 +441,7 @@ project_one_cod_hadd_both_modes <- function(s,
       all_keep_to_rel = cod_calib$all_keep_to_rel[1],
       cod_disc_mort = common_inputs$cod_disc_mort,
       hadd_disc_mort = common_inputs$hadd_disc_mort,
+      floor_sublegal_abs = cod_floor_sublegal_abs,
       utility_adjust = TRUE
     )
 
@@ -654,7 +452,6 @@ project_one_cod_hadd_both_modes <- function(s,
       min_col = "hadd_min",
       size_dt = hadd_size_data,
       species_prefix = "hadd",
-      floor_below_min_in = ifelse(is.na(hadd_calib$floor_used_in[1]), 3, hadd_calib$floor_used_in[1]),
       rel_to_keep = hadd_calib$rel_to_keep[1],
       keep_to_rel = hadd_calib$keep_to_rel[1],
       p_rel_to_keep = hadd_calib$p_rel_to_keep[1],
@@ -662,6 +459,7 @@ project_one_cod_hadd_both_modes <- function(s,
       all_keep_to_rel = hadd_calib$all_keep_to_rel[1],
       cod_disc_mort = common_inputs$cod_disc_mort,
       hadd_disc_mort = common_inputs$hadd_disc_mort,
+      floor_sublegal_abs = hadd_floor_sublegal_abs,
       utility_adjust = TRUE
     )
 
@@ -716,28 +514,34 @@ project_one_cod_hadd_both_modes <- function(s,
         beta_opt_out_ownboat   * own_boat
     )]
 
-    trip_data[, `:=`(
-      probA = calc_prob_trip(vA_trip, v_optout),
-      prob0 = calc_prob_trip(v0_trip, v_optout),
-      log_sum_alt  = log(exp(vA_trip) + exp(v_optout)),
-      log_sum_base = log(exp(v0_trip) + exp(v_optout))
-    )]
-
-    trip_data[, CV := -1 * ((log_sum_alt - log_sum_base) / beta_cost)]
-
     mean_trip_data <- copy(trip_data)
+
+    beta_drop <- setdiff(
+      grep("^beta", names(mean_trip_data), value = TRUE),
+      "beta_cost"
+    )
+
     drop_cols <- intersect(
-      c(grep("^beta", names(mean_trip_data), value = TRUE),
+      c(beta_drop,
         "opt_out", "cost", "total_trips_12", "educ1", "educ2", "educ3",
         "fish_pref_more", "own_boat", "age"),
       names(mean_trip_data)
     )
+
     if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
 
     keep_vars <- setdiff(names(mean_trip_data), c("date_parsed", "mode", "tripid"))
     mean_trip_data <- mean_trip_data[, lapply(.SD, mean, na.rm = TRUE),
                                      by = .(date_parsed, mode, tripid),
                                      .SDcols = keep_vars]
+    mean_trip_data[, `:=`(
+      probA = calc_prob_trip(vA_trip, v_optout),
+      prob0 = calc_prob_trip(v0_trip, v_optout),
+      log_sum_alt  = log(exp(vA_trip) + exp(v_optout)),
+      log_sum_base = log(exp(v0_trip) + exp(v_optout))
+    )]
+
+    mean_trip_data[, CV := -1 * ((log_sum_alt - log_sum_base) / beta_cost)]
 
     outcome_cols <- intersect(c(
       "tot_keep_cod_new", "tot_rel_cod_new", "tot_cat_cod_new",
@@ -764,7 +568,7 @@ project_one_cod_hadd_both_modes <- function(s,
 
     if (!"expansion_factor" %in% names(mean_trip_data)) mean_trip_data[, expansion_factor := 1]
     mean_trip_data[is.na(expansion_factor), expansion_factor := 1]
-    mean_trip_data[, expand := (n_choice_occasions * expansion_factor) / n_draws]
+    mean_trip_data[, expand := (n_choice_occasions * 1) / n_draws]
 
     scale_cols <- intersect(c(outcome_cols, "probA", "prob0", "CV"), names(mean_trip_data))
     mean_trip_data[, (scale_cols) := lapply(.SD, function(x) x * expand), .SDcols = scale_cols]
@@ -926,7 +730,7 @@ data.table::setnames(prediction_long2, "value", "projected_value")
 calib_full <- data.table::as.data.table(fst::read_fst(file.path(final_process_misc_cd, "calibrated_model_stats.fst")))
 calib_keep_cols <- intersect(
   c("season", "mode", "draw", "species", "model_keep", "model_rel", "model_catch",
-    "model_keep_lbs", "model_rel_lbs"),
+    "model_keep_lbs", "model_rel_lbs", "model_discmort_lbs"),
   names(calib_full)
 )
 calib_keep <- calib_full[season %in% season_draw & mode %in% mode_draw & draw %in% draws, ..calib_keep_cols]
@@ -937,7 +741,8 @@ calib_all_modes <- calib_keep[, .(
   model_rel = sum(model_rel, na.rm = TRUE),
   model_catch = sum(model_catch, na.rm = TRUE),
   model_keep_lbs = sum(model_keep_lbs, na.rm = TRUE),
-  model_rel_lbs = sum(model_rel_lbs, na.rm = TRUE)
+  model_rel_lbs = sum(model_rel_lbs, na.rm = TRUE),
+  model_discmort_lbs = sum(model_discmort_lbs, na.rm = TRUE)
 ), by = .(season, iteration, species)]
 calib_all_modes[, mode := "all modes"]
 
@@ -946,7 +751,8 @@ calib_keep <- data.table::rbindlist(list(calib_keep, calib_all_modes), use.names
 calib_long <- data.table::melt(
   calib_keep,
   id.vars = c("season", "mode", "iteration", "species"),
-  measure.vars = intersect(c("model_keep", "model_rel", "model_keep_lbs", "model_rel_lbs", "model_catch"), names(calib_keep)),
+  measure.vars = intersect(c("model_keep", "model_rel", "model_keep_lbs",
+                             "model_rel_lbs", "model_discmort_lbs", "model_catch"), names(calib_keep)),
   variable.name = "metric",
   value.name = "baseline_value"
 )
@@ -957,6 +763,7 @@ calib_long[, metric := data.table::fcase(
   metric == "model_catch", "catch (#s)",
   metric == "model_keep_lbs", "harvest (lbs.)",
   metric == "model_rel_lbs", "discards (lbs.)",
+  metric == "model_discmort_lbs", "dead discards (lbs.)",
   default = as.character(metric)
 )]
 
@@ -988,24 +795,19 @@ data.table::setorder(final_compare, iteration, season, mode, species, metric)
 # ---- Summarize by draw, then average across draws ----
 
 # 1. Sum output within each draw across seasons/modes where appropriate
-final_compare_draw_sums <- final_compare[
-  ,
-  .(
+final_compare_draw_sums <- final_compare[ , .(
     baseline_value  = sum(baseline_value, na.rm = TRUE),
-    projected_value = sum(projected_value, na.rm = TRUE),
-    difference      = sum(difference, na.rm = TRUE)
-  ),
-  by = .(iteration, mode, species, metric)
+    projected_value = sum(projected_value, na.rm = TRUE)
+  ),  by = .(iteration, mode, species, metric)
 ]
 
+final_compare_draw_sums[, difference := projected_value - baseline_value]
 final_compare_draw_sums[, pct_difference :=
-  safe_divide(projected_value - baseline_value, baseline_value) * 100
+                          safe_divide(difference, baseline_value) * 100
 ]
 
 # 2. Average summed draw-level outputs across draws
-final_compare_draw_avg <- final_compare_draw_sums[
-  ,
-  .(
+final_compare_draw_avg <- final_compare_draw_sums[,  .(
     baseline_value  = mean(baseline_value, na.rm = TRUE),
     projected_value = mean(projected_value, na.rm = TRUE),
     difference      = mean(difference, na.rm = TRUE),
@@ -1029,10 +831,4 @@ data.table::setcolorder(
   c("iteration", "mode", "species", "metric",
     "baseline_value", "projected_value", "difference", "pct_difference")
 )
-
-data.table::setorder(final_compare_draw_avg, mode, species, metric)
-# if (exists("final_process_output_cd") && dir.exists(final_process_output_cd)) {
-#   fst::write_fst(prediction_draws, file.path(final_process_output_cd, "prediction_draws_cod_hadd.fst"))
-#   fst::write_fst(final_compare, file.path(final_process_output_cd, "final_compare_cod_hadd.fst"))
-# }
 

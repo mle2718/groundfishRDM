@@ -387,7 +387,7 @@ simulate_species_realloc <- function(catch_dt,
 
   fish_dt[, keep_weight_lb := keep * fish_weight_lb]
   fish_dt[, release_weight_lb := release * fish_weight_lb]
-  fish_dt[, disc_mort_weight_lb := release_weight_lb * Discard_mortality]
+  fish_dt[, discmort_weight_lb := release_weight_lb * Discard_mortality]
 
 
   trip_out_pos <- fish_dt[, .(
@@ -397,7 +397,7 @@ simulate_species_realloc <- function(catch_dt,
     rel_util_n = sum(release_util),
     keep_weight_lb = sum(keep_weight_lb, na.rm = TRUE),
     release_weight_lb = sum(release_weight_lb, na.rm = TRUE),
-    discmort_weight_lb = sum(disc_mort_weight_lb, na.rm = TRUE)
+    discmort_weight_lb = sum(discmort_weight_lb, na.rm = TRUE)
   ), by = key_cols]
 
 
