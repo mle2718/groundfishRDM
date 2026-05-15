@@ -61,8 +61,9 @@ data_version<-Sys.Date()
 
 # create a small dataframe that holds the stock "characteristics".
 stock_stats_df<-tibble(
+  fishery= "NE Groundfish",
   common = "HADDOCK",
-  species_itis =164712 ,
+  species_itis =164744 ,
   stock_abbrev = "GOM",
   state=NA,
   wave=NA,
