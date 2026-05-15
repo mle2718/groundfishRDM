@@ -63,7 +63,7 @@ data_version<-Sys.Date()
 stock_stats_df<-tibble(
   fishery= "NE Groundfish",
   common = "HADDOCK",
-  species_itis =164712 ,
+  species_itis =164744 ,
   stock_abbrev = "GOM",
   state=NA,
   wave=NA,
