@@ -68,7 +68,7 @@ stock_stats_df<-tibble(
   state=NA,
   wave=NA,
   metric="Numbers At Age",
-  units = "Individuals",
+  units = "Thousands",
   data_version= data_version
 )
 
