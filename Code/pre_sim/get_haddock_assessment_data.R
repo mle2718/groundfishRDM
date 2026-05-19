@@ -381,6 +381,12 @@ std1 <- list(TMB:::as.list.sdreport(proj_list[[2]]$sdrep, what = "Est", report =
              TMB:::as.list.sdreport(proj_list[[2]]$sdrep, what = "Std", report = TRUE))
 year<-proj_list[[2]]$years_full
 
+#get age classes from the wham model.
+ages<-proj_list[[2]]$input$ages.lab
+#remove the +
+ages<-gsub("\\D", "", ages)
+
+
 # Extract the mean and std dev of log_NAA from the results.
 # the 1st dimension of this array contains stock, the second contains region.
 # This particular WHAM model only contained 1 stock and 1 region.
@@ -388,7 +394,7 @@ NAA_logmean<-std1[[1]]$log_NAA_rep[1,1,,]
 NAA_logsd<-std1[[2]]$log_NAA_rep[1,1,,]
 
 #column names
-names<-paste0("age",1:ncol(NAA_logmean))
+names<-glue("age{ages}")
 
 TerminalAssess<-tail(mod_accepted$years_full,1)
 
@@ -465,7 +471,7 @@ NAA <-NAA %>%
 
 NAA <-NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="projected Numbers At Age")
+  mutate(metric="Projected Numbers At Age")
 
 
 write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
