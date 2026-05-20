@@ -417,6 +417,39 @@ historical_NAA <-historical_NAA %>%
   mutate(metric="Historical mean Numbers At Age")
 
 
+############### Validate ###############
+# Define the validation function
+validate_naa_data <- function(df) {
+
+  # Ensure specified columns are character vectors and contain no NAs
+  stopifnot(
+    is.character(df$fishery) && !any(is.na(df$fishery)),
+    is.character(df$common) && !any(is.na(df$common)),
+    is.character(df$stock_abbrev) && !any(is.na(df$stock_abbrev)),
+    is.character(df$metric) && !any(is.na(df$metric)),
+    is.character(df$units) && !any(is.na(df$units))
+  )
+
+  # Ensure species_itis is numeric
+  stopifnot(is.numeric(df$species_itis))
+
+  # Ensure data_version is a Date class
+  stopifnot(inherits(df$data_version, "Date"))
+
+  # NOTE: state and wave are allowed to be NA; no type enforcement applied here
+
+  # Return the dataframe invisibly to support tidyverse piping (%>%)
+  invisible(df)
+}
+
+############### Validate ###############
+
+# Apply the validation function to the historical data
+validate_naa_data(historical_NAA)
+
+
+
+
 write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
 write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
@@ -473,6 +506,8 @@ NAA <-NAA %>%
   cross_join(stock_stats_df)%>%
   mutate(metric="Projected Numbers At Age")
 
+#validate
+validate_naa_data(NAA)
 
 write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
 write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
