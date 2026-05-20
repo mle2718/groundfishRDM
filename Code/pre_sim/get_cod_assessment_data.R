@@ -404,7 +404,7 @@ historical_NAA <- historical_NAA %>%
 # add in stock statistics
 historical_NAA<-historical_NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="historical mean Numbers At Age")
+  mutate(metric="Historical mean Numbers At Age")
 
 write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
 write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
