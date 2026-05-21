@@ -421,16 +421,16 @@ historical_NAA <- historical_NAA %>%
 # add in stock statistics
 historical_NAA<-historical_NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="Historical mean Numbers At Age")
+  mutate(metric="Historical Mean Numbers of Age")
 
 
 
+historical_NAA_long<-pivot_naa_long(historical_NAA)
 
 
 ############### Validate ###############
-
 # Apply the validation function to the historical data
-validate_naa_data(historical_NAA)
+validate_naa_data(historical_NAA_long)
 
 
 
@@ -493,10 +493,13 @@ NAA <-NAA %>%
 
 NAA <-NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="Projected Numbers At Age")
+  mutate(metric="Projected Numbers of Age")
+
+NAA_long<-pivot_naa_long(NAA)
+
 
 # Validate
-validate_naa_data(NAA)
+validate_naa_data(NAA_long)
 
 
 write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
