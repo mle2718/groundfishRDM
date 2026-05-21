@@ -69,14 +69,15 @@ stock_stats_df<-tibble(
   wave=NA,
   metric="Numbers At Age",
   units = "Thousands",
+  source = "2024 Assessment",
   data_version= data_version
 )
 
 
 #names of output save files
 FullProjectionsSaveFile<-"GOM_Haddock_Projections"
-ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_2024Assessment_{data_version}")
-HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_2024Assessment_{data_version}")
+ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
+HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_{data_version}")
 
 # input save files
 assessment_file_in<-"mod_nola_dcpe_blls2.rds"

@@ -88,6 +88,7 @@ stock_stats_df<-tibble(
   wave=NA,
   metric="Numbers At Age",
   units = "Thousands",
+  source = "2024 Assessment",
   data_version= data_version
 )
 
@@ -96,8 +97,8 @@ stock_stats_df<-tibble(
 assessment_file_in<-"mod_base_2023_noBLLS.rds"
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
-ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_from_2024Assessment_{data_version}")
-HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_from_2024Assessment_{data_version}")
+ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
+HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
 
 
 
