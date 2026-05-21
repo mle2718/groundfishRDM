@@ -401,7 +401,7 @@ for (s in season_draw) {
 
 
         push_globals(seasons_by_sp, target_env = environment())
-        source(file.path(code_cd, "calibrate_rec_catch1_rewrite.R"), local = environment())
+        source(file.path(code_cd, "calibrate_rec_catch1.R"), local = environment())
 
         last_result <- copy(as.data.table(calib_comparison1))
 
@@ -669,7 +669,7 @@ if (nrow(problem_rows) > 0) {
 
 
       push_globals(seasons_by_sp, target_env = environment())
-      source(file.path(code_cd, "calibrate_rec_catch1_rewrite.R"), local = environment())
+      source(file.path(code_cd, "calibrate_rec_catch1.R"), local = environment())
 
       last_result <- copy(as.data.table(calib_comparison1))
 

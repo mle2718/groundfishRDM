@@ -124,7 +124,7 @@ write_fst(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj.fs
 # I do this for each stratum and each stratum's 125 draws of MRIP trips/catch/harvest.
 # This code retains for each stratum the percent/absolute difference between model-based harvest and MRIP-based harvest by species.
 
-source(file.path(code_cd,"calibrate_rec_catch0_rewrite.R"))
+source(file.path(code_cd,"calibrate_rec_catch0.R"))
 
 #Output files:
 #calibration_comparison.fst
@@ -152,7 +152,7 @@ source(file.path(code_cd,"calibrate_rec_catch0_rewrite.R"))
 #Scripts needed:
 #calibration_catch_weights.R - can be commented out to save time if calibration catch weight are not needed.
 
-source(file.path(code_cd,"calibration_routine_rewrite.R"))
+source(file.path(code_cd,"calibration_routine.R"))
 
 #Output files:
 #calibrated_model_stats.fst
@@ -164,8 +164,6 @@ source(file.path(code_cd,"calibration_routine_rewrite.R"))
 #Run the projection algorithm. This algorithm pulls in population-adjusted catch-at-length distributions and allocates
 #fish discarded as harvest or vice versa in proportion to how they were allocated in the calibration.
 
-source(file.path(code_cd, "predict_rec_catch_data_read.R"))
-source(file.path(code_cd, "predict_rec_catch_data_functions.R"))
 source(file.path(code_cd, "predict_rec_catch.R"))
 
 #Output files:
