@@ -431,6 +431,8 @@ historical_NAA <- historical_NAA %>%
 
 # add in stock statistics
 historical_NAA<-historical_NAA %>%
+  arrange(-year) %>%
+  slice_head(n=5)%>%
   cross_join(stock_stats_df)%>%
   mutate(metric="Historical Mean Numbers of Age")
 
