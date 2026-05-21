@@ -434,8 +434,8 @@ validate_naa_data(historical_NAA_long)
 
 
 
-write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
-write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+write_dta(historical_NAA_long, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA_long, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
 #Put the historical NAA on google drive
 drive_upload(
@@ -502,8 +502,8 @@ NAA_long<-pivot_naa_long(NAA)
 validate_naa_data(NAA_long)
 
 
-write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+write_dta(NAA_long, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA_long, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
 
 #Put the historical NAA on google drive
 drive_upload(
