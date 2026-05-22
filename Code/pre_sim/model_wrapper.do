@@ -69,10 +69,16 @@ global ndraws 100
 global inflation_expansion=1.13
 
 * adjust project paths based on user
-global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
-global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
-global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
-global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
+*global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
+global input_code_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Code\pre_sim" /* Tess's local path */
+*global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
+// these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
+// might be a lot to download whole folders to my machine. will try to just grab what I need 
+global misc_data_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\miscellaneous" /* Change to Tess's local data path */
+// Tess - don't think I need this for now
+*global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
+// Tess not sure where this is or if I need it. Comment out for now
+*global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
 
 * set a global seed #
 global seed 03211990
@@ -103,25 +109,31 @@ do "$input_code_cd\directed_trips_calibration.do"
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
+		//this gets things at the model level, the mode-month, and the mode-season. I think we want mode and mode-month for now. Ask if you should adjust Lou's stuff to get things at mode-wave level
 		do "$input_code_cd\calibration_catch_per_trip_part1.do"
 
 		//b) use copula model (in R) to simulate harvest and discards per-trip
 		* run copula_modeling_calibration.R
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-		do "$input_code_cd\calibration_catch_per_trip_part2.do"
+		//tess commenting this out for now
+		*do "$input_code_cd\calibration_catch_per_trip_part2.do"
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
+// Tess: this makes comparisons of total catch and total trips of calibrated vs MRIP at month level and mode level, and mode-season. Commenting out for now
+		*do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
 
 // 7) add additonal angler demographics based on results of utilty model
-		do "$input_code_cd\additional_angler_dems.do" 
+// Tess: commenting out for now
+		*do "$input_code_cd\additional_angler_dems.do" 
 
 // 8) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
-		do "$input_code_cd\catch_at_length_calibration.do"
+// Tess: commenting out for now
+		*do "$input_code_cd\catch_at_length_calibration.do"
 		
 // 9) Generate projection-year catch-at-length, incorporating the stock assessment data
-		do "$input_code_cd\catch_at_length_projection.do"
+// Tess: commenting out for now
+		*do "$input_code_cd\catch_at_length_projection.do"
 
 // The calibration and projection routines can now be run in R. 		
 
