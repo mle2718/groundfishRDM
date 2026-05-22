@@ -59,6 +59,10 @@ dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
 # data version
 data_version<-Sys.Date()
 
+
+# Read in helpers
+source(here("Code","helpers","naa_helpers.R"))
+
 # create a small dataframe that holds the stock "characteristics".
 stock_stats_df<-tibble(
   fishery= "NE Groundfish",
@@ -68,15 +72,16 @@ stock_stats_df<-tibble(
   state=NA,
   wave=NA,
   metric="Numbers At Age",
-  units = "Individuals",
+  units = "Thousands",
+  source = "2024 Assessment",
   data_version= data_version
 )
 
 
 #names of output save files
 FullProjectionsSaveFile<-"GOM_Haddock_Projections"
-ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_2024Assessment_{data_version}")
-HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_2024Assessment_{data_version}")
+ProjectedNAASaveFile<-glue("GOM_Haddock_projected_NAA_{data_version}")
+HistoricalNAASaveFile<-glue("GOM_Haddock_historical_NAA_{data_version}")
 
 # input save files
 assessment_file_in<-"mod_nola_dcpe_blls2.rds"
@@ -84,6 +89,7 @@ waa_file_in<-"waa_pred_2024-08-25.xlsx"
 
 
 # Connect to Google Drive
+# NOTE: Relies on cached credentials in .secrets. Will prompt interactive auth if missing or expired.
 drive_auth(cache = here(".secrets"), email = TRUE)
 
 # Output folder on google drive
@@ -99,6 +105,7 @@ readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","gr
 file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
 # Create a path for a temporary file
+# NOTE: tempfile handles cross-platform path safe creation and garbage collection upon session end
 temp_path <- tempfile(fileext = ".rds")
 
 # Download
@@ -163,6 +170,7 @@ mod_list <- list(mod_accepted)
 
 
 # take a look at the version of WHAM used to generate the model.
+# NOTE: Splits the commit string at '@' to isolate the hash, then strips trailing ')'
 model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
 model_wham_commit<-gsub(")", "", model_wham_commit)
 
@@ -198,11 +206,11 @@ old_bridge_year_catch <- 2105 #GOM haddock 2024 MT PDT-supplied catch
 
 actual_2023_commercial_catch_mt<-2277
 actual_2024_commercial_catch_mt<-1405
-actual_2025_commercial_catch_mt<-NA
+actual_2025_commercial_catch_mt<-NA # Update for 2027
 
 actual_2023_rec_catch_mt<-793 # From GARFO quota monitoring report
 actual_2024_rec_catch_mt<-899
-actual_2025_rec_catch_mt<-NA
+actual_2025_rec_catch_mt<-NA #Update for 2027
 
 
 actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
@@ -214,7 +222,8 @@ actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 
 #Handle WAA ###############################################################################
 
-
+# NOTE: The 6 rows map to fleets/indices defined in input$data$waa_pointers. Verify this alignment if model fleet structure changes.
+# NOTE2: Array structure is [fleet/index source, projection year (1:4), age (1:9)]
 waa_input_blls <- array(dim = c(6,4,9)) #new wham wants the waa doubled for some reason
 for(i in 1:9){ # the order of the sources matches input$data$waa_pointers
   waa_input_blls[,,i] <- rbind(t(waa_proj_catch[,i]), t(waa_proj_ssb[,i]), t(waa_proj_ssb[,i]),
@@ -242,19 +251,23 @@ set_specs <- function(mod, bridge_year_catch) {
     list(Model = rep(mod$model_name, times = 2),
          scenario    = c("(1) Fmsy (2025-2027)",                  #1
                          "(2) 0.75Fmsy (2025-2027)"               #2
-                         ),
+         ),
          n.yrs       = rep(list(4), times = 2),
          proj_R_opt  = rep(list(2), times = 2),
+
+         # NOTE: proj_F_opt specifies fixed catch (5) in year 1, and fixed instantaneous F (4) in years 2-4
          proj_F_opt  = list(c(5, 4, 4, 4),  #1
                             c(5, 4, 4, 4)  #2
-                            ),
+         ),
+
+         # NOTE: Year 1 uses bridge catch; Years 2-4 apply Fmsy scalar corresponding to the scenario
          proj_Fcatch = list(c(bridge_year_catch, rep(Fmsy, 3)),                #1
                             c(bridge_year_catch, rep(0.75 * Fmsy, 3))         #2
-                           ),
+         ),
          proj_waa = list(waa_input_blls,
                          waa_input_blls)
 
-         )
+    )
 }
 
 # pass in "actual_2024_catch_mt"
@@ -278,7 +291,7 @@ for(i in 1:length(proj.opts_list2$n.yrs)) {
                                   proj_F_opt  = proj.opts_list2$proj_F_opt[[i]],
                                   proj_Fcatch = proj.opts_list2$proj_Fcatch[[i]],
                                   proj_waa    = proj.opts_list2$proj_waa[[i]]
-                                  ),
+                 ),
                  do.sdrep = T,
                  MakeADFun.silent = T,
                  check.version = FALSE)
@@ -292,12 +305,15 @@ for(i in 1:length(proj.opts_list2$n.yrs)) {
 proj_out <-
   map_df(proj_list, .f = function(x) {
 
+    # NOTE: Extracts standard TMB sdreport tables. "Est" is the estimates list; "Std" is standard errors.
     std <- list(TMB:::as.list.sdreport(x$sdrep, what = "Est", report = TRUE),
                 TMB:::as.list.sdreport(x$sdrep, what = "Std", report = TRUE))
 
     logssb <- std[[1]]$log_SSB
     logssb_sd <- std[[2]]$log_SSB
     ssb <- exp(std[[1]]$log_SSB)[,1]
+
+    # NOTE: qnorm(0.95) implies a 90% CI mapping around a lognormal distribution
     ssb_90lo <- exp(logssb - qnorm(0.95) * logssb_sd)[,1]
     ssb_90hi <- exp(logssb + qnorm(0.95) * logssb_sd)[,1]
 
@@ -312,8 +328,8 @@ proj_out <-
              `SSB CI (90% high)` = round(ssb_90hi,1),
              `Catch Fleet` = round(x$rep$pred_catch,1),
              `Catch (Total)` = rowSums(`Catch Fleet`)) %>%
-  filter(Year >= max(x$years)) %>%
-  rename(`Projection scenario` = scenario)
+      filter(Year >= max(x$years)) %>%
+      rename(`Projection scenario` = scenario)
 
     return(out)
   })
@@ -381,14 +397,23 @@ std1 <- list(TMB:::as.list.sdreport(proj_list[[2]]$sdrep, what = "Est", report =
              TMB:::as.list.sdreport(proj_list[[2]]$sdrep, what = "Std", report = TRUE))
 year<-proj_list[[2]]$years_full
 
+#get age classes from the wham model.
+ages<-proj_list[[2]]$input$ages.lab
+
+#remove the +
+# NOTE: Regex \\D matches non-digits. Strips characters like '+' from terminal age groupings (e.g., "1+" -> "1")
+ages<-gsub("\\D", "", ages)
+
+
 # Extract the mean and std dev of log_NAA from the results.
 # the 1st dimension of this array contains stock, the second contains region.
 # This particular WHAM model only contained 1 stock and 1 region.
+# NOTE: Array structure is [stock, region, year, age]
 NAA_logmean<-std1[[1]]$log_NAA_rep[1,1,,]
 NAA_logsd<-std1[[2]]$log_NAA_rep[1,1,,]
 
 #column names
-names<-paste0("age",1:ncol(NAA_logmean))
+names<-glue("age{ages}")
 
 TerminalAssess<-tail(mod_accepted$years_full,1)
 
@@ -405,14 +430,27 @@ historical_NAA <- historical_NAA %>%
   dplyr::filter(year<YearProj)
 
 # add in stock statistics
-
-historical_NAA <-historical_NAA %>%
+historical_NAA<-historical_NAA %>%
+  arrange(-year) %>%
+  slice_head(n=5)%>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="historical mean Numbers At Age")
+  mutate(metric="Historical Mean Numbers of Age")
 
 
-write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
-write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+
+historical_NAA_long<-pivot_naa_long(historical_NAA)
+
+
+############### Validate ###############
+
+# Apply the validation function to the historical data
+validate_naa_data(historical_NAA_long)
+
+
+
+
+write_dta(historical_NAA_long, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA_long, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
 #Put the historical NAA on google drive
 drive_upload(
@@ -447,6 +485,7 @@ NAA<-list()
 
 
 for (ageclass in 1:length(NAA_logmean)){
+  # NOTE: Applies bias correction (- variance/2) to preserve the arithmetic mean when drawing from a lognormal distribution
   NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass])
 
 }
@@ -465,13 +504,17 @@ NAA <-NAA %>%
 
 NAA <-NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="projected Numbers At Age")
+  mutate(metric="Projected Numbers of Age")
 
+NAA_long<-pivot_naa_long(NAA)
 
-write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+#validate
+validate_naa_data(NAA_long)
 
-#Put the historical NAA on google drive
+write_dta(NAA_long, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA_long, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+
+#Put the historical NAA_long on google drive
 drive_upload(
   media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")),
   path = as_id(groundfish_processed_path),

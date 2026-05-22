@@ -24,7 +24,7 @@
 # Parameters that go into the stock assessment
 # Fraction of year that elapses before SSB Calculation (Jan1=0.0)
 # Natural Mortality -- note that in the original blast model, this is a scalar.
-  # In ASAP, this is specified as a vector of M at age, which is stacked into a T by A matrix (T is number of years and A is number of Age classes)
+# In ASAP, this is specified as a vector of M at age, which is stacked into a T by A matrix (T is number of years and A is number of Age classes)
 
 ############
 # Parameters that come out of the stock assessment
@@ -75,6 +75,8 @@ dir.create(file.path(assessment_output_folder), showWarnings = FALSE)
 data_version<-Sys.Date()
 
 
+# Read in helpers
+source(here("Code","helpers","naa_helpers.R"))
 
 
 # create a small dataframe that holds the stock "characteristics".
@@ -87,7 +89,8 @@ stock_stats_df<-tibble(
   state=NA,
   wave=NA,
   metric="Numbers At Age",
-  units = "Individuals",
+  units = "Thousands",
+  source = "2024 Assessment",
   data_version= data_version
 )
 
@@ -96,12 +99,13 @@ stock_stats_df<-tibble(
 assessment_file_in<-"mod_base_2023_noBLLS.rds"
 ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 FullProjectionsSaveFile<-glue("WGOMCod_Projections_{data_version}.Rds")
-ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_from_2024Assessment_{data_version}")
-HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_from_2024Assessment_{data_version}")
+ProjectedNAASaveFile<-glue("WGOM_Cod_projected_NAA_{data_version}")
+HistoricalNAASaveFile<-glue("WGOM_Cod_historical_NAA_{data_version}")
 
 
 
 # Connect to Google Drive
+# NOTE: Relies on cached credentials in .secrets. Will prompt interactive auth if missing or expired.
 drive_auth(cache = here(".secrets"), email = TRUE)
 # Output folder on google drive
 groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
@@ -120,6 +124,7 @@ readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","gr
 file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 #
 # Create a path for a temporary file
+# NOTE: tempfile handles cross-platform path safe creation and garbage collection upon session end
 temp_path <- tempfile(fileext = ".rds")
 
 # Download
@@ -174,6 +179,7 @@ if (file.exists(temp_path)) {
 ###################################################################################
 
 # take a look at the version of WHAM used to generate the model.
+# NOTE: Splits the commit string at '@' to isolate the hash, then strips trailing ')'
 model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
 model_wham_commit<-gsub(")", "", model_wham_commit)
 
@@ -217,6 +223,7 @@ cFp1=cMp1
 
 # Natural Mortality
 cMyr=tail(asap3[[1]]$dat$M,1)
+# NOTE: M is a vector across ages; dividing by periods yields a monthly rate vector
 cM=cMyr/periods
 
 
@@ -269,11 +276,11 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 
 actual_2023_commercial_catch_mt<-438
 actual_2024_commercial_catch_mt<-550
-actual_2025_commercial_catch_mt<-NA
+actual_2025_commercial_catch_mt<-NA # Update this for 2027 management:
 
 actual_2023_rec_catch_mt<-192 # From GARFO quota monitoring report
 actual_2024_rec_catch_mt<-72
-actual_2025_rec_catch_mt<-NA
+actual_2025_rec_catch_mt<-NA # Update this for 2027 management:
 
 
 actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
@@ -294,7 +301,11 @@ set_specs <- function(mod) {
     list(Model = rep(mod$model_name, times = 1),
          scenario    = c("0.75Fmsy (2025-2027)"), #Scenario 2 from the original projections. This is just a string.
          n.yrs       = rep(list(4), times = 1),   # Number of years is set in in (list(numyears)). Number of scenarios is set with times
+
+         # NOTE: proj_F_opt maps projection modes for each of the 4 projection years: 5 = catch in MT, 4 = fixed instantaneous F
          proj_F_opt  = list(c(5, 5, 4, 4)),  # length=numyears.  stack on different things to make different projections. 5=metric tons, 4=an instantanous fishing mortality rate (F)
+
+         # NOTE: Year 1 & 2 use specified MT bridging catch; Year 3 & 4 apply the 75% Fmsy rate
          proj_Fcatch = list(c(actual_2023_catch_mt, actual_2024_catch_mt, rep(0.75 * Fmsy, 2))) #2 # length=numyears
     )
 }
@@ -332,12 +343,15 @@ for(i in 1:length(proj.opts_list2$n.yrs)) {
 proj_out <-
   map_df(proj_list, .f = function(x) {
 
+    # NOTE: Extracts standard TMB sdreport tables. "Est" is the estimates list; "Std" is standard errors.
     std <- list(TMB:::as.list.sdreport(x$sdrep, what = "Est", report = TRUE),
                 TMB:::as.list.sdreport(x$sdrep, what = "Std", report = TRUE))
 
     logssb <- std[[1]]$log_SSB
     logssb_sd <- std[[2]]$log_SSB
     ssb <- exp(std[[1]]$log_SSB)[,1]
+
+    # NOTE: qnorm(0.95) implies a 90% CI mapping around a lognormal distribution
     ssb_90lo <- exp(logssb - qnorm(0.95) * logssb_sd)[,1]
     ssb_90hi <- exp(logssb + qnorm(0.95) * logssb_sd)[,1]
 
@@ -353,8 +367,8 @@ proj_out <-
              `Catch (Com.)` = round(x$rep$pred_catch[,1],1),
              `Catch (Rec.)` = round(x$rep$pred_catch[,2],1),
              `Catch (Total)` = `Catch (Com.)` + `Catch (Rec.)`) %>%
-  filter(Year >= 2023) %>%
-  rename(`Projection scenario` = scenario)
+      filter(Year >= 2023) %>%
+      rename(`Projection scenario` = scenario)
 
     return(out)
   })
@@ -378,15 +392,21 @@ std1 <- list(TMB:::as.list.sdreport(proj_list[[1]]$sdrep, what = "Est", report =
 
 
 year<-proj_list[[1]]$years_full
+ages<-proj_list[[1]]$input$ages.lab
+
+#remove the +
+# NOTE: Regex \\D matches non-digits. Strips characters like '+' from terminal age groupings (e.g., "1+" -> "1")
+ages<-gsub("\\D", "", ages)
 
 # Extract the mean and std dev of log_NAA from the results.
 # the 1st dimension of this array contains stock, the second contains region.
 # This particular WHAM model only contained 1 stock and 1 region.
+# NOTE: Array structure is [stock, region, year, age]
 NAA_logmean<-std1[[1]]$log_NAA_rep[1,1,,]
 NAA_logsd<-std1[[2]]$log_NAA_rep[1,1,,]
 
 #column names
-names<-paste0("age",1:ncol(NAA_logmean))
+names<-glue("age{ages}")
 
 TerminalAssess<-tail(mod_list[[1]]$years_full,1)
 
@@ -400,11 +420,24 @@ historical_NAA <- historical_NAA %>%
 
 # add in stock statistics
 historical_NAA<-historical_NAA %>%
+  arrange(-year) %>%
+  slice_head(n=5)%>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="historical mean Numbers At Age")
+  mutate(metric="Historical Mean Numbers of Age")
 
-write_dta(historical_NAA, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
-write_rds(historical_NAA, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
+
+
+historical_NAA_long<-pivot_naa_long(historical_NAA)
+
+
+############### Validate ###############
+# Apply the validation function to the historical data
+validate_naa_data(historical_NAA_long)
+
+
+
+write_dta(historical_NAA_long, path=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.dta")))
+write_rds(historical_NAA_long, file=file.path(assessment_output_folder,glue("{HistoricalNAASaveFile}.Rds")))
 
 #Put the historical NAA on google drive
 drive_upload(
@@ -440,6 +473,7 @@ stopifnot(length(NAA_logmean)==length(NAA_logsd))
 #To "bias-correct" the lognormal you would change the SIM_NAA[[ageclass]] line to:
 NAA<-list()
 for (ageclass in 1:length(NAA_logmean)){
+  # NOTE: Applies bias correction (- variance/2) to preserve the arithmetic mean when drawing from a lognormal distribution
   NAA[[ageclass]]<-rlnorm(num_NAA_draws,NAA_logmean[ageclass]-NAA_logsd[ageclass]^2/2,NAA_logsd[ageclass]) # Feed it straight into rlnorm
 }
 
@@ -461,11 +495,17 @@ NAA <-NAA %>%
 
 NAA <-NAA %>%
   cross_join(stock_stats_df)%>%
-  mutate(metric="projected Numbers At Age")
+  mutate(metric="Projected Numbers of Age")
+
+NAA_long<-pivot_naa_long(NAA)
 
 
-write_dta(NAA, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
+# Validate
+validate_naa_data(NAA_long)
+
+
+write_dta(NAA_long, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
+write_rds(NAA_long, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
 
 #Put the historical NAA on google drive
 drive_upload(
@@ -481,5 +521,3 @@ drive_upload(
   name = glue("{ProjectedNAASaveFile}.dta"),
   overwrite = TRUE
 )
-
-
