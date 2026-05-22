@@ -8,7 +8,7 @@ set seed $seed
 * MRIP discard lengths  
 **************************
 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 
@@ -55,7 +55,7 @@ gen st2 = string(st,"%02.0f")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -173,7 +173,7 @@ save `b2', replace
 **************************
 * MRIP harvest lengths  
 **************************
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 
@@ -222,7 +222,7 @@ gen st2 = string(st,"%02.0f")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -349,7 +349,7 @@ tempfile props
 save `props', replace
 
 * multiply proportions by simulated total harvest and release  
-u "$input_data_cd\simulated_catch_totals_for_catch_length.dta", clear 
+u "$misc_data_cd\simulated_catch_totals_for_catch_length.dta", clear 
 keep tot_cod_keep_sim tot_cod_rel_sim tot_hadd_keep_sim tot_hadd_rel_sim  draw season
 keep if draw<=$ndraws
 
@@ -532,5 +532,5 @@ keep fitted_length fitted_prob draw season species observed_prob
 order draw season species fitted_length fitted_prob observed_prob	
 rename fitted_length length 
 
-export delimited using "$input_data_cd/baseline_catch_at_length.csv", replace 
+export delimited using "$misc_data_cd/baseline_catch_at_length.csv", replace 
 

@@ -34,31 +34,35 @@ conflicts_prefer(dplyr::count)
 
 #Need to ensure that the globals below are set up in both this file and the stata model_wrapper.do file.
 
-
 #Set up R globals for input/output data and code scripts
 code_cd=here("Code", "sim")
-input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
-iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+# input_data_cd="E:/Lou_projects/groundfishRDM/input_data"
+# iterative_input_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+#
+# final_process_data_cd="E:/Lou_projects/groundfishRDM/process_data"
+# final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/process_data/base_outcomes"
+# final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/process_data/n_choice_occasions"
+# final_process_misc_cd="E:/Lou_projects/groundfishRDM/process_data/miscellaneous"
 
-final_process_data_cd="E:/Lou_projects/groundfishRDM/final_process_data"
-final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/final_process_data/base_outcomes"
-final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/final_process_data/n_choice_occasions"
-final_process_misc_cd="E:/Lou_projects/groundfishRDM/final_process_data/miscellaneous"
 
-###################################################
-###############Pre-sim Stata code##################
-###################################################
+final_process_data_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle"
+final_process_outcomes_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/base_outcomes"
+final_process_choice_occasions_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/n_choice_occasions"
+final_process_misc_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/miscellaneous"
+final_process_calib_catch_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle/calib_catch_draws"
 
-#Stata code extracts and prepares the data needed for the simulation
 
-#Connect Rstudio to Stata
-#options("RStata.StataPath" = "\"C:\\Program Files\\Stata17\\StataMP-64\"")
-#options("RStata.StataVersion" = 17)
+n_simulations<-1 # Number of model iterations
+n_draws<-50 # Number of simulated trips per day
 
-#Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-201
 
-n_draws<-50 #Number of simulated trips per day
+# helpers
+parse_date_any <- function(x) {
+  data.table::as.IDate(as.Date(
+    x,
+    tryFormats = c("%d%b%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y")
+  ))
+}
 
 #First, open "$code_cd\model wrapper.do" and set globals:
 #a) data years for different datasets
@@ -89,24 +93,30 @@ n_draws<-50 #Number of simulated trips per day
 #and angler preferences. I calibrate the model with 125 iterations, some of which are
 #excluded after Step 2. From the pool of remaining iterations, I use the first 100 in the projection.
 
-#Prior to running the model, transfer the catch_draw files from .csv to .feather to reduce computing time
-# statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-#
-# for(s in statez) {
-#
-#   dtrip0<-read.csv(file.path(iterative_input_data_cd, paste0("directed_trips_calibration_", s,".csv")))
-#   write_feather(dtrip0, file.path(iterative_input_data_cd, paste0("directed_trips_calibration_", s,".feather")))
-#
-#   for(i in 1:n_simulations) {
-#     catch<-read_dta(file.path(input_data_cd, paste0("calib_catch_draws_",s, "_", i,".dta")))
-#     write_feather(catch, file.path(iterative_input_data_cd, paste0("calib_catch_draws_",s, "_", i,".feather")))
-#
-#     # make fake projection draws
-#     # write_feather(catch, file.path(iterative_input_data_cd, paste0("projected_catch_draws_",s, "_", i,".feather")))
-#
-#   }
-# }
+#Prior to running the model, transfer some files from .csv to .fst to reduce computing time
+dtrip0<-read.csv(file.path(final_process_misc_cd, paste0("directed_trip_draws.csv"))) %>%
+  dplyr::mutate(date_parsed = parse_date_any(day),
+                month=data.table::month(date_parsed)) %>%
+  dplyr::select(-day, -day_y2)
 
+write_fst(dtrip0, file.path(final_process_misc_cd, paste0("directed_trip_draws.fst")))
+
+for(i in 1:n_simulations) {
+
+    catch0<-read_dta(file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_", i,".dta"))) %>%
+      dplyr::mutate(date_parsed = parse_date_any(date),
+                    month=data.table::month(date_parsed)) %>%
+      dplyr::select(-date)
+
+    write_fst(catch0, file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_", i,".fst")))
+
+  }
+
+disc_mort<- readr::read_csv(file.path(final_process_misc_cd, "Discard_Mortality.csv"), show_col_types = FALSE)
+write_fst(disc_mort, file.path(final_process_misc_cd, paste0("Discard_Mortality.fst")))
+
+calendar_adj<- readr::read_csv(file.path(final_process_misc_cd, "next_year_calendar_adjustments.csv"), show_col_types = FALSE)
+write_fst(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj.fst")))
 
 
 ##################### STEP 1 #####################
@@ -114,26 +124,10 @@ n_draws<-50 #Number of simulated trips per day
 # I do this for each stratum and each stratum's 125 draws of MRIP trips/catch/harvest.
 # This code retains for each stratum the percent/absolute difference between model-based harvest and MRIP-based harvest by species.
 
-MRIP_comparison = read_dta(file.path(input_data_cd,"simulated_catch_totals.dta")) %>%
-  dplyr::rename(estimated_trips=tot_dtrip_sim,
-                cod_catch=tot_cod_cat_sim,
-                hadd_catch=tot_hadd_cat_sim,
-                cod_keep=tot_cod_keep_sim,
-                hadd_keep=tot_hadd_keep_sim,
-                cod_rel=tot_cod_rel_sim,
-                hadd_rel=tot_hadd_rel_sim)
-
-#Files needed:
-
-#Scripts needed:
-
-
 source(file.path(code_cd,"calibrate_rec_catch0.R"))
 
 #Output files:
-#calibration_comparison.feather
-
-
+#calibration_comparison.fst
 
 
 ##################### STEP 2 #####################
@@ -161,123 +155,15 @@ source(file.path(code_cd,"calibrate_rec_catch0.R"))
 source(file.path(code_cd,"calibration_routine.R"))
 
 #Output files:
-#calibration_comparison.rds
-#calibration_catch_weights_cm.xlsx
-#paste0("pds_new_", i,".rds")), where i is an indicator for a domain-draw combination
-#paste0("costs_", i,".rds"))), where i is an indicator for a domain-draw combination
-
-
-# Filter out model iterations that did not converge on harvest for both species
-converged<-fst::read_fst(file.path(iterative_input_data_cd, "calibrated_model_stats_raw.fst")) %>%
-  dplyr::mutate(abs_pct_diff_keep=abs(pct_diff_keep),
-                abs_diff_keep=abs(diff_keep)) %>%
-  dplyr::filter(abs_pct_diff_keep<5 | abs_diff_keep<500) %>%
-  dplyr::group_by(draw) %>%
-  dplyr::count() %>%
-  dplyr::filter(n==8) %>%
-  dplyr::select(draw)
-
-converged<-converged %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(good_draw=1,
-                draw2 = dplyr::row_number())
-
-# Now select from the projection input data only the "good draws", i.e., model iterations that
-# converged on harvest for both species
-  # input data files for projections:
-    # directed_trip_draws.csv
-    # calibrated_model_stats_raw.rds
-    # base_outcomes_"season"_"md"_"dr".fst
-    # n_choice_occasions_"season"_"md"_"dr".fst
-    # next year calendar adjustments.csv
-
-# directed trips
-directed_trips<-read_csv(file.path(iterative_input_data_cd,"directed_trip_draws.csv"), show_col_types = FALSE) %>%
-  dplyr::left_join(converged, by="draw") %>%
-  dplyr::filter(!is.na(good_draw)) %>%
-  dplyr::select(-draw) %>%
-  dplyr::rename(draw=draw2)
-#write_csv(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.csv")))
-fst::write_fst(directed_trips, file.path(final_process_misc_cd, paste0("directed_trip_draws_final.fst")))
-
-# calibration model stats
-calib_stats<-read_fst(file.path(iterative_input_data_cd,"calibrated_model_stats_raw.fst")) %>%
-  dplyr::left_join(converged, by="draw") %>%
-  dplyr::filter(!is.na(good_draw)) %>%
-  dplyr::select(-draw) %>%
-  dplyr::rename(draw=draw2)
-#write_csv(calib_stats, file.path(final_process_misc_cd, paste0("calibrated_model_stats_final.csv")))
-fst::write_fst(calib_stats, file.path(final_process_misc_cd, paste0("calibrated_model_stats_final.fst")))
-
-# calibration model stats
-calendar_adj<-read_csv(file.path(input_data_cd,"next year calendar adjustments.csv"), show_col_types = FALSE) %>%
-  dplyr::left_join(converged, by="draw") %>%
-  dplyr::filter(!is.na(good_draw)) %>%
-  dplyr::select(-draw) %>%
-  dplyr::rename(draw=draw2)
-#write_csv(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_final.csv")))
-fst::write_fst(calendar_adj, file.path(final_process_misc_cd, paste0("calendar_adj_final.fst")))
-
-# Baseline year outcomes and number of choice occasions
-mode_draw <- c("pr", "fh")
-season_draw <- c("summer", "winter")
-for(dr in 1:n_simulations){
-  for (md in mode_draw) {
-    for(s in season_draw) {
-
-      good_draws<-converged %>%
-        dplyr::filter(draw2==dr)
-
-      draw_orig<-mean(good_draws$draw)
-
-      # pull trip outcomes from the calibration year
-      base_outcomes_in<-fst::read_fst(file.path(iterative_input_data_cd, paste0("base_outcomes_", s, "_", md, "_", draw_orig, ".fst"))) %>%
-        data.table::as.data.table()
-
-      write_fst(base_outcomes_in, file.path(final_process_outcomes_cd, paste0("base_outcomes_final_", s, "_", md, "_", dr, ".fst")))
-
-      # pull in data on the number of choice occasions per mode-day
-      n_choice_occasions_in<-fst::read_fst(file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s, "_", md, "_", draw_orig, ".fst"))) %>%
-        data.table::as.data.table()
-
-      write_fst(n_choice_occasions_in, file.path(final_process_choice_occasions_cd, paste0("n_choice_occasions_final_", s, "_", md, "_", dr, ".fst")))
-    }
-  }
-
-}
-
-# catch at length - save as .fst as well as .csv to pull back into stata for computing projected catch at length
-catch_at_length<-read_csv(file.path(input_data_cd,"baseline_catch_at_length.csv"), show_col_types = FALSE) %>%
-  dplyr::left_join(converged, by="draw") %>%
-  dplyr::filter(!is.na(good_draw)) %>%
-  dplyr::select(-draw) %>%
-  dplyr::rename(draw=draw2)
-write_csv(catch_at_length, file.path(final_process_misc_cd, paste0("baseline_catch_at_length.csv")))
-fst::write_fst(catch_at_length, file.path(final_process_misc_cd, paste0("baseline_catch_at_length.fst")))
-
-
-# projected catch at length - save as .fst as well as .csv to pull back into stata for computing projected catch at length
-proj_catch_at_length<-read_csv(file.path(input_data_cd,"projected_catch_at_length.csv"), show_col_types = FALSE) %>%
-  dplyr::left_join(converged, by="draw") %>%
-  dplyr::filter(!is.na(good_draw)) %>%
-  dplyr::select(-draw) %>%
-  dplyr::rename(draw=draw2)
-fst::write_fst(proj_catch_at_length, file.path(final_process_misc_cd, paste0("proj_catch_at_length.fst")))
-
-
-#re-save other input files as .fst
-# discard mortality
-disc_mort<- readr::read_csv(file.path(input_data_cd, "Discard_Mortality.csv"), show_col_types = FALSE)
-write_fst(disc_mort, file.path(final_process_misc_cd, paste0("Discard_Mortality.fst")))
-
+#calibrated_model_stats.fst
+#file.path(final_process_choice_occasions_cd,paste0("n_choice_occasions_", s, "_", md, "_", i,".fst"))
+#file.path(final_process_outcomes_cd, paste0("base_outcomes_", s, "_", md, "_", i, ".fst"))
 
 
 ##################### STEP 3 #####################
 #Run the projection algorithm. This algorithm pulls in population-adjusted catch-at-length distributions and allocates
 #fish discarded as harvest or vice versa in proportion to how they were allocated in the calibration.
 
-source(file.path(code_cd, "predict_rec_catch_data_read.R"))
-source(file.path(code_cd, "predict_rec_catch_data_functions.R"))
 source(file.path(code_cd, "predict_rec_catch.R"))
 
 #Output files:

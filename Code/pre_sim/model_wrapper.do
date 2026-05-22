@@ -62,18 +62,17 @@ global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026)
 global leap_yr_days "td(29feb2024)" 
 
 * choose number of draws to create. Will ultimately select ~100 for final model
-global ndraws 201
+global ndraws 100
 
 * adjust 2022 survey trip costs to account for inflation (January 2022 - January 2025)
 * source =https://www.bls.gov/data/inflation_calculator.htm
 global inflation_expansion=1.13
 
 * adjust project paths based on user
-global project_path "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM" /* Lou's project path */
-global input_data_cd "E:\Lou_projects\groundfishRDM\input_data" /* Lou's local data path */
 global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
-global iterative_input_data_cd "E:\Lou_projects\groundfishRDM\process_data"
-global figure_cd  "E:\Lou_projects\groundfishRDM\figures"
+global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
+global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
+global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
 
 * set a global seed #
 global seed 03211990
@@ -89,18 +88,18 @@ global wavelist 1 2 3 4 5 6
 
 **************************************************Model calibration ************************************************** 
 // 1) Pull the MRIP data
-do "$input_code_cd\MRIP data wrapper.do"
+do "$input_code_cd\MRIP_data_wrapper.do"
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
 do "$input_code_cd\directed_trips_calibration.do"
-		*This file calls "set regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
+		*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
 		*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
-*do "$input_code_cd\survey trip costs.do"
+*do "$input_code_cd\survey_trip_costs.do"
 
 // 4) Create draw of angler preference parameters 
-*do "$input_code_cd\estimate angler preferences.do" - only needs to be run once
+*do "$input_code_cd\estimate_angler_preferences.do" - only needs to be run once
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
@@ -113,7 +112,7 @@ do "$input_code_cd\directed_trips_calibration.do"
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-		do "$input_code_cd\compare calibration data to MRIP.do" 
+		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
 
 // 7) add additonal angler demographics based on results of utilty model
 		do "$input_code_cd\additional_angler_dems.do" 

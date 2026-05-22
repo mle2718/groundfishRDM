@@ -11,7 +11,7 @@
 * Import simulated total catch by season and species 	
 set seed $seed
 
-use "$input_data_cd\simulated_catch_totals.dta", clear 
+use "$misc_data_cd\simulated_catch_totals.dta", clear 
 keep if draw<= $ndraws
 
 collapse (sum)  tot_cod_cat_sim tot_hadd_cat_sim, by(season draw)
@@ -31,7 +31,7 @@ tempfile catch2024
 save `catch2024', replace 
 
 *a2) 
-import delimited using "$input_data_cd/baseline_catch_at_length.csv", clear  
+import delimited using "$misc_data_cd/baseline_catch_at_length.csv", clear  
 keep if draw<= $ndraws
 sort draw season species length
 
@@ -58,13 +58,13 @@ save `cal', replace
 * for cod, there are few obs for age 7+, combine these into 6+ category
 
 *b1) 
-import delimited using "$input_data_cd/NEFSC_cruises.csv", clear 
+import delimited using "$misc_data_cd/NEFSC_cruises.csv", clear 
 renvarlab, lower
 tempfile cruises
 sort year 
 save `cruises', replace 
 
-import delimited using "$input_data_cd/NEFSC_trawl_cod.csv", clear 
+import delimited using "$misc_data_cd/NEFSC_trawl_cod.csv", clear 
 renvarlab, lower
 rename count count 
 merge m:1 cruise6 using `cruises'
@@ -129,13 +129,13 @@ save `al_cod', replace
 
 * Haddock ALK - age 1 through 9 
 *b1) 
-import delimited using "$input_data_cd/NEFSC_cruises.csv", clear 
+import delimited using "$misc_data_cd/NEFSC_cruises.csv", clear 
 renvarlab, lower
 tempfile cruises
 sort year 
 save `cruises', replace 
 
-import delimited using "$input_data_cd/NEFSC_trawl_hadd.csv", clear 
+import delimited using "$misc_data_cd/NEFSC_trawl_hadd.csv", clear 
 renvarlab, lower
 rename count count 
 merge m:1 cruise6 using `cruises'
@@ -206,7 +206,7 @@ save `al_hadd', replace
 	* c5) compute rec selectivity ql=CAL/NAL
 	
 * c1) cod
-use "$input_data_cd/WGOM_Cod_historical_NAA_from_2024Assessment.dta", clear 
+use "$misc_data_cd/WGOM_Cod_historical_NAA_from_2024Assessment.dta", clear 
 
 egen age6_plus=rowtotal(age6-age9)
 drop age6 age7 age8 age9
@@ -238,7 +238,7 @@ tempfile naa_cod
 save `naa_cod', replace 
 
 * c1) haddock 
-use "$input_data_cd/GOM_Haddock_historical_NAA_2024Assessment.dta", clear 
+use "$misc_data_cd/GOM_Haddock_historical_NAA_2024Assessment.dta", clear 
 
 keep if year==2025
 reshape long age, i(year) j(new)
@@ -345,7 +345,7 @@ save `ql', replace
 *	5) compute 2026 catch-at-length numbers and probability distribution
 	
 * E1) cod
-use "$input_data_cd/WGOM_Cod_projected_NAA_from_2024Assessment.dta", clear 
+use "$misc_data_cd/WGOM_Cod_projected_NAA_from_2024Assessment.dta", clear 
 
 egen age6_plus=rowtotal(age6-age9)
 drop age6 age7 age8 age9
@@ -387,7 +387,7 @@ tempfile proj_naa_cod
 save `proj_naa_cod', replace 
 
 * e1) haddock 
-use "$input_data_cd/GOM_Haddock_projected_NAA_2024Assessment.dta", clear 
+use "$misc_data_cd/GOM_Haddock_projected_NAA_2024Assessment.dta", clear 
 
 sample $ndraws, count 
 gen draw=_n
@@ -622,5 +622,5 @@ egen replicate=rowtotal(hadd_replicate - cod_replicate)
 drop hadd_replicate cod_replicate
 drop year 
 drop nal
-export delimited using "$input_data_cd/projected_catch_at_length.csv", replace 
+export delimited using "$misc_data_cd/projected_catch_at_length.csv", replace 
 

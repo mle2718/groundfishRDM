@@ -1,746 +1,748 @@
+# calibration-year trip simulation WITH optional trip-level harvest/release reallocation
+# optimized for speed/efficiency while retaining fish-level expansion
+# utility adjustment: for cod and haddock, fish reallocated from kept->released
+# still count as kept in utility calculations, but remain released in harvest/release totals.
+
+#l_w_conversion parameters =
+cod_lw_a = 0.000005132
+cod_lw_b = 3.1625
+had_lw_a = 0.000009298
+had_lw_b = 3.0205
 
 
-#This is the calibration-year trip simulation WITH any adjustments for illegal harvest or voluntary release
-
-# Create an empty list to collect results
-calib_comparison <- list()
-
-# make some placeholders
-n_sub_cod_kept<-0 # number of sublegal sized fish kept
-prop_sub_cod_kept<-0 # proportion of the original num. of released fish that were illegally kept (n_sub_scup_kept/total_original_released)
-n_legal_cod_rel<-0 # number of legal sized fish released
-prop_legal_cod_rel<-0 # proportion of the original num. of kept fish that were voluntarily kept (n_legal_scup_rel/total_original_kept
-
-n_sub_hadd_kept<-0
-prop_sub_hadd_kept<-0
-n_legal_hadd_rel<-0
-prop_legal_hadd_rel<-0
-
-
-# import necessary data
-
-# Pull in the regulations, but before selecting the season,
-# identify the minimum cod size limit for the full FY. Will use this
-# to allow sublegal harvest of cod in the closed season
-
-dtripz<-read_csv(file.path(iterative_input_data_cd,"directed_trip_draws.csv"), show_col_types = FALSE) %>%
-  tibble::tibble() %>%
-  dplyr::filter(draw == i) %>%
-  dplyr::select(mode, day, cod_bag, cod_min, hadd_bag,hadd_min, dtrip) %>%
-  dplyr::filter(mode == md) %>%
-  dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer"))
-
-cod_min_size_FY<-min(dtripz$cod_min)
-hadd_min_size_FY<-min(dtripz$hadd_min)
-
-dtripz<-dtripz %>%
-  dplyr::filter(season == s)
-
-catch_data <- haven::read_dta(file.path(iterative_input_data_cd, paste0("calib_catch_draws_", i,".dta"))) %>%
-  dplyr::mutate(date=as.Date(day, format = "%d%b%Y"),
-                season = ifelse(lubridate::month(date) %in% c(9, 10, 11, 12, 1, 2, 3, 4), "winter", "summer")) %>%
-  dplyr::filter(mode==md) %>%
-  dplyr::filter(season==s) %>%
-  dplyr::select(-season, -day) %>%
-  dplyr::left_join(dtripz, by=c("mode", "date"))
-
-angler_dems<-catch_data %>%
-  dplyr::select(date, mode, tripid, total_trips_12, fish_pref_more, educ1, educ2, educ3, own_boat, cost, starts_with("beta")) %>%
-  dplyr::filter(mode==md)
-
-angler_dems<-dplyr::distinct(angler_dems)
-
-catch_data<-catch_data %>%
-  dplyr::select(-total_trips_12, -fish_pref_more, -educ1, -educ2, -educ3, -own_boat, -cost, -age, -day, -dtrip, starts_with("beta"))
-
-
-cod_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE)  %>%
-  dplyr::filter(species=="cod", draw==i, season==s) %>%
-  dplyr::filter(!is.na(fitted_prob)) %>%
-  dplyr::select(fitted_prob, length)
-
-hadd_size_data <- read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"), show_col_types = FALSE)  %>%
-  dplyr::filter(species=="hadd", draw==i, season==s) %>%
-  dplyr::filter(!is.na(fitted_prob)) %>%
-  dplyr::select(fitted_prob, length)
-
-
-#Create lowest length at which fish may be illegally harvested.
-#1) This "floor" (floor_subl_harvest) size will be 3 inches (*2.54 to convert to cm's)
-#   below the lowest minimum size across the simulation period
-#2) If the fishery is closed for the simulation period, floor_subl_harvest is the
-#   lowest minimum size across the FY
-#3) I don't think there will be any cases where either species is closed the entire season
-
-floor_subl_cod_harv<-min(dtripz$cod_min)-3*2.54
-floor_subl_hadd_harv<-min(dtripz$hadd_min)-3*2.54
-
-if (min(dtripz$cod_min)==100){
-  floor_subl_cod_harv<-cod_min_size_FY-3*2.54
+parse_date_any <- function(x) {
+  data.table::as.IDate(as.Date(
+    x,
+    tryFormats = c("%d%b%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y")
+  ))
 }
 
-if (min(dtripz$hadd_min)==100){
-  floor_subl_hadd_harv<-hadd_min_size_FY-3*2.54
+safe_divide <- function(num, den) {
+  ifelse(is.na(den) | den == 0, NA_real_, num / den)
 }
 
-# Begin trip simulation
+# stable binary logit probability for the trip alternative
+calc_prob_trip <- function(v_trip, v_optout) {
+  z <- v_trip - v_optout
+  out <- numeric(length(z))
+  pos <- z >= 0
+  out[pos] <- 1 / (1 + exp(-z[pos]))
+  ez <- exp(z[!pos])
+  out[!pos] <- ez / (1 + ez)
+  out
+}
 
-# subset trips with zero catch, as no size draws are required
-cod_zero_catch <- dplyr::filter(catch_data, cod_cat == 0)
-hadd_zero_catch <- dplyr::filter(catch_data, hadd_cat == 0)
+build_compare_table <- function(summed_results, MRIP_comparison_draw, md, eligible_dt = NULL) {
 
-# Check if there is zero catch for any species and if so, pipe code around keep/release determination
-cod_catch_check<-base::sum(catch_data$cod_cat)
-hadd_catch_check<-base::sum(catch_data$hadd_cat)
+  number_metric_cols <- c(
+    "cod_keep", "cod_rel", "cod_catch",
+    "hadd_keep", "hadd_rel", "hadd_catch"
+  )
 
-calib_comparison<-fst::read_fst(file.path(iterative_input_data_cd, "calibration_comparison.fst")) %>%
-  dplyr::filter(season==s & draw==i & mode==md)
+  weight_metric_cols <- c(
+    "tot_keep_cod_weight_lb_new", "tot_rel_cod_weight_lb_new",
+    "tot_discmort_cod_weight_lb_new",
+    "tot_keep_hadd_weight_lb_new", "tot_rel_hadd_weight_lb_new",
+    "tot_discmort_hadd_weight_lb_new"
+  )
 
-# cod trip simulation
-# keep trips with positive cod catch
-if (cod_catch_check!=0){
+  metric_cols <- c(number_metric_cols, weight_metric_cols)
 
-  cod_catch_data <- dplyr::filter(catch_data, cod_cat > 0)
+  model_metrics  <- intersect(metric_cols, names(summed_results))
+  mrip_metrics   <- intersect(number_metric_cols, names(MRIP_comparison_draw))
 
-  row_inds <- seq_len(nrow(cod_catch_data))
-
-  cod_catch_data<-cod_catch_data %>%
-    dplyr::slice(rep(row_inds, cod_cat))   %>%
-    dplyr::mutate(fishid=dplyr::row_number())
-
-  # generate lengths for each fish
-  catch_size_data <- cod_catch_data %>%
-    dplyr::mutate(fitted_length = sample(cod_size_data$length,
-                                         nrow(.),
-                                         prob = cod_size_data$fitted_prob,
-                                         replace = TRUE))
-
-  # impose regulations, calculate keep and release per trip
-  catch_size_data <- catch_size_data %>%
-    dplyr::mutate(posskeep = ifelse(fitted_length>=cod_min ,1,0)) %>%
-    dplyr::group_by(tripid, date, mode, catch_draw) %>%
-    dplyr::mutate(csum_keep = cumsum(posskeep)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(
-      keep_adj = dplyr::case_when(
-        cod_bag > 0 ~ ifelse(csum_keep<=cod_bag & posskeep==1,1,0),
-        TRUE ~ 0))
-
-  catch_size_data <- catch_size_data %>%
-    dplyr::mutate_if(is.numeric, tidyr::replace_na, replace = 0)
-
-  catch_size_data <- catch_size_data %>%
-    dplyr::mutate(keep = keep_adj,
-                  release = ifelse(keep==0,1,0)) %>%
-    dplyr::select(fishid, fitted_length, tripid, keep, release, date, catch_draw, mode)
-
-  # code for trip level harvest re-allocation
-  catch_size_data<- catch_size_data %>%
-    dplyr::select(fishid, fitted_length, tripid, keep, release, date, catch_draw, mode) %>%
-    dplyr::mutate(subl_harv_indicator=case_when(release==1 & fitted_length>=floor_subl_cod_harv~1,TRUE~0))
-
-  sum_cod_rel<-sum(catch_size_data$release)
-  sum_cod_keep<-sum(catch_size_data$keep)
-
-  # reallocate a portion of all releases as kept if needed
-  if (rel_to_keep_cod==1 & sum_cod_rel>0){
-
-    catch_size_data_re_allocate<- catch_size_data %>%
-      dplyr::filter(subl_harv_indicator==1)
-
-    original_rel_cod<-sum(catch_size_data_re_allocate$release)
-
-    catch_size_data_re_allocate_base<- catch_size_data %>%
-      dplyr::filter(subl_harv_indicator==0)
-
-    catch_size_data_re_allocate <- catch_size_data_re_allocate %>%
-      dplyr::mutate(uniform=runif(n(), min=0, max=1)) %>%
-      dplyr::arrange(uniform) %>%
-      dplyr::ungroup()
-
-    n_row_re_allocate<-nrow(catch_size_data_re_allocate)
-
-    n_sub_cod_kept=round(p_rel_to_keep_cod*n_row_re_allocate)
-
-    catch_size_data_re_allocate <- catch_size_data_re_allocate %>%
-      dplyr::mutate(fishid2=1:n_row_re_allocate) %>%
-      dplyr::mutate(keep_new=case_when(fishid2<=n_sub_cod_kept~1, TRUE~ 0))
-
-    n_rel_cod_kept<-sum(catch_size_data_re_allocate$keep_new)
-
-    catch_size_data_re_allocate <- catch_size_data_re_allocate %>%
-      dplyr::mutate(rel_new=case_when(keep_new==0~1, TRUE~ 0)) %>%
-      dplyr::select(-keep, -release, -uniform, -fishid2, -uniform) %>%
-      dplyr::rename(keep=keep_new, release=rel_new)
-
-    catch_size_data<- rbind.fill(catch_size_data_re_allocate,catch_size_data_re_allocate_base) %>%
-      dplyr::select(-subl_harv_indicator)
-
-    n_kept_cod_rel<-0
-    prop_sub_cod_kept<-n_rel_cod_kept/original_rel_cod
-    n_rel_cod_kept
-
-    rm(catch_size_data_re_allocate,catch_size_data_re_allocate_base)
-
+  if (length(model_metrics) == 0L) {
+    stop("No model metric columns found in summed_results.")
   }
 
-  # Now reallocate a portion of all keeps as releases if needed
-  if (keep_to_rel_cod==1 & sum_cod_keep>0){
+  model_long <- data.table::melt(
+    data.table::as.data.table(summed_results)[, c("mode", model_metrics), with = FALSE],
+    id.vars = "mode",
+    measure.vars = model_metrics,
+    variable.name = "metric",
+    value.name = "model"
+  )
 
-    # If all kept must be release, p_keep_to_rel_cod==1
-    if (all_keep_to_rel_cod==1){
+  mrip_long <- data.table::melt(
+    data.table::as.data.table(MRIP_comparison_draw)[, c("mode", mrip_metrics), with = FALSE],
+    id.vars = "mode",
+    measure.vars = mrip_metrics,
+    variable.name = "metric",
+    value.name = "MRIP"
+  )
 
-      n_kept_cod_rel<-sum(catch_size_data$keep)
-      prop_legal_cod_rel<-n_kept_cod_rel/sum(catch_size_data$keep)
+  model_long[, model := as.numeric(model)]
+  mrip_long[, MRIP := as.numeric(MRIP)]
 
-      catch_size_data<-catch_size_data %>%
-        dplyr::mutate(rel_new = keep+release,
-                      keep_new = 0) %>%
-        dplyr::select(-keep, -release) %>%
-        dplyr::rename(release=rel_new,  keep=keep_new)
+  cmp <- merge(model_long, mrip_long, by = c("mode", "metric"), all.x = TRUE)
 
-      n_rel_cod_kept<-0
+  cmp[, `:=`(
+    species = data.table::fcase(
+      grepl("_cod_", metric) | grepl("^cod_", metric), "cod",
+      grepl("_hadd_", metric) | grepl("^hadd_", metric), "hadd",
+      default = NA_character_
+    ),
+    disposition = data.table::fcase(
+      grepl("discmort", metric), "discmort",
+      grepl("keep", metric), "keep",
+      grepl("rel", metric), "rel",
+      grepl("catch", metric), "catch",
+      default = NA_character_
+    ),
+    units = data.table::fcase(
+      grepl("weight_lb", metric), "lbs",
+      default = "numbers"
+    )
+  )]
 
+  cmp[, diff := model - MRIP]
+  cmp[, pct_diff := fifelse(!is.na(MRIP) & MRIP != 0, 100 * diff / MRIP, NA_real_)]
+  cmp[, abs_diff_val := abs(diff)]
+  cmp[, abs_pct_diff_val := fifelse(!is.na(MRIP) & MRIP != 0, abs(100 * diff / MRIP), NA_real_)]
+  cmp[, mode := md]
+
+  cmp <- cmp[
+    species %in% c("cod", "hadd") &
+      disposition %in% c("keep", "rel", "catch", "discmort"),
+    .(species, disposition, units, mode, MRIP, model, diff, pct_diff,
+      abs_diff_val, abs_pct_diff_val)
+  ]
+
+  cmp_num <- cmp[units == "numbers"]
+
+  compare_k <- cmp_num[disposition == "keep",
+                       .(mode, species,
+                         MRIP_keep = MRIP,
+                         model_keep = model,
+                         diff_keep = diff,
+                         pct_diff_keep = pct_diff)
+  ]
+
+  compare_c <- cmp_num[disposition == "catch",
+                       .(mode, species,
+                         MRIP_catch = MRIP,
+                         model_catch = model,
+                         diff_catch = diff,
+                         pct_diff_catch = pct_diff)
+  ]
+
+  compare_r <- cmp_num[disposition == "rel",
+                       .(mode, species,
+                         MRIP_rel = MRIP,
+                         model_rel = model,
+                         diff_rel = diff,
+                         pct_diff_rel = pct_diff)
+  ]
+
+  out <- merge(compare_r, compare_k, by = c("mode", "species"), all = TRUE)
+  out <- merge(out, compare_c, by = c("mode", "species"), all = TRUE)
+
+  cmp_lbs <- cmp[units == "lbs"]
+
+  if (nrow(cmp_lbs) > 0L) {
+    weight_wide <- data.table::dcast(
+      cmp_lbs,
+      mode + species ~ disposition,
+      value.var = "model"
+    )
+
+    wt_old <- intersect(c("keep", "rel", "catch", "discmort"), names(weight_wide))
+    wt_new <- paste0("model_", wt_old, "_lbs")
+
+    if (length(wt_old) > 0L) {
+      data.table::setnames(weight_wide, old = wt_old, new = wt_new)
     }
 
-    #If not all kept must be release, p_keep_to_rel_cod<1
-    if (all_keep_to_rel_cod!=1){
-
-      catch_size_data_re_allocate<- catch_size_data %>%
-        dplyr::filter(keep==1)
-
-      catch_size_data_re_allocate_base<- catch_size_data %>%
-        dplyr::filter(keep==0)
-
-      n_row_re_allocate<-nrow(catch_size_data_re_allocate)
-
-      catch_size_data_re_allocate<-catch_size_data_re_allocate %>%
-        dplyr::mutate(uniform=runif(n_row_re_allocate)) %>%
-        dplyr::arrange(uniform) %>%
-        dplyr::mutate(fishid2=1:n_row_re_allocate)
-
-      n_kept_cod_rel=round(p_keep_to_rel_cod*n_row_re_allocate)
-
-      prop_legal_cod_rel<-n_kept_cod_rel/sum(catch_size_data$keep)
-
-      catch_size_data_re_allocate<-catch_size_data_re_allocate %>%
-        dplyr::mutate(rel_new=dplyr::case_when(fishid2<=n_kept_cod_rel~1, TRUE~ 0))
-
-      catch_size_data_re_allocate<-catch_size_data_re_allocate %>%
-        dplyr::mutate(keep_new=dplyr::case_when(rel_new==0~1, TRUE~ 0)) %>%
-        dplyr::select(-keep, -release, -fishid2, -uniform) %>%
-        dplyr::rename(keep=keep_new, release=rel_new)
-
-      sum(catch_size_data$release)
-      sum(catch_size_data$keep)
-
-      catch_size_data<-rbind.fill(catch_size_data_re_allocate,catch_size_data_re_allocate_base )
-
-      sum(catch_size_data$release)
-      sum(catch_size_data$keep)
-
-      rm(catch_size_data_re_allocate,catch_size_data_re_allocate_base)
-
-      n_rel_cod_kept<-0
-
-    }
+    out <- merge(out, weight_wide, by = c("mode", "species"), all.x = TRUE)
+  } else {
+    out[, `:=`(
+      model_keep_lbs = NA_real_,
+      model_rel_lbs = NA_real_
+    )]
   }
 
-
-  trip_data <- catch_size_data %>%
-    dplyr::group_by(date, catch_draw, tripid, mode) %>%
-    dplyr::summarize(tot_keep_cod_new = sum(keep),
-                     tot_rel_cod_new = sum(release),
-                     .groups = "drop") %>%
-    dplyr::ungroup()
-
-  cod_zero_catch<-cod_zero_catch %>%
-    dplyr::select(date, catch_draw, tripid, mode) %>%
-    dplyr::mutate(tot_keep_cod_new=0,
-                  tot_rel_cod_new=0)
-
-  cod_trip_data <- dplyr::bind_rows(trip_data, cod_zero_catch) %>%
-    dplyr::mutate_if(is.numeric, tidyr::replace_na, replace = 0) %>%
-    dplyr::select(c("date", "catch_draw","tripid","mode",
-                    "tot_keep_cod_new","tot_rel_cod_new"))
-
-  cod_trip_data<- cod_trip_data %>% dplyr::mutate(domain2 = paste0(date, "_", mode, "_", catch_draw, "_", tripid))
-  cod_trip_data<-data.table::as.data.table(cod_trip_data)
-  data.table::setkey(cod_trip_data, "domain2")
-}
-
-if (cod_catch_check==0){
-  cod_trip_data<-catch_data %>%
-    dplyr::select("date", "catch_draw","tripid","mode") %>%
-    dplyr::mutate(tot_keep_cod_new = 0,
-                  tot_rel_cod_new= 0,
-                  domain2 = paste0(date, "_", mode, "_", catch_draw, "_", tripid))
-
-  cod_trip_data<-data.table::as.data.table(cod_trip_data)
-  data.table::setkey(cod_trip_data, "domain2")
-}
-
-rm(catch_size_data, trip_data)
-
-
-# hadd trip simulation
-if (hadd_catch_check!=0){
-
-  # keep trips with positive hadd catch
-  hadd_catch_data <- dplyr::filter(catch_data, hadd_cat > 0)
-
-  row_inds <- seq_len(nrow(hadd_catch_data))
-
-  hadd_catch_data<-hadd_catch_data %>%
-    dplyr::slice(rep(row_inds, hadd_cat))   %>%
-    dplyr::mutate(fishid=dplyr::row_number())
-
-  # generate lengths for each fish
-  catch_size_data <- hadd_catch_data %>%
-    dplyr::mutate(fitted_length = sample(hadd_size_data$length,
-                                         nrow(.),
-                                         prob = hadd_size_data$fitted_prob,
-                                         replace = TRUE))
-
-  # Impose regulations, calculate keep and release per trip
-  catch_size_data <- catch_size_data %>%
-    dplyr::mutate(posskeep = ifelse(fitted_length>=hadd_min ,1,0)) %>%
-    dplyr::group_by(tripid, date, mode, catch_draw) %>%
-    dplyr::mutate(csum_keep = cumsum(posskeep)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(
-      keep_adj = dplyr::case_when(
-        hadd_bag > 0 ~ ifelse(csum_keep<=hadd_bag & posskeep==1,1,0),
-        TRUE ~ 0))
-
-  catch_size_data <- catch_size_data %>%
-    dplyr::mutate_if(is.numeric, tidyr::replace_na, replace = 0)
-
-  catch_size_data <- catch_size_data %>%
-    dplyr::mutate(keep = keep_adj,
-                  release = ifelse(keep==0,1,0)) %>%
-    dplyr::select(fishid, fitted_length, tripid, keep, release, date, catch_draw, mode)
-
-  # code for trip level harvest re-allocation
-  catch_size_data<- catch_size_data %>%
-    dplyr::select(fishid, fitted_length, tripid, keep, release, date, catch_draw, mode) %>%
-    dplyr::mutate(subl_harv_indicator=case_when(release==1 & fitted_length>=floor_subl_hadd_harv~1,TRUE~0))
-
-  sum_hadd_rel<-sum(catch_size_data$release)
-  sum_hadd_keep<-sum(catch_size_data$keep)
-
-  # reallocate a portion of all releases as kept if needed
-  if (rel_to_keep_hadd==1 & sum_hadd_rel>0){
-
-    catch_size_data_re_allocate<- catch_size_data %>%
-      dplyr::filter(subl_harv_indicator==1)
-
-    original_rel_hadd<-sum(catch_size_data_re_allocate$release)
-
-    catch_size_data_re_allocate_base<- catch_size_data %>%
-      dplyr::filter(subl_harv_indicator==0)
-
-    catch_size_data_re_allocate <- catch_size_data_re_allocate %>%
-      dplyr::mutate(uniform=runif(n(), min=0, max=1)) %>%
-      dplyr::arrange(uniform) %>%
-      dplyr::ungroup()
-
-    n_row_re_allocate<-nrow(catch_size_data_re_allocate)
-
-    n_sub_hadd_kept=round(p_rel_to_keep_hadd*n_row_re_allocate)
-
-    catch_size_data_re_allocate <- catch_size_data_re_allocate %>%
-      dplyr::mutate(fishid2=1:n_row_re_allocate) %>%
-      dplyr::mutate(keep_new=case_when(fishid2<=n_sub_hadd_kept~1, TRUE~ 0))
-
-    n_rel_hadd_kept<-sum(catch_size_data_re_allocate$keep_new)
-
-
-    catch_size_data_re_allocate <- catch_size_data_re_allocate %>%
-      dplyr::mutate(rel_new=case_when(keep_new==0~1, TRUE~ 0)) %>%
-      dplyr::select(-keep, -release, -uniform, -fishid2, -uniform) %>%
-      dplyr::rename(keep=keep_new, release=rel_new)
-
-
-    catch_size_data<- rbind.fill(catch_size_data_re_allocate,catch_size_data_re_allocate_base) %>%
-      dplyr::select(-subl_harv_indicator)
-
-    n_kept_hadd_rel<-0
-    prop_sub_hadd_kept<-n_rel_hadd_kept/original_rel_hadd
-    n_rel_hadd_kept
-
-    rm(catch_size_data_re_allocate,catch_size_data_re_allocate_base)
-
+  if (!is.null(eligible_dt)) {
+    out <- merge(out, eligible_dt, by = c("mode", "species"), all.x = TRUE)
+  } else {
+    out[, original_rel_eligible := NA_real_]
   }
 
-  # reallocate a portion of all keeps as releases if needed
-  if (keep_to_rel_hadd==1 & sum_hadd_keep>0){
+  out[is.na(original_rel_eligible), original_rel_eligible := 0]
 
-    # if all kept must be release, p_keep_to_rel_hadd==1
-    if (all_keep_to_rel_hadd==1){
+  out[, rel_to_keep_new := fifelse(diff_keep < 0, 1, 0)]
+  out[, keep_to_rel_new := fifelse(diff_keep > 0, 1, 0)]
+  out[, p_rel_to_keep_new := abs(safe_divide(diff_keep, original_rel_eligible))]
+  out[, p_rel_to_keep_new := pmin(1, p_rel_to_keep_new)]
 
-      n_kept_hadd_rel<-sum(catch_size_data$keep)
-      prop_legal_hadd_rel<-n_kept_hadd_rel/sum(catch_size_data$keep)
+  out[, p_keep_to_rel_new := abs(safe_divide(diff_keep, model_keep))]
 
-      catch_size_data<-catch_size_data %>%
-        dplyr::mutate(rel_new = keep+release,
-                      keep_new = 0) %>%
-        dplyr::select(-keep, -release) %>%
-        dplyr::rename(release=rel_new,  keep=keep_new)
+  out[]
+}
 
-      n_rel_hadd_kept<-0
+# initialize defaults if not supplied by the outer routine
+species_defaults <- c("cod", "hadd")
+for (sp in species_defaults) {
+  if (!exists(paste0("keep_to_rel_", sp), inherits = FALSE)) assign(paste0("keep_to_rel_", sp), 0)
+  if (!exists(paste0("rel_to_keep_", sp), inherits = FALSE)) assign(paste0("rel_to_keep_", sp), 0)
+  if (!exists(paste0("p_rel_to_keep_", sp), inherits = FALSE)) assign(paste0("p_rel_to_keep_", sp), 0)
+  if (!exists(paste0("p_keep_to_rel_", sp), inherits = FALSE)) assign(paste0("p_keep_to_rel_", sp), 0)
+  if (!exists(paste0("all_keep_to_rel_", sp), inherits = FALSE)) assign(paste0("all_keep_to_rel_", sp), 0)
+}
 
-    }
+if (!exists("cod_floor_below_min_in", inherits = FALSE))   cod_floor_below_min_in <- 3
+if (!exists("hadd_floor_below_min_in", inherits = FALSE))  hadd_floor_below_min_in <- 3
 
-    # if not all kept must be release, p_keep_to_rel_hadd<1
-    if (all_keep_to_rel_hadd!=1){
 
-      catch_size_data_re_allocate<- catch_size_data %>%
-        dplyr::filter(keep==1)
+n_sub_kept_cod <- 0L
+prop_sub_kept_cod <- 0
+n_legal_rel_cod <- 0L
+prop_legal_rel_cod <- 0
+original_rel_eligible_cod <- 0
 
-      catch_size_data_re_allocate_base<- catch_size_data %>%
-        dplyr::filter(keep==0)
+n_sub_kept_hadd <- 0L
+prop_sub_kept_hadd <- 0
+n_legal_rel_hadd <- 0L
+prop_legal_rel_hadd <- 0
+original_rel_eligible_hadd <- 0
 
-      n_row_re_allocate<-nrow(catch_size_data_re_allocate)
+simulate_species_realloc <- function(catch_dt,
+                                     catch_col,
+                                     bag_col,
+                                     min_col,
+                                     size_dt,
+                                     species_prefix = c("cod", "hadd"),
+                                     floor_sublegal,
+                                     rel_to_keep = 0,
+                                     keep_to_rel = 0,
+                                     p_rel_to_keep = 0,
+                                     p_keep_to_rel = 0,
+                                     all_keep_to_rel = 0,
+                                     utility_adjust = FALSE) {
 
-      catch_size_data_re_allocate<-catch_size_data_re_allocate %>%
-        dplyr::mutate(uniform=runif(n_row_re_allocate)) %>%
-        dplyr::arrange(uniform) %>%
-        dplyr::mutate(fishid2=1:n_row_re_allocate)
+  species_prefix <- as.character(species_prefix)[1]
 
-      n_kept_hadd_rel=round(p_keep_to_rel_hadd*n_row_re_allocate)
-      prop_legal_hadd_rel<-n_kept_hadd_rel/sum(catch_size_data$keep)
+  key_cols <- c("date_parsed", "mode", "tripid", "catch_draw")
 
-      catch_size_data_re_allocate<-catch_size_data_re_allocate %>%
-        dplyr::mutate(rel_new=dplyr::case_when(fishid2<=n_kept_hadd_rel~1, TRUE~ 0))
+  keep_col <- paste0("tot_keep_", species_prefix, "_new")
+  rel_col  <- paste0("tot_rel_", species_prefix, "_new")
+  keep_wt_col <- paste0("tot_keep_", species_prefix, "_weight_lb_new")
+  rel_wt_col  <- paste0("tot_rel_", species_prefix, "_weight_lb_new")
+  disc_wt_col  <- paste0("tot_discmort_", species_prefix, "_weight_lb_new")
 
-      catch_size_data_re_allocate<-catch_size_data_re_allocate %>%
-        dplyr::mutate(keep_new=dplyr::case_when(rel_new==0~1, TRUE~ 0)) %>%
-        dplyr::select(-keep, -release, -fishid2, -uniform) %>%
-        dplyr::rename(keep=keep_new, release=rel_new)
+  util_keep_col <- paste0("util_keep_", species_prefix, "_new")
+  util_rel_col  <- paste0("util_rel_",  species_prefix, "_new")
 
-      sum(catch_size_data$release)
-      sum(catch_size_data$keep)
 
-      catch_size_data<-rbind.fill(catch_size_data_re_allocate,catch_size_data_re_allocate_base )
+  pos_dt <- catch_dt[get(catch_col) > 0,
+                     .(date_parsed, mode, tripid, catch_draw,
+                       catch_n = get(catch_col),
+                       bag     = get(bag_col),
+                       min_sz  = get(min_col))]
 
-      sum(catch_size_data$release)
-      sum(catch_size_data$keep)
+  zero_dt <- catch_dt[get(catch_col) == 0,
+                      .(date_parsed, mode, tripid, catch_draw)]
 
-      rm(catch_size_data_re_allocate,catch_size_data_re_allocate_base)
+  trip_out_zero <- copy(zero_dt)
 
-      n_rel_hadd_kept<-0
+  trip_out_zero[,
+                c(keep_col, rel_col, util_keep_col, util_rel_col, keep_wt_col, rel_wt_col, disc_wt_col) :=
+                  .(0L, 0L, 0L, 0L, 0, 0, 0)  ]
 
+  if (nrow(pos_dt) == 0L) {
+
+    setcolorder(trip_out_zero,
+                c(key_cols, keep_col, rel_col, util_keep_col, util_rel_col, keep_wt_col, rel_wt_col, disc_wt_col))
+
+    setkeyv(trip_out_zero, key_cols)
+
+    return(list(
+      trip = trip_out_zero,
+      n_sub_kept = 0L,
+      n_legal_rel = 0L,
+      prop_sub_kept = 0,
+      prop_legal_rel = 0,
+      original_rel_eligible = 0
+
+    ))
+  }
+
+  fish_dt <- pos_dt[rep(seq_len(.N), catch_n)]
+  fish_dt[, fishid := seq_len(.N)]
+
+  fish_dt[, fitted_length := sample(size_dt$length,
+                                    .N,
+                                    replace = TRUE,
+                                    prob = size_dt$fitted_prob)]
+
+   fish_dt[, month := as.integer(format(date_parsed, "%m"))]
+
+    # Compute weight
+    if (species_prefix=="cod"){
+      fish_dt[, fish_weight_lb := cod_lw_a*fitted_length^cod_lw_b]
+      fish_dt<-fish_dt %>% left_join(cod_disc_mort,by="month")
+      }
+
+    if (species_prefix=="hadd"){
+      fish_dt[, fish_weight_lb := had_lw_a*fitted_length^had_lw_b]
+      fish_dt[, spp2 := data.table::fifelse(
+        fitted_length > 50, "had_lg","had_sm")]
+      fish_dt<-fish_dt %>% left_join(hadd_disc_mort,by=c("spp2", "month"))
+
+     }
+
+
+    # Convert to lbs
+  fish_dt[, fish_weight_lb := fish_weight_lb * 2.20462262185]
+
+  fish_dt <- data.table::copy(data.table::as.data.table(fish_dt))
+  fish_dt[, `:=`(
+    posskeep = data.table::fifelse(fitted_length >= min_sz, 1L, 0L))]
+
+  setorder(fish_dt, date_parsed, mode, tripid, catch_draw, fishid)
+  fish_dt[, csum_keep := cumsum(posskeep), by = key_cols]
+  fish_dt[, keep := fifelse(bag > 0 & posskeep == 1L & csum_keep <= bag, 1L, 0L)]
+  fish_dt[, release := fifelse(keep == 0L, 1L, 0L)]
+  fish_dt[, kept_to_released_flag := 0L]
+
+  fish_dt[, subl_harv_indicator := fifelse(release == 1L & fitted_length >= floor_sublegal, 1L, 0L)]
+
+  n_sub_kept <- 0L
+  n_legal_rel <- 0L
+  prop_sub_kept <- 0
+  prop_legal_rel <- 0
+
+  original_rel_eligible <- fish_dt[
+    release == 1L & subl_harv_indicator == 1L,
+    .N
+  ]
+
+  original_sum_rel <- fish_dt[, sum(release)]
+  original_sum_keep <- fish_dt[, sum(keep)]
+
+  if (rel_to_keep == 1 && original_sum_rel > 0) {
+    realloc_dt <- fish_dt[subl_harv_indicator == 1L]
+    base_dt    <- fish_dt[subl_harv_indicator == 0L]
+
+    if (nrow(realloc_dt) > 0L) {
+      realloc_dt[, u := runif(.N)]
+      setorder(realloc_dt, u)
+
+      n_row_realloc <- nrow(realloc_dt)
+      n_sub_kept <- round(p_rel_to_keep * n_row_realloc)
+      n_sub_kept <- max(0L, min(n_sub_kept, n_row_realloc))
+
+      realloc_dt[, idx := seq_len(.N)]
+      realloc_dt[, keep_new := fifelse(idx <= n_sub_kept, 1L, 0L)]
+      realloc_dt[, rel_new  := fifelse(keep_new == 0L, 1L, 0L)]
+
+      n_sub_kept <- realloc_dt[, sum(keep_new)]
+      prop_sub_kept <- safe_divide(n_sub_kept, original_rel_eligible)
+
+      realloc_dt[, `:=`(keep = keep_new, release = rel_new)]
+      realloc_dt[, c("u", "idx", "keep_new", "rel_new") := NULL]
+
+      fish_dt <- rbindlist(list(realloc_dt, base_dt), use.names = TRUE)
     }
   }
 
-  trip_data <- catch_size_data %>%
-    dplyr::group_by(date, catch_draw, tripid, mode) %>%
-    dplyr::summarize(tot_keep_hadd_new = sum(keep),
-                     tot_rel_hadd_new = sum(release),
-                     .groups = "drop") %>%
-    dplyr::ungroup()
+  if (keep_to_rel == 1 && original_sum_keep > 0) {
+    if (all_keep_to_rel == 1) {
+      n_legal_rel <- fish_dt[, sum(keep)]
+      prop_legal_rel <- safe_divide(n_legal_rel, fish_dt[, sum(keep)])
+      fish_dt[, kept_to_released_flag := keep]
+      fish_dt[, release := keep + release]
+      fish_dt[, keep := 0L]
+    } else {
+      realloc_dt <- fish_dt[keep == 1L]
+      base_dt    <- fish_dt[keep == 0L]
+
+      if (nrow(realloc_dt) > 0L) {
+        realloc_dt[, u := runif(.N)]
+        setorder(realloc_dt, u)
+        realloc_dt[, idx := seq_len(.N)]
+
+        n_row_realloc <- nrow(realloc_dt)
+        n_legal_rel <- round(p_keep_to_rel * n_row_realloc)
+        n_legal_rel <- max(0L, min(n_legal_rel, n_row_realloc))
+        prop_legal_rel <- safe_divide(n_legal_rel, fish_dt[, sum(keep)])
+
+        realloc_dt[, rel_new  := fifelse(idx <= n_legal_rel, 1L, 0L)]
+        realloc_dt[, keep_new := fifelse(rel_new == 0L, 1L, 0L)]
+        realloc_dt[, kept_to_released_flag := fifelse(rel_new == 1L, 1L, 0L)]
+        realloc_dt[, `:=`(keep = keep_new, release = rel_new)]
+        realloc_dt[, c("u", "idx", "keep_new", "rel_new") := NULL]
+
+        fish_dt <- rbindlist(list(realloc_dt, base_dt), use.names = TRUE)
+      }
+    }
+  }
+
+  if (utility_adjust) {
+    fish_dt[, keep_util := fifelse(keep == 1L | kept_to_released_flag == 1L, 1L, 0L)]
+    fish_dt[, release_util := fifelse(release == 1L & kept_to_released_flag == 0L, 1L, 0L)]
+  } else {
+    fish_dt[, keep_util := keep]
+    fish_dt[, release_util := release]
+  }
+
+  fish_dt[, keep_weight_lb := keep * fish_weight_lb]
+  fish_dt[, release_weight_lb := release * fish_weight_lb]
+  fish_dt[, discmort_weight_lb := release_weight_lb * Discard_mortality]
 
 
-  hadd_zero_catch<-hadd_zero_catch %>%
-    dplyr::select(date, catch_draw, tripid, mode) %>%
-    dplyr::mutate(tot_keep_hadd_new=0,
-                  tot_rel_hadd_new=0)
+  trip_out_pos <- fish_dt[, .(
+    keep_n = sum(keep),
+    rel_n = sum(release),
+    keep_util_n = sum(keep_util),
+    rel_util_n = sum(release_util),
+    keep_weight_lb = sum(keep_weight_lb, na.rm = TRUE),
+    release_weight_lb = sum(release_weight_lb, na.rm = TRUE),
+    discmort_weight_lb = sum(discmort_weight_lb, na.rm = TRUE)
+  ), by = key_cols]
 
-  hadd_trip_data <- dplyr::bind_rows(trip_data, hadd_zero_catch) %>%
-    dplyr::mutate_if(is.numeric, tidyr::replace_na, replace = 0) %>%
-    dplyr::select(c("date", "catch_draw","tripid","mode",
-                    "tot_keep_hadd_new","tot_rel_hadd_new"))
 
-  hadd_trip_data<- hadd_trip_data %>%
-    dplyr::mutate(domain2 = paste0(date, "_", mode, "_", catch_draw, "_", tripid)) %>%
-    dplyr::select(-c("date", "catch_draw","tripid","mode"))
 
-  hadd_trip_data<-data.table::as.data.table(hadd_trip_data)
-  data.table::setkey(hadd_trip_data, "domain2")
+
+  setnames(
+    trip_out_pos,
+    old = c("keep_n", "rel_n", "keep_util_n", "rel_util_n", "keep_weight_lb", "release_weight_lb", "discmort_weight_lb"),
+    new = c(keep_col, rel_col, util_keep_col, util_rel_col, keep_wt_col, rel_wt_col, disc_wt_col)
+  )
+
+  trip_out <- rbindlist(list(trip_out_pos, trip_out_zero), use.names = TRUE, fill = TRUE)
+  setkeyv(trip_out, key_cols)
+
+  list(
+    trip = trip_out,
+    n_sub_kept = n_sub_kept,
+    n_legal_rel = n_legal_rel,
+    prop_sub_kept = prop_sub_kept,
+    prop_legal_rel = prop_legal_rel,
+    original_rel_eligible = original_rel_eligible
+  )
 }
 
-if (hadd_catch_check==0){
-  hadd_trip_data<-catch_data %>%
-    dplyr::select("date", "catch_draw","tripid","mode") %>%
-    dplyr::mutate(tot_keep_hadd_new = 0,
-                  tot_rel_hadd_new= 0,
-                  domain2 = paste0(date, "_", mode, "_", catch_draw, "_", tripid)) %>%
-    dplyr::select(-c("date", "catch_draw","tripid","mode"))
 
-  hadd_trip_data<-data.table::as.data.table(hadd_trip_data)
-  data.table::setkey(hadd_trip_data, "domain2")
-}
-
-rm(catch_size_data,trip_data)
+# Catch-at-length is common. Read once.
+size_lookup <- as.data.table(
+  readr::read_csv(file.path(final_process_misc_cd, "baseline_catch_at_length.csv"),
+                  show_col_types = FALSE)
+)
+check_required_cols(size_lookup,
+                    c("species", "draw", "season", "fitted_prob", "length"),
+                    "baseline_catch_at_length.csv")
+size_lookup <- size_lookup[!is.na(fitted_prob), .(species, draw, season, fitted_prob, length)]
+setkey(size_lookup, species, draw, season)
 
 
-# merge the hadd trip data with the rest of the trip data
-trip_data<- cod_trip_data[hadd_trip_data, on = "domain2"]
+# one state-draw-mode run; expects s, i, md in the parent environment
+dtrip_all <- as.data.table(read_fst(file.path(final_process_misc_cd, "directed_trip_draws.fst")))
+dtrip_all[, season := cod_hadd_season(date_parsed)]
+dtrip_all <- dtrip_all[, .(draw, mode, date_parsed, season, dtrip,
+                           cod_bag, cod_min, hadd_bag, hadd_min)]
 
-trip_data<- trip_data %>%
-  dplyr::mutate(tot_hadd_catch = tot_keep_hadd_new + tot_rel_hadd_new,
-                tot_cod_catch = tot_keep_cod_new + tot_rel_cod_new)
+setkey(dtrip_all, draw, season, mode, date_parsed)
+months_md <- unique(as.integer(format(dtrip_all$date_parsed, "%m")))
 
-# merge the trip data with angler demograohics
-trip_data<- trip_data %>%
-  dplyr::left_join(angler_dems, by = c("date", "mode", "tripid"))
+if (nrow(dtrip_all) == 0L || sum(dtrip_all$dtrip, na.rm = TRUE) == 0) {
 
-# base_outcomes_s_md_i data sets will retain trip outcomes from the baseline scenario.
-# we will merge these data to the prediction year outcomes to calculate changes in effort and CS.
+  calib_comparison1 <- data.table(
+    mode = md,
+    species = c("cod", "hadd"),
+    MRIP_keep = NA_real_,
+    model_keep = 0,
+    diff_keep = NA_real_,
+    pct_diff_keep = NA_real_,
+    MRIP_rel = NA_real_,
+    model_rel = 0,
+    diff_rel = NA_real_,
+    pct_diff_rel = NA_real_,
+    MRIP_catch = NA_real_,
+    model_catch = 0,
+    diff_catch = NA_real_,
+    pct_diff_catch = NA_real_,
+    rel_to_keep_new = NA_real_,
+    keep_to_rel_new = NA_real_,
+    p_rel_to_keep_new = NA_real_,
+    p_keep_to_rel_new = NA_real_,
+    draw = i,
+    state = s
+  )
 
-baseline_outcomes<- trip_data %>%
-  dplyr::rename(tot_keep_hadd_base = tot_keep_hadd_new,
-                tot_keep_cod_base = tot_keep_cod_new,
-                tot_rel_hadd_base = tot_rel_hadd_new,
-                tot_rel_cod_base = tot_rel_cod_new)
+} else {
 
-fst::write_fst(baseline_outcomes, file.path(iterative_input_data_cd, paste0("base_outcomes_", s,"_", md, "_", i, ".fst")))
+  dtrip_draw <- dtrip_all[list(i, s, md)]
 
-#  compute utility
-mean_trip_data <-trip_data %>%
-  dplyr::mutate(
-    vA_trip = beta_sqrt_cod_keep*sqrt(tot_keep_cod_new) +
-      beta_sqrt_cod_release*sqrt(tot_rel_cod_new) +
-      beta_sqrt_hadd_keep*sqrt(tot_keep_hadd_new) +
-      beta_sqrt_hadd_release*sqrt(tot_rel_hadd_new) +
-      beta_sqrt_cod_hadd_keep*(sqrt(tot_keep_cod_new)*sqrt(tot_keep_hadd_new)) +
-      beta_cost*cost,
+  catch_path_fst <- file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_", i, ".fst"))
+  catch_data <- as.data.table(read_fst(catch_path_fst))
+  setnames(
+    catch_data,
+    old = c("cod_cat_sim", "hadd_cat_sim", "cost_sim"),
+    new = c("cod_cat", "hadd_cat", "cost"),
+    skip_absent = TRUE
+  )
 
-    vA_optout = beta_opt_out +
-      beta_opt_out_trips12 * total_trips_12 +
+  catch_data[, season := cod_hadd_season(date_parsed)]
+
+  catch_data <- merge(
+    catch_data[mode == md & season == s],
+    dtrip_draw[, .(mode, date_parsed, dtrip, cod_bag, cod_min, hadd_bag, hadd_min)],
+    by = c("mode", "date_parsed"),
+    all.x = TRUE
+  )
+
+  angler_cols <- intersect(
+    c("date_parsed", "mode", "tripid", "total_trips_12", "fish_pref_more",
+      "educ1", "educ2", "educ3", "own_boat", "cost", "age",
+      grep("^beta", names(catch_data), value = TRUE)),
+    names(catch_data)
+  )
+  angler_dems <- unique(catch_data[, ..angler_cols])
+
+  cod_size_data  <- size_lookup[list("cod",  i, s), .(fitted_prob, length)]
+  hadd_size_data <- size_lookup[list("hadd", i, s), .(fitted_prob, length)]
+
+
+  floor_subl_cod_harv   <- min(dtrip_all$cod_min, na.rm = TRUE) - cod_floor_below_min_in * 2.54
+  floor_subl_hadd_harv  <- min(dtrip_all$hadd_min,   na.rm = TRUE) - hadd_floor_below_min_in * 2.54
+
+  cod_res <- simulate_species_realloc(
+    catch_dt = catch_data,
+    catch_col = "cod_cat",
+    bag_col = "cod_bag",
+    min_col = "cod_min",
+    size_dt = cod_size_data,
+    species_prefix = "cod",
+    floor_sublegal = floor_subl_cod_harv,
+    rel_to_keep = rel_to_keep_cod,
+    keep_to_rel = keep_to_rel_cod,
+    p_rel_to_keep = p_rel_to_keep_cod,
+    p_keep_to_rel = p_keep_to_rel_cod,
+    all_keep_to_rel = all_keep_to_rel_cod,
+    utility_adjust = TRUE
+  )
+  # catch_dt = catch_data
+  # catch_col = "cod_cat"
+  # bag_col = "cod_bag"
+  # min_col = "cod_min"
+  # size_dt = cod_size_data
+  # species_prefix = "cod"
+  # floor_sublegal = floor_subl_cod_harv
+  # rel_to_keep = rel_to_keep_cod
+  # keep_to_rel = keep_to_rel_cod
+  # p_rel_to_keep = p_rel_to_keep_cod
+  # p_keep_to_rel = p_keep_to_rel_cod
+  # all_keep_to_rel = all_keep_to_rel_cod
+  # utility_adjust = TRUE
+  hadd_res <- simulate_species_realloc(
+    catch_dt = catch_data,
+    catch_col = "hadd_cat",
+    bag_col = "hadd_bag",
+    min_col = "hadd_min",
+    size_dt = hadd_size_data,
+    species_prefix = "hadd",
+    floor_sublegal = floor_subl_hadd_harv,
+    rel_to_keep = rel_to_keep_hadd,
+    keep_to_rel = keep_to_rel_hadd,
+    p_rel_to_keep = p_rel_to_keep_hadd,
+    p_keep_to_rel = p_keep_to_rel_hadd,
+    all_keep_to_rel = all_keep_to_rel_hadd,
+    utility_adjust = TRUE
+  )
+
+
+  n_sub_kept_cod <- cod_res$n_sub_kept
+  n_legal_rel_cod <- cod_res$n_legal_rel
+  prop_sub_kept_cod <- cod_res$prop_sub_kept
+  prop_legal_rel_cod <- cod_res$prop_legal_rel
+  original_rel_eligible_cod <- cod_res$original_rel_eligible
+
+  n_sub_kept_hadd <- hadd_res$n_sub_kept
+  n_legal_rel_hadd <- hadd_res$n_legal_rel
+  prop_sub_kept_hadd <- hadd_res$prop_sub_kept
+  prop_legal_rel_hadd <- hadd_res$prop_legal_rel
+  original_rel_eligible_hadd <- hadd_res$original_rel_eligible
+
+  key_cols <- c("date_parsed", "mode", "tripid", "catch_draw")
+  setkeyv(cod_res$trip, key_cols)
+  setkeyv(hadd_res$trip, key_cols)
+
+  trip_data <- merge(cod_res$trip, hadd_res$trip, by = key_cols, all = TRUE)
+
+  zero_fill_cols <- intersect(
+    c("tot_keep_cod_new", "tot_rel_cod_new", "util_keep_cod_new", "util_rel_cod_new",
+      "tot_keep_hadd_new", "tot_rel_hadd_new", "util_keep_hadd_new", "util_rel_hadd_new",
+      "tot_keep_cod_weight_lb_new", "tot_rel_cod_weight_lb_new", "tot_discmort_cod_weight_lb_new",
+      "tot_keep_hadd_weight_lb_new", "tot_rel_hadd_weight_lb_new", "tot_discmort_hadd_weight_lb_new"),
+    names(trip_data)
+  )
+
+  for (cc in zero_fill_cols) {
+    set(trip_data, which(is.na(trip_data[[cc]])), cc, 0L)
+  }
+
+  trip_data[, `:=`(
+    tot_hadd_catch  = tot_keep_hadd_new + tot_rel_hadd_new,
+    tot_cod_catch   = tot_keep_cod_new + tot_rel_cod_new
+  )]
+
+
+  setkey(angler_dems, date_parsed, mode, tripid)
+  trip_data <- merge(trip_data, angler_dems, by = c("date_parsed", "mode", "tripid"), all.x = TRUE)
+
+  setorder(trip_data, date_parsed, mode, tripid, catch_draw)
+
+  baseline_outcomes <- copy(trip_data)
+  setnames(
+    baseline_outcomes,
+    old = c("tot_keep_hadd_new", "tot_keep_cod_new","util_keep_cod_new", "util_keep_hadd_new",
+            "tot_rel_hadd_new", "tot_rel_cod_new", "util_rel_cod_new", "util_rel_hadd_new",
+            "tot_hadd_catch", "tot_cod_catch",
+            "tot_keep_hadd_weight_lb_new", "tot_keep_cod_weight_lb_new",
+            "tot_rel_hadd_weight_lb_new", "tot_rel_cod_weight_lb_new",
+            "tot_discmort_cod_weight_lb_new", "tot_discmort_hadd_weight_lb_new"),
+    new = c("tot_keep_hadd_base", "tot_keep_cod_base", "util_keep_cod_base", "util_keep_hadd_base",
+            "tot_rel_hadd_base", "tot_rel_cod_base","util_rel_cod_base",  "util_rel_hadd_base",
+            "tot_cat_hadd_base", "tot_cat_cod_base",
+            "tot_keep_hadd_weight_lb_base", "tot_keep_cod_weight_lb_base",
+            "tot_rel_hadd_weight_lb_base", "tot_rel_cod_weight_lb_base",
+            "tot_discmort_cod_weight_lb_base", "tot_discmort_hadd_weight_lb_base"),
+    skip_absent = TRUE
+  )
+
+  fst::write_fst(
+    baseline_outcomes,
+    file.path(final_process_outcomes_cd,
+              paste0("base_outcomes_", s, "_", md, "_", i, ".fst"))
+  )
+
+  trip_data[, `:=`(
+    vA_trip =
+      beta_sqrt_cod_keep    * sqrt(util_keep_cod_new) +
+      beta_sqrt_cod_release * sqrt(util_rel_cod_new) +
+      beta_sqrt_hadd_keep   * sqrt(util_keep_hadd_new) +
+      beta_sqrt_hadd_release * sqrt(util_rel_hadd_new) +
+      beta_sqrt_cod_hadd_keep * (sqrt(util_keep_cod_new) * sqrt(util_keep_hadd_new)) +
+      beta_cost * cost,
+
+    vA_optout =
+      beta_opt_out +
+      beta_opt_out_trips12  * total_trips_12 +
       beta_opt_out_fish_pref * fish_pref_more +
-      beta_opt_out_educ2 * educ2 +
-      beta_opt_out_educ3 * educ3 +
-      beta_opt_out_ownboat * own_boat)
+      beta_opt_out_educ2    * educ2 +
+      beta_opt_out_educ3    * educ3 +
+      beta_opt_out_ownboat  * own_boat
+  )]
 
+  mean_trip_data <- copy(trip_data)
 
-#Calculate the expected utility of alts 2 parameters of the utility function,
-#put the two values in the same column, exponentiate, and calculate their sum (vA_col_sum)
+  drop_cols <- intersect(
+    c(grep("^beta", names(mean_trip_data), value = TRUE),
+      "opt_out", "cost", "total_trips_12", "educ1", "educ2", "educ3",
+      "fish_pref_more", "own_boat", "age"),
+    names(mean_trip_data)
+  )
+  if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
 
-setDT(mean_trip_data)
+  keep_vars <- setdiff(names(mean_trip_data), c("date_parsed", "mode", "tripid"))
+  mean_trip_data <- mean_trip_data[, lapply(.SD, mean),
+                                   by = .(date_parsed, mode, tripid),
+                                   .SDcols = keep_vars]
 
+  mean_trip_data[, probA := calc_prob_trip(vA_trip, vA_optout)]
+  mean_trip_data[, c("vA_trip", "vA_optout", "catch_draw",
+                     "util_keep_cod_new", "util_rel_cod_new",
+                     "util_keep_hadd_new", "util_rel_hadd_new") := NULL]
 
-# remove big cols
-drop_cols <- c("beta_opt_out","beta_opt_out_educ2", "beta_opt_out_educ3",
-               "beta_opt_out_fish_pref", "beta_opt_out_ownboat", "beta_opt_out_trips12" ,
-               "beta_sqrt_cod_hadd_keep", "beta_sqrt_cod_keep", "beta_sqrt_cod_release",
-               "beta_sqrt_hadd_keep", "beta_sqrt_hadd_release", "beta_cost",
-               "opt_out", "cost","total_trips_12", "educ1","educ2","educ3",
-               "fish_pref_more","own_boat", "domain2")
+  wt_cols <- c(
+    "tot_keep_cod_new", "tot_rel_cod_new", "tot_cod_catch",
+    "tot_keep_hadd_new", "tot_rel_hadd_new", "tot_hadd_catch",
+    "tot_keep_cod_weight_lb_new", "tot_rel_cod_weight_lb_new",
+    "tot_keep_hadd_weight_lb_new", "tot_rel_hadd_weight_lb_new",
+    "tot_discmort_cod_weight_lb_new", "tot_discmort_hadd_weight_lb_new"
+  )
 
-drop_cols <- intersect(drop_cols, names(mean_trip_data))
-if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
+  wt_cols <- intersect(wt_cols, names(mean_trip_data))
 
-# average across catch_draw
-keep_vars <- setdiff(names(mean_trip_data), c("date","mode","tripid"))
-mean_trip_data <- mean_trip_data[, lapply(.SD, mean),
-                                 by = .(date, mode,tripid),
-                                 .SDcols = keep_vars]
+  mean_trip_data[,
+                 (wt_cols) := lapply(.SD, function(x) x * probA),
+                 .SDcols = wt_cols]
 
-# calculate probabilities
-mean_trip_data[, prob0 := exp(vA_trip) / (exp(vA_trip) + exp(vA_optout))]
+  mean_trip_data <- merge(mean_trip_data, dtrip_draw, by = c("mode", "date_parsed"), all.x = TRUE)
+  drop_reg_cols <- intersect(c("hadd_bag", "hadd_min", "cod_bag", "cod_min"), names(mean_trip_data))
+  if (length(drop_reg_cols)) mean_trip_data[, (drop_reg_cols) := NULL]
 
+  mean_trip_data[, mean_prob := mean(probA), by = .(mode, date_parsed)]
+  mean_trip_data[is.na(mean_prob) | mean_prob == 0, mean_prob := NA_real_]
+  mean_trip_data[, sims := fifelse(!is.na(mean_prob), round(dtrip / mean_prob), 0)]
+  mean_trip_data[, expand := sims / n_draws]
+  mean_trip_data[, n_choice_occasions := 1]
 
-# Get rid of things we don't need.
-mean_trip_data <- mean_trip_data %>%
-  dplyr::select(-"vA_trip" ,-"vA_optout", -"catch_draw") %>%
-  dplyr::arrange(date, mode, tripid)
+  expand_cols <- intersect(c(wt_cols, "n_choice_occasions", "probA"), names(mean_trip_data))
 
+  mean_trip_data[,
+                 (expand_cols) := lapply(.SD, function(x) x * expand),
+                 .SDcols = expand_cols]
 
-# multiply the average trip probability (probA) by each catch variable to get probability-weighted catch
-list_names <- c("tot_keep_cod_new","tot_rel_cod_new","tot_cod_catch",
-                "tot_keep_hadd_new","tot_rel_hadd_new", "tot_hadd_catch")
+  for (j in names(mean_trip_data)) setattr(mean_trip_data[[j]], "label", NULL)
 
-mean_trip_data <- mean_trip_data %>%
-  as.data.table() %>%
-  .[,as.vector(list_names) := lapply(.SD, function(x) x * prob0), .SDcols = list_names] %>%
-  .[]
+  aggregate_trip_data <- mean_trip_data[, lapply(.SD, sum),
+                                        by = .(date_parsed, mode),
+                                        .SDcols = expand_cols]
 
-mean_trip_data<-mean_trip_data %>%
-  left_join(dtripz, by = c("mode", "date"))
+  aggregate_trip_data[, month := data.table::month(date_parsed)]
 
-mean_trip_data <-mean_trip_data %>%
-  group_by(mode, date) %>%
-  dplyr::mutate(mean_prob=mean(prob0)) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(sims=round(dtrip/mean_prob),
-                expand=sims/50, #number of trips per day,
-                n_choice_occasions=1)
+  setnames(
+    aggregate_trip_data,
+    old = c("probA", "tot_cod_catch", "tot_hadd_catch",
+            "tot_keep_cod_new", "tot_keep_hadd_new",
+            "tot_rel_cod_new", "tot_rel_hadd_new" ),
+    new = c("estimated_trips", "cod_catch", "hadd_catch",
+            "cod_keep", "hadd_keep",
+            "cod_rel", "hadd_rel"),
+    skip_absent = TRUE
+  )
 
-# Expand outcomes
-list_names <- c("tot_keep_cod_new",   "tot_rel_cod_new",  "tot_cod_catch",
-                "tot_keep_hadd_new",  "tot_rel_hadd_new", "tot_hadd_catch",
-                "n_choice_occasions", "prob0" )
+  n_choice_out <- aggregate_trip_data[, .(date_parsed, mode, n_choice_occasions, estimated_trips)]
+  fst::write_fst(
+    n_choice_out,
+    file.path(final_process_choice_occasions_cd,
+              paste0("n_choice_occasions_", s, "_", md, "_", i,".fst"))
+  )
 
-all_vars <- c(list_names)
+  list_names <- c(
+    "hadd_catch", "hadd_keep", "hadd_rel",
+    "cod_catch", "cod_keep", "cod_rel",
+    "estimated_trips", "n_choice_occasions",
+    "tot_keep_cod_weight_lb_new", "tot_rel_cod_weight_lb_new",
+    "tot_keep_hadd_weight_lb_new", "tot_rel_hadd_weight_lb_new",
+    "tot_discmort_cod_weight_lb_new", "tot_discmort_hadd_weight_lb_new"
+  )
 
-mean_trip_data <- mean_trip_data %>%
-  data.table::as.data.table() %>%
-  .[,as.vector(all_vars) := lapply(.SD, function(x) x * expand), .SDcols = all_vars] %>%
-  .[]
+  list_names <- intersect(list_names, names(aggregate_trip_data))
 
-for (j in names(mean_trip_data)) {
-  attr(mean_trip_data[[j]], "label") <- NULL
+  summed_results <- aggregate_trip_data[  ,
+                                          lapply(.SD, sum, na.rm = TRUE),
+                                          by = .(mode),
+                                          .SDcols = list_names  ]
+
+   eligible_dt <- data.table::data.table(
+    mode = md,
+    species = c("cod", "hadd"),
+    original_rel_eligible = c(
+      original_rel_eligible_cod,
+      original_rel_eligible_hadd
+    )
+  )
+
+  MRIP_comparison_draw <- as.data.table(MRIP_comparison)[
+    draw == i & season == s & mode == md,
+    .(mode, cod_keep, cod_rel, cod_catch,
+      hadd_keep, hadd_rel, hadd_catch)
+  ]
+
+  calib_comparison1 <- build_compare_table(summed_results, MRIP_comparison_draw, md,
+                                           eligible_dt = eligible_dt)
+  calib_comparison1[, `:=`(draw = i, season = s)]
 }
-
-aggregate_trip_data <- mean_trip_data %>%
-  data.table::as.data.table() %>%
-  .[,lapply(.SD, sum),  by = c("date", "mode"), .SDcols = list_names]
-
-aggregate_trip_data<-aggregate_trip_data %>%
-  dplyr::rename(estimated_trips=prob0,
-                cod_catch=tot_cod_catch,
-                hadd_catch=tot_hadd_catch,
-                cod_keep=tot_keep_cod_new,
-                hadd_keep=tot_keep_hadd_new,
-                cod_rel=tot_rel_cod_new,
-                hadd_rel=tot_rel_hadd_new)
-
-list_names = c("hadd_catch","hadd_keep","hadd_rel",
-               "cod_catch", "cod_keep","cod_rel",
-               "estimated_trips","n_choice_occasions")
-
-summed_results <- aggregate_trip_data %>%
-  data.table::as.data.table() %>%
-  .[,lapply(.SD, sum),  by = c("mode"), .SDcols = list_names]
-
-aggregate_trip_data<-aggregate_trip_data %>%
-  dplyr::select(date, mode, n_choice_occasions, estimated_trips)
-
-fst::write_fst(aggregate_trip_data, file.path(iterative_input_data_cd, paste0("n_choice_occasions_", s,"_", md, "_", i, ".fst")))
-
-# compare calibration output to MRIP by state-mode
-
-# save simulation results by mode as objects
-# loop over rows (modes)
-
-for (r in 1:nrow(summed_results)) {
-  mode_val <- summed_results$mode[r]
-
-  # loop over summary columns
-  for (var in c("hadd_catch","hadd_keep","hadd_rel","cod_catch","cod_keep","cod_rel")) {
-    value <- summed_results[[var]][r]
-    obj_name <- paste0(var, "_", "model")
-    assign(obj_name, value)
-  }
-}
-
-
-# save MRIP estimates by mode as objects
-MRIP_comparison_draw <- baseline_output0 %>%
-  dplyr::filter(draw==i & season==s & mode==md)
-
-for (p in 1:nrow(MRIP_comparison_draw)) {
-  sp <- MRIP_comparison_draw$species[p]
-
-  assign(paste0(sp,"_catch_MRIP" ), MRIP_comparison_draw$MRIP_catch[p])
-  assign(paste0(sp,"_keep_MRIP" ), MRIP_comparison_draw$MRIP_keep[p])
-  assign(paste0(sp,"_rel_MRIP" ), MRIP_comparison_draw$MRIP_rel[p])
-
-}
-
-
-species <- c("cod", "hadd")
-dispositions <- c("keep", "rel", "catch")
-
-compare1 <- data.frame()
-
-# Initialize a vector to track intermediate variable names
-intermediate_vars <- c()
-
-for (sp in species) {
-  for (disp in dispositions) {
-
-    # Construct variable names
-    base_name <- paste(sp, disp, sep = "_")
-    mrip_var <- paste0(base_name, "_MRIP")
-    model_var <- paste0(base_name, "_model")
-
-    # Check if both variables exist
-    if (exists(mrip_var) && exists(model_var)) {
-      # Retrieve values
-      mrip_val <- get(mrip_var)
-      model_val <- get(model_var)
-
-      # Calculate differences
-      diff_val <- model_val - mrip_val
-      pct_diff_val <- if (mrip_val != 0)  (diff_val / mrip_val) * 100 else NA
-      abs_diff_val <- abs(model_val - mrip_val)
-      abs_pct_diff_val <- if (mrip_val != 0)  abs((diff_val / mrip_val) * 100) else NA
-
-      # Create variable names and assign them
-      diff_name <- paste0(base_name, "_diff")
-      pct_diff_name <- paste0(base_name, "_pct_diff")
-      abs_diff_name <- paste0(base_name, "_abs_diff")
-      abs_pct_diff_name <- paste0(base_name, "_abs_pct_diff")
-
-      assign(diff_name, diff_val)
-      assign(pct_diff_name, pct_diff_val)
-      assign(abs_diff_name, abs_diff_val)
-      assign(abs_pct_diff_name, abs_pct_diff_val)
-
-      # Store names to delete later
-      intermediate_vars <- c(intermediate_vars,
-                             diff_name, pct_diff_name,
-                             abs_diff_name, abs_pct_diff_name)
-
-      compare1 <- rbind(compare1, data.frame(
-        species = sp,
-        disposition = disp,
-        mode = md,
-        MRIP = mrip_val,
-        model = model_val,
-        diff = diff_val,
-        pct_diff = pct_diff_val,
-        abs_diff_val= abs_diff_val,
-        abs_pct_diff_val= abs_pct_diff_val
-      ))
-    }
-
-    else {
-      warning(paste("Missing variable:", mrip_var, "or", model_var))
-
-
-    }
-  }
-}
-
-# Remove all intermediate variables created with assign()
-rm(list = intermediate_vars)
-rm(cod_keep_model, cod_keep_MRIP, cod_catch_model, cod_catch_MRIP, cod_rel_model, cod_rel_MRIP,
-   hadd_keep_model, hadd_keep_MRIP, hadd_catch_model, hadd_catch_MRIP, hadd_rel_model, hadd_rel_MRIP)
-
-compare1_k<-compare1 %>%
-  dplyr::filter(disposition=="keep") %>%
-  dplyr::select(mode, species, MRIP, model, diff, pct_diff) %>%
-  dplyr::rename(MRIP_keep=MRIP, model_keep=model, diff_keep=diff, pct_diff_keep=pct_diff)
-
-compare1_r<-compare1 %>%
-  dplyr::filter(disposition=="rel") %>%
-  dplyr::select(mode, species, MRIP, model, diff, pct_diff) %>%
-  dplyr::rename(MRIP_rel=MRIP, model_rel=model, diff_rel=diff, pct_diff_rel=pct_diff) %>%
-  dplyr::left_join(compare1_k, by=c("mode", "species"))
-
-compare1_c<-compare1 %>%
-  dplyr::filter(disposition=="catch") %>%
-  dplyr::select(mode, species, MRIP, model, diff, pct_diff) %>%
-  dplyr::rename(MRIP_catch=MRIP, model_catch=model, diff_catch=diff, pct_diff_catch=pct_diff) %>%
-  dplyr::left_join(compare1_r, by=c("mode", "species"))
-
-calib_comparison1<-compare1_c %>%
-  dplyr::mutate(draw=i, season=s)
-
-
-# Vector of object names you want to remove
-objects_to_remove <- c( "baseline_outcomes",
-                       "hadd_catch_data", "hadd_trip_data", "hadd_zero_catch",
-                       "cod_catch_data", "cod_trip_data", "cod_zero_catch",
-                       "catch_data", "trip_data", "parameters", "mean_trip_data",
-                       "results")
-
-# Only remove those that exist
-rm(list = objects_to_remove[objects_to_remove %in% ls()], envir = .GlobalEnv)
-
 
