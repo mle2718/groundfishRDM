@@ -80,8 +80,8 @@ replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim1_common)," ","",.)
 
 * We need to retain 1 observation for each strat_id, psu_id, and id_code
-/* A.  Trip (Targeted or Caught) (fluke, sea bass, or scup) then it should be marked in the domain "_ATLCO"
-   B.  Trip did not (Target or Caught) (fluke, sea bass, or scup) then it is marked in the the domain "ZZZZZ"
+/* A.  Trip (Targeted or Caught) (cod or haddock) then it should be marked in the domain "_ATLCO"
+   B.  Trip did not (Target or Caught) (cod or haddock) then it is marked in the the domain "ZZZZZ"
 */
 
 gen common_dom="ZZ"
@@ -109,7 +109,7 @@ merge m:1 intsite state using `mrip_sites',  keep(1 3) nogen
 
 /*classify into WGOM or not WGOM */
 gen str3 area_s="XX"
-replace area_s="WGOM" if st2=="33"
+replace area_s="WGOM" if st2=="33" /*classify all NH sites as WGOM */
 replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 tostring wave, gen(wv2)
@@ -153,7 +153,7 @@ replace no_dup=1 if  strmatch(common, "atlanticcod")==0
 replace no_dup=1 if strmatch(common, "haddock")==0
 
 /*
-We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (fluke, sea bass, or scup) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
+We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (codd, haddock) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
 
 After sorting, we generate a count variable (count_obs1 from 1....n) and we keep only the "first" observations within each "year, strat_id, psu_id, and id_codes" group.
 */
@@ -594,7 +594,7 @@ replace no_dup=1 if  strmatch(common, "atlanticcod")==0
 replace no_dup=1 if strmatch(common, "haddock")==0
 
 /*
-We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (fluke, sea bass, or scup) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
+We sort on year, strat_id, psu_id, id_code, "no_dup", and "my_dom_id_string". For records with duplicate year, strat_id, psu_id, and id_codes, the first entry will be "my_common catch" if it exists.  These will all be have sp_dom "SF."  If there is no my_common catch, but the trip targeted (cod or haddock) or caught either species, the secondary sorting on "my_dom_id_string" ensures the trip is properly classified.
 
 After sorting, we generate a count variable (count_obs1 from 1....n) and we keep only the "first" observations within each "year, strat_id, psu_id, and id_codes" group.
 */
