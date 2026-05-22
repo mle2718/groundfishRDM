@@ -42,6 +42,12 @@
 *global calibration_date_end td(31aug2025)
 
 /*Updated data years*/
+// note to tess: dashboard has at least some data for waves 2-6 in calendar years 2024 and 2025. 
+// going to make my own version of lou's calibration_year global, name it something else, and then update the year global when running this stuff for the dashboard
+// actually there is a problem: his outputs don't contain year so you will need to adjust code and put the year in
+//new tess year global
+global dashboard_years "(year==2025 & inlist(wave, 1, 2, 3, 4, 5, 6)) | (year==2024 & inlist(wave, 1, 2, 3, 4, 5, 6))"  // all waves for 2024 and 2025
+//lou's:
 global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data  updated
 global calibration_date_start td(01nov2024)
 global calibration_date_end td(31oct2025)
