@@ -5,4 +5,9 @@
 .secrets
 .csv
 
+/Data
+/data-raw
+/output
+
 **/.env
+**/*.env

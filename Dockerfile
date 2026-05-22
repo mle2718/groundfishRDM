@@ -1,10 +1,13 @@
 FROM rocker/shiny:4.3
+
+ENV GROUNDFISH_AZURE_STORAGE_QUEUE_URL=""
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     nano \
     && rm -rf /var/lib/apt/lists/*
 COPY shiny-server.conf /etc/shiny-server/shiny-server.conf
-COPY . /srv/app/
+COPY . /srv/rdmtool
 RUN install2.r -e -s \
     shiny \
     shinyjs \
@@ -17,7 +20,6 @@ RUN install2.r -e -s \
     stringr \
     lubridate \
     tibble \
-    arrow \
     graphics \
     data.table \
     knitr \
@@ -30,4 +32,8 @@ RUN install2.r -e -s \
     DT \
     plotly \
     rlang \
-    && chown -R shiny:shiny /srv/app
+    openssl \
+    uuid \
+    && chown -R shiny:shiny /srv/rdmtool
+
+CMD ["sh", "-c", "/usr/bin/shiny-server & sleep 2 && tail -F /var/log/shiny-server/*.log"]

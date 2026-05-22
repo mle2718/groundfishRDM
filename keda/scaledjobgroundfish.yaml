@@ -1,0 +1,98 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledJob
+metadata:
+  name: r-model-runner-groundfish
+  namespace: shinyproxy
+spec:
+  pollingInterval: 30           # seconds between queue checks
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  maxReplicaCount: 3            # limit concurrent model runs
+  rolloutStrategy: default
+  jobTargetRef:
+    parallelism: 1
+    completions: 1
+    backoffLimit: 0  # no retries
+    template:
+      metadata:
+        labels:
+          app: r-model-runner-groundfish
+      spec:
+        restartPolicy: Never
+        # Tolerations / node selection (adjust to your large node pool)
+        tolerations:
+          - key: "sku"
+            operator: "Equal"
+            value: "model"
+            effect: "NoSchedule"
+        containers:
+          - name: runner
+            image: ${GROUNDFISH_RUNNER_IMAGE}
+            imagePullPolicy: Always
+            env:
+              - name: GROUNDFISH_QUEUE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: r-model-queue-groundfish
+                    key: queueName
+              - name: STORAGE_QUEUE_CONNECTION_STRING
+                valueFrom:
+                  secretKeyRef:
+                    name: r-model-queue-groundfish
+                    key: connectionString
+              - name: STORAGE_ACCOUNT_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: r-model-queue-groundfish
+                    key: accountName
+            resources:
+              requests:
+                cpu: "1"
+                memory: "2Gi"
+              limits:
+                cpu: "2"
+                memory: "4Gi"
+            volumeMounts:
+              - name: app-share-groundfish
+                mountPath: /srv/rdmtool/saved_regs
+                subPath: saved_regs
+              - name: app-share-groundfish
+                mountPath: /srv/rdmtool/output
+                subPath: output
+              - name: app-share-groundfish
+                mountPath: /srv/rdmtool/Data
+                subPath: Data
+                readOnly: true
+            command: ["/bin/sh","-c","/app/consume_and_run.sh"]
+        volumes:
+          - name: app-share-groundfish
+            persistentVolumeClaim:
+              claimName: app-share-groundfish-pvc-3
+  triggers:
+    - type: azure-queue
+      metadata:
+        queueName: ${GROUNDFISH_QUEUE_NAME}
+        queueLength: "1"          # scale one job per message
+      authenticationRef:
+        name: r-model-queue-trigger-auth-groundfish
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: r-model-queue-groundfish
+  namespace: shinyproxy
+stringData:
+  queueName: ${GROUNDFISH_QUEUE_NAME}
+  connectionString: ${STORAGE_QUEUE_CONNECTION_STRING}
+  accountName: ${STORAGE_ACCOUNT_NAME}
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: r-model-queue-trigger-auth-groundfish
+  namespace: shinyproxy
+spec:
+  secretTargetRef:
+    - parameter: connection
+      name: r-model-queue-groundfish
+      key: connectionString

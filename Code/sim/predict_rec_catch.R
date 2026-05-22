@@ -585,12 +585,12 @@ project_one_cod_hadd_both_modes <- function(s,
     mean_trip_data[, season := s]
 
     mode_outputs[[md]] <- mean_trip_data[ ,
-      lapply(.SD, sum, na.rm = TRUE),
-      by = .(season, mode),
-      .SDcols = trip_metrics
+                                          lapply(.SD, sum, na.rm = TRUE),
+                                          by = .(season, mode),
+                                          .SDcols = trip_metrics
     ]
 
-    }
+  }
 
   model_output <- data.table::rbindlist(mode_outputs, use.names = TRUE, fill = TRUE)
 
@@ -775,7 +775,6 @@ final_compare <- merge(
 )
 
 final_compare <- data.table::rbindlist(list(final_compare, trip_compare), use.names = TRUE, fill = TRUE)
-
 final_compare[, difference := projected_value - baseline_value]
 final_compare[, pct_difference := safe_divide(projected_value - baseline_value, baseline_value) * 100]
 final_compare[, difference := round(difference, 1)]
@@ -790,15 +789,12 @@ data.table::setcolorder(
 )
 data.table::setorder(final_compare, iteration, season, mode, species, metric)
 
-
-
 # ---- Summarize by draw, then average across draws ----
-
 # 1. Sum output within each draw across seasons/modes where appropriate
 final_compare_draw_sums <- final_compare[ , .(
-    baseline_value  = sum(baseline_value, na.rm = TRUE),
-    projected_value = sum(projected_value, na.rm = TRUE)
-  ),  by = .(iteration, mode, species, metric)
+  baseline_value  = sum(baseline_value, na.rm = TRUE),
+  projected_value = sum(projected_value, na.rm = TRUE)
+),  by = .(iteration, mode, species, metric)
 ]
 
 final_compare_draw_sums[, difference := projected_value - baseline_value]
@@ -808,12 +804,12 @@ final_compare_draw_sums[, pct_difference :=
 
 # 2. Average summed draw-level outputs across draws
 final_compare_draw_avg <- final_compare_draw_sums[,  .(
-    baseline_value  = mean(baseline_value, na.rm = TRUE),
-    projected_value = mean(projected_value, na.rm = TRUE),
-    difference      = mean(difference, na.rm = TRUE),
-    pct_difference  = mean(pct_difference, na.rm = TRUE)
-  ),
-  by = .(mode, species, metric)
+  baseline_value  = mean(baseline_value, na.rm = TRUE),
+  projected_value = mean(projected_value, na.rm = TRUE),
+  difference      = mean(difference, na.rm = TRUE),
+  pct_difference  = mean(pct_difference, na.rm = TRUE)
+),
+by = .(mode, species, metric)
 ]
 
 final_compare_draw_avg[, iteration := "draw average"]
