@@ -166,8 +166,8 @@ keep if count_obs1==1 // This keeps only one record for trips with catch of mult
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
 // think these next two lines are needed. going to un-comment them out
-*keep if common_dom=="ATLCO"
-*keep if area_s=="WGOM"
+keep if common_dom=="ATLCO"
+keep if area_s=="WGOM"
 
 replace my_dom_id_string=month+"_"+mode1+"_"+area_s+"_"+common_dom
 //tess adding year
