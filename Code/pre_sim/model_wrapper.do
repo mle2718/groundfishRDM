@@ -103,7 +103,8 @@ global wavelist 1 2 3 4 5 6
 do "$input_code_cd\MRIP_data_wrapper.do"
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
-do "$input_code_cd\directed_trips_calibration.do"
+//tess commenting this out for now
+*do "$input_code_cd\directed_trips_calibration.do"
 		*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
 		*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
