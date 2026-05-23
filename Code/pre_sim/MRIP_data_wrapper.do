@@ -17,27 +17,28 @@ else{
 	
 }
 
-capture confirm file "size_b2_`wave'.dta"
-if _rc==0{
-	use size_b2_`wave'.dta, clear
-	renvarlab, lower
-	save size_b2_`wave'.dta, replace
-}
-
-else{
-	
-}
-
-capture confirm file "size_`wave'.dta"
-if _rc==0{
-	use size_`wave'.dta, clear
-	renvarlab, lower
-	save size_`wave'.dta, replace
-}
-
-else{
-	
-}
+//Tess: dont need these (use 'crtl + /'  to comment out and un-comment out)
+// capture confirm file "size_b2_`wave'.dta"
+// if _rc==0{
+// 	use size_b2_`wave'.dta, clear
+// 	renvarlab, lower
+// 	save size_b2_`wave'.dta, replace
+// }
+//
+// else{
+//	
+// }
+//
+// capture confirm file "size_`wave'.dta"
+// if _rc==0{
+// 	use size_`wave'.dta, clear
+// 	renvarlab, lower
+// 	save size_`wave'.dta, replace
+// }
+//
+// else{
+//	
+// }
 
 capture confirm file "catch_`wave'.dta"
 if _rc==0{
@@ -98,45 +99,46 @@ foreach year in $yearlist{
 }
 
 /*B2 Files*/
-global b2list
-foreach year in $yearlist{
-	foreach wave in $wavelist{
-	capture confirm file "size_b2_`year'`wave'.dta"
-	if _rc==0{
-		use "size_b2_`year'`wave'.dta", clear
-		quietly count
-		scalar tt=r(N)
-		if scalar(tt)>0{
-			global b2list "$b2list "size_b2_`year'`wave'.dta " " 
-		}
-		else{
-		}
-	}
-	else{
-	}
-	
-}
-}
-
-
-/*SIZE_LIST */
-global sizelist
-foreach year in $yearlist{
-	foreach wave in $wavelist{
-	capture confirm file "size_`year'`wave'.dta"
-	if _rc==0{
-	use "size_`year'`wave'.dta", clear
-	quietly count
-	scalar tt=r(N)
-	if scalar(tt)>0{
-		global sizelist "$sizelist "size_`year'`wave'.dta " " 
-		}
-		else{
-		}
-	}
-	else{
-	}
-	
-}
-}
+// Tess: dont need for now
+// global b2list
+// foreach year in $yearlist{
+// 	foreach wave in $wavelist{
+// 	capture confirm file "size_b2_`year'`wave'.dta"
+// 	if _rc==0{
+// 		use "size_b2_`year'`wave'.dta", clear
+// 		quietly count
+// 		scalar tt=r(N)
+// 		if scalar(tt)>0{
+// 			global b2list "$b2list "size_b2_`year'`wave'.dta " " 
+// 		}
+// 		else{
+// 		}
+// 	}
+// 	else{
+// 	}
+//	
+// }
+// }
+//
+//
+// /*SIZE_LIST */
+// global sizelist
+// foreach year in $yearlist{
+// 	foreach wave in $wavelist{
+// 	capture confirm file "size_`year'`wave'.dta"
+// 	if _rc==0{
+// 	use "size_`year'`wave'.dta", clear
+// 	quietly count
+// 	scalar tt=r(N)
+// 	if scalar(tt)>0{
+// 		global sizelist "$sizelist "size_`year'`wave'.dta " " 
+// 		}
+// 		else{
+// 		}
+// 	}
+// 	else{
+// 	}
+//	
+// }
+// }
 
