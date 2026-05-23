@@ -116,6 +116,8 @@ tostring wave, gen(wv2)
 tostring year, gen(yr2)
 
 gen my_dom_id_string=area_s+"_"+month+"_"+mode1+"_"+common_dom
+//tess adding year
+*gen my_dom_id_string=area_s+"_"+month+"_"+year+"_"+mode1+"_"+common_dom
 
 * Define the list of species to process
 local species "atlanticcod haddock"
@@ -163,10 +165,14 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
+// think these next two lines are needed. going to un-comment them out
 *keep if common_dom=="ATLCO"
 *keep if area_s=="WGOM"
 
 replace my_dom_id_string=month+"_"+mode1+"_"+area_s+"_"+common_dom
+//tess adding year
+*replace my_dom_id_string=month+"_"+year+"_"+mode1+"_"+area_s+"_"+common_dom
+
 
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
 
@@ -265,6 +271,16 @@ rename my_dom_id_string2 mode
 rename my_dom_id_string3 area_s
 rename my_dom_id_string4 common_dom
 
+//tess adding year
+/*
+split my, parse(_)
+rename my_dom_id_string1 month
+rename my_dom_id_string2 year
+rename my_dom_id_string3 mode
+rename my_dom_id_string4 area_s
+rename my_dom_id_string5 common_dom
+*/
+
 gen shoulder_month="10" if month=="11"
 
 
@@ -273,6 +289,9 @@ levelsof strata_id, local(stratz)
 
 tempfile missing_se
 save `missing_se', replace 
+
+
+//tess need to figure out how to incorporate year here. use AI
 
 * Round 1
 global impute
@@ -346,6 +365,16 @@ rename my_dom_id_string1 month
 rename my_dom_id_string2 mode
 rename my_dom_id_string3 area_s
 rename my_dom_id_string4 common_dom
+
+//tess adding year
+/*
+split my, parse(_)
+rename my_dom_id_string1 month
+rename my_dom_id_string2 year
+rename my_dom_id_string3 mode
+rename my_dom_id_string4 area_s
+rename my_dom_id_string5 common_dom
+*/
 
 keep if area_s=="WGOM"
 keep if common=="ATLCO"
