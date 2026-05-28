@@ -165,9 +165,9 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
-// think these next two lines are needed. going to un-comment them out
-keep if common_dom=="ATLCO"
-keep if area_s=="WGOM"
+// need these commented out. Can't drop anything in a state-wave yet. (we filter for these later on)
+*keep if common_dom=="ATLCO"
+*keep if area_s=="WGOM"
 
 replace my_dom_id_string=month+"_"+mode1+"_"+area_s+"_"+common_dom
 //tess adding year
@@ -412,6 +412,8 @@ gen hadd_no_catch=1 if meanhadd_rel==0 & meanhadd_keep==0
 mvencode cod_only_keep cod_only_rel cod_keep_and_rel cod_no_catch hadd_only_keep hadd_only_rel hadd_keep_and_rel hadd_no_catch, mv(0) override
 
 merge 1:m my_dom_id_string using `basefile'
+// drop observations we don't need to export:
+drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1
 
 *condition for when keep and release are both positive for a stratum, but they never occur on the same trip
 *Will model these distributions as independent
