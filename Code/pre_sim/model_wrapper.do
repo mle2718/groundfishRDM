@@ -116,7 +116,6 @@ do "$input_code_cd\MRIP_data_wrapper.do"
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
-		//this gets things at the model level, the mode-month, and the mode-season. I think we want mode and mode-month for now. Ask if you should adjust Lou's stuff to get things at mode-wave level
 		do "$input_code_cd\calibration_catch_per_trip_part1.do"
 
 		//b) use copula model (in R) to simulate harvest and discards per-trip
