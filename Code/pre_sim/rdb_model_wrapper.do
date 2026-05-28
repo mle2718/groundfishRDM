@@ -100,7 +100,7 @@ global wavelist 1 2 3 4 5 6
 
 **************************************************Model calibration ************************************************** 
 // 1) Pull the MRIP data
-do "$input_code_cd\MRIP_data_wrapper.do"
+do "$input_code_cd\rdb_MRIP_data_wrapper.do"
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
 //tess commenting this out for now
@@ -116,29 +116,24 @@ do "$input_code_cd\MRIP_data_wrapper.do"
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
-		do "$input_code_cd\calibration_catch_per_trip_part1.do"
+		do "$input_code_cd\rdb_calibration_catch_per_trip_part1.do"
 
 		//b) use copula model (in R) to simulate harvest and discards per-trip
 		* run copula_modeling_calibration.R
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-		//tess commenting this out for now
 		*do "$input_code_cd\calibration_catch_per_trip_part2.do"
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-// Tess: this makes comparisons of total catch and total trips of calibrated vs MRIP at month level and mode level, and mode-season. Commenting out for now
 		*do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
 
 // 7) add additonal angler demographics based on results of utilty model
-// Tess: commenting out for now
 		*do "$input_code_cd\additional_angler_dems.do" 
 
 // 8) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
-// Tess: commenting out for now
 		*do "$input_code_cd\catch_at_length_calibration.do"
 		
 // 9) Generate projection-year catch-at-length, incorporating the stock assessment data
-// Tess: commenting out for now
 		*do "$input_code_cd\catch_at_length_projection.do"
 
 // The calibration and projection routines can now be run in R. 		
