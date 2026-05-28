@@ -8,6 +8,7 @@
 /Data
 /data-raw
 /output
+/saved_regs
 
 **/.env
 **/*.env
