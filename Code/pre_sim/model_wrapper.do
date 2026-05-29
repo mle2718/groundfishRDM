@@ -1,21 +1,13 @@
 
 
-/****RDM input code wrapper****/
+/**** Groundfish RDM input code wrapper ****/
 
-*** Groundfish ***
+**Data availability**
 
-*************************
-****Data availability****
-*************************
+* We make projections for the next fishing year in Dec/Jan. 
 
-*We make projections for the next fishing year in Dec/Jan. 
+* MRIP catch, effort, and length data: most recent 6 waves of MRIP data. 
 
-*MRIP catch and effort data: most recent 6 waves of MRIP data. 
-		*For FY 2026 projections we use MRIP data from 2025 waves1-5 and 2024 wave 6 to compute catch-per-trip, directed trips, and catch-at-length 
-
-*MRIP-only length data: last full calender year, to align with stock assessment data 
-
-				
 *Stock assessment projections data:
 		*Jan 1 2024 NAA to compute historical rec. selectivity ***CHECK
 		*Jan 1 2026 NAA to compute projected catch-at-length ***CHECK
@@ -33,7 +25,7 @@
 
 
 
-**************************************************ADJUST GLOBALS************************************************** 	
+**Set globals **
 * these need to be changed every year 
 
 /*Original data years*/
@@ -45,7 +37,6 @@
 global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data  updated
 global calibration_date_start td(01nov2024)
 global calibration_date_end td(31oct2025)
-
 
 global projection_date_start td(01may2026)
 global projection_date_end td(30apr2027)
@@ -61,7 +52,7 @@ global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026)
 * leap-year days here
 global leap_yr_days "td(29feb2024)" 
 
-* choose number of draws to create. Will ultimately select ~100 for final model
+* set number of model iterations to create
 global ndraws 100
 
 * adjust 2022 survey trip costs to account for inflation (January 2022 - January 2025)
@@ -84,6 +75,37 @@ global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 					 
 global yearlist 2023 2024 2025
 global wavelist 1 2 3 4 5 6
+
+* stock assessment numbers-at-age data
+	* Min-Yang processes the historical numbers-at-age data and makes projections, and stores his output in Google Drive
+	* Here I pull that data from Google Drive (using the Desktop app file path) and save it with a generic name in a local folder 
+
+local google_folder "D:/Shared drives/NMFS NEC READ SSB/socialsci/RecreationalDST/2027_management_cycle_data/groundfishRDM/input_data"
+local filestubs  "GOM_Haddock_historical_NAA GOM_Haddock_projected_NAA WGOM_Cod_projected_NAA WGOM_Cod_historical_NAA"
+
+foreach s of local filestubs {
+    clear
+    local files : dir "`google_folder'" files "`s'_*.dta" // find matching file
+    local myfile : word 1 of `files' // grab first match
+    local myfile : subinstr local myfile `"""' "", all // remove embedded quotes
+    local fullpath `"`google_folder'/`myfile'"' // build full path
+    di as text "Loading: `fullpath'" 
+    use `"`fullpath'"', clear
+    save `"$misc_data_cd/`s'.dta"', replace // save standardized filename
+}
+
+* set the baseline year and projection year numbers-at-age globals 
+global cod_NAA_base_year 2025  
+global hadd_NAA_base_year 2025
+global cod_NAA_proj_year 2026
+global hadd_NAA_proj_year 2026
+
+* set the starting year for the NEFSC trawl survey data pull (in catch_at_length_projection.do)
+	* we aggregate these data across multiple years and use them to create age-length keys  
+	* I usually check how many observations are available across different choices of the starting year; we want sufficient data 
+	* but do not want to use historical data too far in the past. 
+	
+global trawl_survey_start_year 2022
 
 
 **************************************************Model calibration ************************************************** 
@@ -127,7 +149,6 @@ do "$input_code_cd\directed_trips_calibration.do"
 
 
 		
-
 
 
 
