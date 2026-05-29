@@ -488,6 +488,10 @@ replace hadd_no_catch=1 if meancod_rel==0 & meancod_keep==0
 export excel "$misc_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
 import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first
 
+//tess to save as dta for futher processing
+save "$misc_data_cd\baseline_mrip_catch_processed.dta", replace 
+
+
 ///TESS COMMENTING OUT PART B FOR NOW
 /*
 
