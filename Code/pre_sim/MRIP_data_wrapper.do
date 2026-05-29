@@ -1,5 +1,5 @@
 
-cd $input_data_cd
+cd $misc_data_cd
 
 
 *This code only needs to be run once after new MRIP data enters the repo

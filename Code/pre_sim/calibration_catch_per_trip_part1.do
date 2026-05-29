@@ -20,7 +20,7 @@ set seed $seed
 
 * Pull in MRIP data
 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -93,7 +93,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -163,19 +163,10 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
-keep if common_dom=="ATLCO"
-keep if area_s=="WGOM"
 
-replace my_dom_id_string=month+"_"+mode1+"_"+common_dom
+replace my_dom_id_string=month+"_"+mode1+"_"+area_s+"_"+common_dom
 
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
-
-/*
-local vars sf_catch sf_keep sf_rel bsb_catch bsb_keep bsb_rel  scup_catch scup_keep scup_rel
-foreach v of local vars{
-	replace `v'=round(`v')
-}
-*/
 
 drop if wp_int==0
 encode my_dom_id_string, gen(my_dom_id)
@@ -262,7 +253,8 @@ keep if se==.
 split my, parse(_)
 rename my_dom_id_string1 month
 rename my_dom_id_string2 mode
-drop my_dom_id_string3 
+rename my_dom_id_string3 area_s
+rename my_dom_id_string4 common_dom
 
 gen shoulder_month="10" if month=="11"
 
@@ -281,12 +273,14 @@ foreach s of local stratz{
 	
 	levelsof mode, local(md) clean
 	levelsof month, local(month1) clean
+	levelsof common_dom, local(common_dom1) clean
+	levelsof area_s, local(area_s1) clean
 	levelsof shoulder_month, local(month2) clean
 	levelsof varname, local(outcome) clean
 	levelsof my_dom_id_string, local(my_dom_id_string) clean
 
 	u `basefile', clear 
-	keep if mode1=="`md'" & inlist(month, "`month1'", "`month2'")
+	keep if mode1=="`md'" & inlist(month, "`month1'", "`month2'") & area_s=="`area_s1'" & common_dom=="`common_dom1'"
 	drop my_dom_id_string my_dom_id
 	gen my_dom_id_string="`my_dom_id_string'"
 	encode my_dom_id_string, gen(my_dom_id)
@@ -336,8 +330,16 @@ drop _merge
 merge 1:1 varname my_dom_id_string using `base_results'
 
 replace se=mean*pse_impute if se==. & _merge==3
+drop month mode area_s common
 
+split my, parse(_)
+rename my_dom_id_string1 month
+rename my_dom_id_string2 mode
+rename my_dom_id_string3 area_s
+rename my_dom_id_string4 common_dom
 
+keep if area_s=="WGOM"
+keep if common=="ATLCO"
 * Stop code if non-value mean harvest/discards/catch-per trip are missing standard errors
 * Check condition across the dataset
 summarize if mean != 0 & missing(se)
@@ -372,6 +374,8 @@ gen hadd_no_catch=1 if meanhadd_rel==0 & meanhadd_keep==0
 mvencode cod_only_keep cod_only_rel cod_keep_and_rel cod_no_catch hadd_only_keep hadd_only_rel hadd_keep_and_rel hadd_no_catch, mv(0) override
 
 merge 1:m my_dom_id_string using `basefile'
+
+drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1 
 
 *condition for when keep and release are both positive for a stratum, but they never occur on the same trip
 *Will model these distributions as independent
@@ -439,16 +443,19 @@ keep wp_int my_dom_id_string meancod_cat-id_code year common_dom cod_tot_cat-had
 
 mvencode se*, mv(0) override
 mvencode missing*, mv(0) override
+mvencode mean*, mv(0) override
+replace cod_no_catch=1 if meancod_rel==0 & meancod_keep==0
+replace hadd_no_catch=1 if meancod_rel==0 & meancod_keep==0
 
-export excel "$input_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
-import excel using "$input_data_cd\baseline_mrip_catch_processed.xlsx", clear first
+export excel "$misc_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
+import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first
 
 
 ************** Part B  **************
 * Compute MRIP estimates for comparison with simulated estimates 
 
 * Estimates by mode
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -520,7 +527,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -590,10 +597,9 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
-keep if common_dom=="ATLCO"
-keep if area_s=="WGOM"
 
-replace my_dom_id_string=mode1+"_"+common_dom
+
+replace my_dom_id_string=mode1+"_"+area_s+"_"+common_dom
 
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
 
@@ -654,22 +660,27 @@ sort varname  my_dom_id
 keep varname total se my_dom_id_string ll95 ul95
 reshape wide total se ll95 ul95, i(my_dom) j(varname) string
 
-ds my_dom_id_string, not
-renvarlab `r(varlist)', postfix(_mrip)
-
 split my_dom, parse(_)
 rename my_dom_id_string1 mode
-drop  my_dom_id_string2 
-order my_dom_id_string mode 
+rename my_dom_id_string2 area_s
+rename my_dom_id_string3 common_dom
+keep if area_s=="WGOM"
+keep if common_dom=="ATLCO"
 
-save "$input_data_cd\mrip_catch_by_mode.dta", replace 
+ds my_dom_id_string mode area_s common_dom, not
+
+renvarlab `r(varlist)', postfix(_mrip)
+
+order my_dom_id_string mode area common
+
+save "$misc_data_cd\mrip_catch_by_mode.dta", replace 
 
 
 
 
 
 * Estimates by mode and month 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -742,7 +753,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -761,7 +772,7 @@ gen str3 area_s="XX"
 replace area_s="WGOM" if st2=="33"
 replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
-gen my_dom_id_string=month+"_"+mode1+"_"+common_dom
+gen my_dom_id_string=month+"_"+mode1+"_"+area_s+"_"+common_dom
 
 tostring wave, gen(wv2)
 tostring year, gen(yr2)
@@ -812,8 +823,6 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
-keep if common_dom=="ATLCO"
-keep if area_s=="WGOM"
 
 
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
@@ -875,20 +884,24 @@ sort varname  my_dom_id
 keep varname total se my_dom_id_string ll95 ul95
 reshape wide total se ll95 ul95, i(my_dom) j(varname) string
 
-ds my_dom_id_string, not
+split my_dom, parse(_)
+rename my_dom_id_string1 month 
+rename my_dom_id_string2 mode 
+rename my_dom_id_string3 area_s
+rename my_dom_id_string4 common_dom
+keep if area_s=="WGOM"
+keep if common_dom=="ATLCO"
+
+ds my_dom_id_string month mode area_s common_dom, not
 renvarlab `r(varlist)', postfix(_mrip)
 
-split my_dom, parse(_)
-rename my_dom_id_string1 month
-rename  my_dom_id_string2 mode
-drop my_dom_id_string3
-order my_dom_id_string month mode 
+order my_dom_id_string month mode  area_s common_dom
 
-save "$input_data_cd\mrip_catch_by_mode_month.dta", replace 
+save "$misc_data_cd\mrip_catch_by_mode_month.dta", replace 
 
 
 * Estimates by mode and season 
-cd $input_data_cd
+cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -961,7 +974,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 *New MRIP site allocations
 preserve 
-import delimited using "$input_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
+import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
 keep state intsite nmfs_stock_area nmfs_stat_area
 sort intsite nmfs_stock_area  
@@ -983,7 +996,7 @@ replace area_s=nmfs_stock_area if inlist(st2, "25", "23")
 gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
 replace season="summer" if inlist(month, "05", "06", "07", "08")
 
-gen my_dom_id_string=season+"_"+mode1+"_"+common_dom
+gen my_dom_id_string=season+"_"+mode1+"_"+area_s+"_"+common_dom
 
 tostring wave, gen(wv2)
 tostring year, gen(yr2)
@@ -1034,8 +1047,7 @@ bysort year strat_id psu_id id_code (my_dom_id_string no_dup): gen count_obs1=_n
 keep if count_obs1==1 // This keeps only one record for trips with catch of multiple species. We have already computed catch of the species of interest above and saved these in a trip-row
 
 order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
-keep if common_dom=="ATLCO"
-keep if area_s=="WGOM"
+
 
 
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
@@ -1097,15 +1109,23 @@ sort varname  my_dom_id
 keep varname total se my_dom_id_string ll95 ul95
 reshape wide total se ll95 ul95, i(my_dom) j(varname) string
 
-ds my_dom_id_string, not
-renvarlab `r(varlist)', postfix(_mrip)
-
 split my_dom, parse(_)
 rename my_dom_id_string1 season
 rename  my_dom_id_string2 mode
-drop my_dom_id_string3
-order my_dom_id_string season mode 
+rename  my_dom_id_string3 area_s
+rename  my_dom_id_string4 common_dom
 
-save "$input_data_cd\mrip_catch_by_mode_season.dta", replace 
+keep if common_dom=="ATLCO"
+keep if area_s=="WGOM"
+
+order my_dom_id_string season mode  area_s common_dom
+
+
+ds my_dom_id_string season mode  area_s common_dom, not
+renvarlab `r(varlist)', postfix(_mrip)
+
+
+
+save "$misc_data_cd\mrip_catch_by_mode_season.dta", replace 
 
 

@@ -154,7 +154,7 @@ keep if inlist(source, "FY25 actual regulations - updated MRIP", "FY25 proposed 
 "KLB8 (close September) - updated MRIP", "WRTIII5 (close private) - updated MRIP")
 */
 
-keep if inlist(source, "FY25 actual - updated MRIP", "KLB8 (close September) - updated MRIP", "WRTIII5 (close private) - updated MRIP", "FY25 actual cod; haddock 17 - updated MRIP")
+keep if inlist(source,"FY25 actual - updated MRIP", "KLB8 (close September) - updated MRIP", "WRTIII5 (close private) - updated MRIP", "FY25 actual cod; haddock 17 - updated MRIP")
 
 *cod
 count if metric=="removals_weight" & species=="cod" & source=="FY25 actual - updated MRIP" & value<=118

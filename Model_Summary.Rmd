@@ -493,7 +493,7 @@ keep_release<- function(model){
     dplyr::mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
                           total * lb_to_mt(), 
                           total)) %>%
-    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
+    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 0)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, species,keep_numbers,keep_weight, release_numbers,release_weight, 
                   discmort_number,discmort_weight, removals_number, removals_weight ) %>% 
@@ -527,7 +527,7 @@ keep_release_mode<- function(model){
     mutate(total = ifelse(Variable %in% c("keep_weight", "release_weight", "discmort_weight","removals_weight"), 
                           total * lb_to_mt(), 
                           total)) %>%
-    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 2)))) %>% 
+    dplyr::mutate(across(where(is.numeric),~ comma(round(.x, 0)))) %>% 
     tidyr::pivot_wider(names_from = Variable, values_from = total) %>% 
     dplyr::select(model, species, mode, keep_numbers,keep_weight, release_numbers,release_weight, 
                   discmort_number,discmort_weight, removals_number, removals_weight ) %>% 

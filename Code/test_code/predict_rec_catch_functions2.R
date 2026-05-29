@@ -191,8 +191,12 @@ for (md in mode_draw) {
   }
 }
 
-catch_data_draw <- bind_rows(catch_data0)
-base_outcomes_angler_dems_draw <- bind_rows(base_outcomes_angler_dems0)
+catch_data_draw <- bind_rows(catch_data0) %>%
+  dplyr::filter(tripid<=10)
+
+base_outcomes_angler_dems_draw <- bind_rows(base_outcomes_angler_dems0) %>%
+  dplyr::filter(tripid<=10)
+
 n_choice_occasions_draw <- bind_rows(n_choice_occasions0)
 
 rm(base_outcomes_angler_dems0, n_choice_occasions0, catch_data0)
@@ -316,7 +320,8 @@ size_data_hadd <- rbindlist(lapply(results_list, `[[`, "size_data"), fill=TRUE) 
   dplyr::mutate(dplyr::across(everything(), ~tidyr::replace_na(., 0)))
 
 # merge the trip data
-trip_data <- merge(trip_data_cod, trip_data_hadd, by = "domain2", all = TRUE)
+trip_data <- merge(trip_data_cod, trip_data_hadd, by = "domain2", all = TRUE) %>%
+  dplyr::filter(tripid<=10)
 
 #replace NAs with zeroes
 num_cols_trip <- names(trip_data)[vapply(trip_data, is.numeric, logical(1))]

@@ -1,144 +1,4 @@
 
-
-
-* First compare copula-simulated mean catch-per-trip to MRIP 
-* Estimates were generated at the month and mode level
-
-set seed $seed
-
-*A) 
-clear
-tempfile master
-save `master', emptyok
-
-forv i=1/$ndraws{
-
-import excel using "$iterative_input_data_cd\calib_catch_draws_`i'.xlsx", clear firstrow
-gen cod_cat_sim  = cod_keep_sim + cod_rel_sim
-gen hadd_cat_sim = hadd_keep_sim + hadd_rel_sim
-collapse (mean) cod_keep_sim cod_rel_sim cod_cat_sim hadd_keep_sim hadd_rel_sim hadd_cat_sim , by(my_dom_id_string)
-gen draw=`i'
-
-append using `master'
-save `master', replace
-}
-
-use `master', clear
-save "$input_data_cd\simulated_means_copula.dta", replace 
-
-
-
-u "$input_data_cd\simulated_means_copula.dta", clear 
-ds draw my_dom_id, not
-local vars `r(varlist)'
-foreach v of local vars{
-	mvencode `v', mv(0) override
-}
-
-collapse (mean) cod_keep_sim cod_rel_sim cod_cat_sim hadd_keep_sim hadd_rel_sim hadd_cat_sim 	///
-						(sd) sd_cod_keep_sim=cod_keep_sim sd_cod_cat_sim=cod_cat_sim sd_cod_rel_sim=cod_rel_sim ///
-						sd_hadd_keep_sim=hadd_keep_sim sd_hadd_rel_sim=hadd_rel_sim sd_hadd_cat_sim=hadd_cat_sim, by(my)
-						
-renvarlab cod* hadd* , prefix(tot_)					
-split my, parse(_)
-rename my_dom_id_string1 month
-rename my_dom_id_string2 mode
-drop my_dom_id_string3
-
-reshape long tot_ sd_, i(month  mode) j(new) string
-rename tot_ sim_total 
-rename sd_ sim_sd
-split new, parse(_)
-rename new1 species
-rename new2 disp
-drop new3
-drop new
-tempfile sim
-save `sim', replace
-
-*Pull in the MRIP means/SEs dataset
-import excel using "$input_data_cd\baseline_mrip_catch_processed.xlsx", clear first 
-keep my_dom_id_string-missing_sehadd_rel
-drop missing*
-duplicates drop
-split my, parse(_)
-rename my_dom_id_string1 month
-rename my_dom_id_string2 mode
-drop my_dom_id_string3
-reshape long mean se, i(month mode) j(new) string
-rename mean mrip_total 
-rename se mrip_sd
-split new, parse(_)
-rename new1 species
-rename new2 disp
-drop new
-
-*Join simulated means to MRIP means
-merge 1:1 month mode my species disp using `sim'
-browse if _merge==1
-browse
-
-gen mrip_ul=mrip_total+1.96*mrip_sd
-gen mrip_ll=mrip_total-1.96*mrip_sd
-gen sim_ul=sim_total+1.96*sim_sd
-gen sim_ll=sim_total-1.96*sim_sd
-
-drop if mrip_total==0 & sim_total==0
-drop if disp=="cat"
-
-gen domain=species+"_"+disp
-
-gen pct_diff = ((sim_total-mrip_total)/mrip_total)*100
-gen diff= sim_total-mrip_total
-sort pct_diff
-sort my_dom
-replace my_dom_id_string=month+"_"+mode
-
-sort month mode
-tempfile new
-save `new', replace 
-
-levelsof domain, local(domain_list)
-		
-		foreach d in `domain_list' {
-		
-		u `new', clear
-		keep if domain=="`d'"
-		sort month mode
-		encode my_dom_id_string, gen(my_dom_id)
-		gen my_dom_id_mrip = my_dom_id+0.1 
-		gen my_dom_id_sim = my_dom_id-0.1  
-
-* Start by clearing any existing macro
-local xlabels ""
-
-* Loop over the levels of the encoded variable
-levelsof my_dom_id, local(levels)
-
-foreach l of local levels {
-    local label : label (my_dom_id) `l'
-    local xlabels `xlabels' `l' "`label'" 
-}
-
-qui twoway (rcap mrip_ul mrip_ll my_dom_id_mrip if domain=="`d'", color(blue)  ) ///
-			(scatter mrip_total my_dom_id_mrip if domain=="`d'",  msymbol(o) mcolor(blue)) ///
-			(rcap sim_ul sim_ll my_dom_id_sim if domain=="`d'",  color(red)) ///
-			(scatter sim_total my_dom_id_sim if domain=="`d'", msymbol(o) mcolor(red)), ///
-			legend(order(2 "MRIP estimate" 4 "Simulated estimate") size(small) rows(1)) ///
-			ytitle("") xtitle("") ylabel(#10,  angle(horizontal) ) ///
-			xlabel(`xlabels',  labsize(small) angle(45)) ///
-			title("`d'", size(medium)) name(`d', replace) 
-		}
-  
-  
-u `new', clear 
-sort  month mode 
-grc1leg  hadd_keep cod_keep hadd_rel cod_rel  , cols(2) title("Mean catch-per-trip, MRIP vs. copula estimates", size(small))
-graph export "$figure_cd/mean_catch_MRIP_copula.png", as(png) replace
-
-
-
-
 *B) The copula model data is used to generate daily catch-draw data, so here, I:
 		*1) compute mean catch-per-trip from the daily catch-draw data
 		*2) compute total catch/harvest/discards from the daily catch-draw data by multiplying
@@ -153,27 +13,14 @@ save `master', emptyok
 forv i=1/$ndraws{
 di "`i'"
 
-*local i=1
+use "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", clear 
 
-use "$iterative_input_data_cd\calib_catch_draws_`i'.dta", clear 
-
-drop if dtrip==0
-
-
-rename cod_cat cod_cat_sim
-rename hadd_cat hadd_cat_sim
-
-collapse (mean) cod_keep_sim cod_cat_sim cod_rel_sim hadd_keep_sim hadd_rel_sim hadd_cat_sim , by(my_dom_id_string)
-split my_dom_id_string, parse(_)
-
-rename my_dom_id_string1 month
-rename my_dom_id_string2 mode
-drop my_dom_id_string3
+collapse (mean) cod_keep_sim cod_cat_sim cod_rel_sim hadd_keep_sim hadd_rel_sim hadd_cat_sim , by(month mode)
 
 tempfile catch
 save `catch', replace 
 
-import delimited using "$iterative_input_data_cd\directed_trip_draws.csv",  clear 
+import delimited using "$misc_data_cd\directed_trip_draws.csv",  clear 
 drop if dtrip==0
 
 keep if draw==`i'
@@ -182,13 +29,12 @@ gen date_num = date(day, "DMY")
 gen month1 = month(date_num)	
 drop date_num
 gen month = string(month1, "%02.0f")
+destring month, replace 
 
 collapse (sum) dtrip, by(mode month)
 
 merge 1:1 mode month  using `catch'
 drop _merge
-
-
 
 local vars cod_keep_sim cod_cat_sim cod_rel_sim hadd_keep_sim hadd_rel_sim hadd_cat_sim 
 foreach v of local vars{
@@ -204,13 +50,12 @@ save `master', replace
 
 use `master', clear
 
-save "$input_data_cd\simulated_catch_totals3.dta", replace 
+save "$misc_data_cd\simulated_catch_totals3.dta", replace 
 
 
 *B3 compare means @ mode month level
-u "$input_data_cd\simulated_catch_totals3.dta", clear 
+u "$misc_data_cd\simulated_catch_totals3.dta", clear 
 rename dtrip tot_dtrip_sim
-drop my_dom_id
 
 ds draw mode month, not
 local vars `r(varlist)'
@@ -243,12 +88,14 @@ tempfile sim
 save `sim', replace
 
 
-import excel using "$input_data_cd\baseline_mrip_catch_processed.xlsx", clear first 
+import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first 
 keep my_dom_id_string-missing_sehadd_rel
 drop missing*
 duplicates drop
 split my, parse(_)
 rename my_dom_id_string1 month
+destring month, replace
+tostring month, replace
 rename my_dom_id_string2 mode
 drop my_dom_id_string3
 reshape long mean se, i(month mode) j(new) string
@@ -260,8 +107,7 @@ rename new2 disp
 drop new
 
 merge 1:1 month mode  species disp using `sim'
-browse if _merge==2
-browse
+
 
 gen mrip_ul=mrip_total+1.96*mrip_sd
 gen mrip_ll=mrip_total-1.96*mrip_sd
@@ -283,7 +129,6 @@ replace my_dom_id_string=month+"_"+mode
 tempfile new
 save `new', replace 
 
-	
 levelsof domain, local(domain_list)
 	foreach d in `domain_list' {
 		u `new', clear
@@ -323,9 +168,8 @@ gr drop _all
 
 
 *B3 compare catch totals @ mode and month level
-u "$input_data_cd\simulated_catch_totals3.dta", replace 
+u "$misc_data_cd\simulated_catch_totals3.dta", replace 
 rename dtrip tot_dtrip_sim
-drop my
 ds draw mode month, not
 local vars `r(varlist)'
 foreach v of local vars{
@@ -367,13 +211,13 @@ drop if disp=="dtrip"
 tempfile sim
 save `sim', replace
 
-u  "$input_data_cd\mrip_catch_by_mode_month.dta", clear 
+u  "$misc_data_cd\mrip_catch_by_mode_month.dta", clear 
 reshape long total se ll95 ul95, i(mode month) j(new) string
 rename tot mrip_total 
 rename se mrip_se
 rename ll mrip_ll
 rename ul mrip_ul
-
+destring month, replace
 
 split new, parse(_)
 rename new1 species
@@ -389,7 +233,7 @@ tempfile catch
 save `catch', replace 
 
 
-u  "$input_data_cd\mrip_dtrip_by_mode_month.dta", clear 
+u  "$misc_data_cd\mrip_dtrip_by_mode_month.dta", clear 
 rename se_mrip se_dtrip_mrip
 rename ll ll_dtrip_mrip
 rename ul ul_dtrip_mrip
@@ -399,7 +243,7 @@ rename tot_ mrip_total
 rename ll mrip_ll
 rename ul_ mrip_ul
 drop se_
-
+destring month, replace
 rename new disp
 replace disp="dtrip"
 gen species="NA"
@@ -407,7 +251,6 @@ merge 1:1  mode month species disp  using `simdtrip', keep(3)
 
 append using `catch'
 
-drop _merge mrip_se 
 
 replace disp="discards" if disp=="rel"
 replace disp="harvest" if disp=="keep"
@@ -428,6 +271,7 @@ gen diff= sim_total-mrip_total
 sort pct_diff
 sort diff
 
+tostring month, replace
 tempfile new
 save `new', replace 
 
@@ -480,9 +324,8 @@ gr drop _all
 	
 	
 *B3 compare catch totals @ mode level
-u "$input_data_cd\simulated_catch_totals3.dta", replace 
+u "$misc_data_cd\simulated_catch_totals3.dta", replace 
 rename dtrip tot_dtrip_sim
-drop my
 ds draw mode month, not
 local vars `r(varlist)'
 foreach v of local vars{
@@ -524,7 +367,7 @@ drop if disp=="dtrip"
 tempfile sim
 save `sim', replace
 
-u  "$input_data_cd\mrip_catch_by_mode.dta", clear 
+u  "$misc_data_cd\mrip_catch_by_mode.dta", clear 
 reshape long total se ll95 ul95, i(mode) j(new) string
 rename tot mrip_total 
 rename se mrip_se
@@ -546,7 +389,7 @@ tempfile catch
 save `catch', replace 
 
 
-u  "$input_data_cd\mrip_dtrip_by_mode.dta", clear 
+u  "$misc_data_cd\mrip_dtrip_by_mode.dta", clear 
 rename se_mrip se_dtrip_mrip
 rename ll ll_dtrip_mrip
 rename ul ul_dtrip_mrip
@@ -638,9 +481,8 @@ gr drop _all
 
 	
 *B3 compare catch totals @ mode and season level
-u "$input_data_cd\simulated_catch_totals3.dta", replace 
+u "$misc_data_cd\simulated_catch_totals3.dta", replace 
 rename dtrip tot_dtrip_sim
-drop my
 ds draw mode month, not
 local vars `r(varlist)'
 foreach v of local vars{
@@ -648,8 +490,8 @@ foreach v of local vars{
 }
 
 
-gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
-replace season="summer" if inlist(month, "05", "06", "07", "08")
+gen season= "winter" if inlist(month, 9, 10, 11, 12, 1, 2, 3, 4)
+replace season="summer" if inlist(month, 5, 6, 7, 8)
 	
 collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
 						  tot_hadd_keep_sim tot_hadd_rel_sim tot_hadd_cat_sim ///
@@ -685,7 +527,7 @@ drop if disp=="dtrip"
 tempfile sim
 save `sim', replace
 
-u  "$input_data_cd\mrip_catch_by_mode_season.dta", clear 
+u  "$misc_data_cd\mrip_catch_by_mode_season.dta", clear 
 drop sec* seh*
 reshape long total  ll95 ul95, i(mode season my) j(new) string
 rename tot mrip_total 
@@ -707,7 +549,7 @@ tempfile catch
 save `catch', replace 
 
 
-u  "$input_data_cd\mrip_dtrip_by_mode_season.dta", clear 
+u  "$misc_data_cd\mrip_dtrip_by_mode_season.dta", clear 
 rename se_mrip se_dtrip_mrip
 rename ll ll_dtrip_mrip
 rename ul ul_dtrip_mrip
@@ -798,53 +640,40 @@ gr drop _all
 ** FINAL STEP
 
 * Once the simulated totals approximate MRIP, save the data to be used in the R code simulation
-u "$input_data_cd\simulated_catch_totals3.dta", replace 
+u "$misc_data_cd\simulated_catch_totals3.dta", replace 
 rename dtrip tot_dtrip_sim
-drop my
 ds draw mode month, not
 local vars `r(varlist)'
 foreach v of local vars{
 	mvencode `v', mv(0) override
 }
 
-preserve
-gen season="1" if inlist(month, "01", "02")
-replace season="2" if inlist(month, "03", "04")
-replace season="3" if inlist(month, "05", "06")
-replace season="4" if inlist(month, "07", "08")
-replace season="5" if inlist(month, "09", "10")
-replace season="6" if inlist(month, "11", "12")
-collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
-						  tot_hadd_keep_sim tot_hadd_rel_sim tot_hadd_cat_sim ///
-						  tot_dtrip_sim , by( season draw)				  
-save "$input_data_cd\simulated_catch_totals_for_catch_length_wave.dta", replace 
-restore 
 
-gen season= "winter" if inlist(month, "09", "10", "11", "12", "01", "02", "03", "04")
-replace season="summer" if inlist(month, "05", "06", "07", "08")
+gen season= "winter" if inlist(month, 9, 10, 11, 12, 1, 2, 3, 4)
+replace season="summer" if inlist(month, 5, 6, 7, 8)
 
 
 collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
 						  tot_hadd_keep_sim tot_hadd_rel_sim tot_hadd_cat_sim ///
 						  tot_dtrip_sim , by( mode season draw)
 	  
-save "$input_data_cd\simulated_catch_totals.dta", replace 
+save "$misc_data_cd\simulated_catch_totals.dta", replace 
 
 collapse (sum) tot_cod_keep_sim tot_cod_cat_sim tot_cod_rel_sim ///
 						  tot_hadd_keep_sim tot_hadd_rel_sim tot_hadd_cat_sim ///
 						  tot_dtrip_sim , by( season draw)	
 						  
-save "$input_data_cd\simulated_catch_totals_for_catch_length.dta", replace 
+save "$misc_data_cd\simulated_catch_totals_for_catch_length.dta", replace 
 
 * Remove extraneous columns from the catch-per-trip data
 mata: mata clear
 clear
 
 forvalues i = 1/$ndraws {
-		use "$iterative_input_data_cd\calib_catch_draws_`i'.dta", clear 
-	   drop my_dom_id_string cod_keep_sim cod_rel_sim hadd_keep_sim hadd_rel_sim  dtrip
+		use "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", clear 
+	   drop  cod_keep_sim cod_rel_sim hadd_keep_sim hadd_rel_sim  
 	   compress
-	   save  "$iterative_input_data_cd\calib_catch_draws_`i'.dta", replace
+	   save  "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", replace
 	}
 
 
