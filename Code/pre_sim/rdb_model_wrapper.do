@@ -83,7 +83,7 @@ global input_code_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Co
 global misc_data_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\miscellaneous" /* Change to Tess's local data path */
 // Tess - don't think I need this for now
 *global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
-// Tess not sure where this is or if I need it. Comment out for now
+
 *global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
 
 * set a global seed #
