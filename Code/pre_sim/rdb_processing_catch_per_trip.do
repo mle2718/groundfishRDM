@@ -49,7 +49,7 @@ gen wave = substr(psu_id, 5, 1)
 destring wave, replace
 
 //why are there trips where cod_cat is 6.038303 and hadd_cat is 20.85714, etc?  Ask lou
-// Rounding to nearest whole number for now
+// Rounding to nearest whole number for now. It's an issue bc then the sum of all the catch per trips won't equal total catch. Do we want rows were one trip caught 5.987235 fish? 
 tab cod_cat
 tab hadd_cat
 replace cod_cat = round(cod_cat)
