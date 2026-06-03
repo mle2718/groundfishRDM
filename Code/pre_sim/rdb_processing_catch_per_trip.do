@@ -98,8 +98,8 @@ gen fishery= "NE Groundfish"
 //ask lou when he pulled the dta's here. this folder says he saved them May 12: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
 //Did he pull in updated MRIP data that day? We should pull on same day and rerun the wrapper
 gen data_version="2026-05-12"
-//ask about state. New England? NA?
-gen state="New England"
+//state will be NA
+gen state=.
 destring month, replace
 recode month (1/2=1) (3/4=2) (5/6=3) (7/8=4) (9/10=5)  (11/12=6), gen(wave)
 
