@@ -454,10 +454,6 @@ import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear fir
 save "$misc_data_cd\baseline_mrip_catch_processed.dta", replace 
 
 
-///TESS COMMENTING OUT PART B FOR NOW
-/*
-
-
 ************** Part B  **************
 * Compute MRIP estimates for comparison with simulated estimates 
 
