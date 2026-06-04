@@ -117,7 +117,6 @@ tostring year, gen(yr2)
 
 gen my_dom_id_string=area_s+"_"+month+"_"+mode1+"_"+common_dom
 
-
 * Define the list of species to process
 local species "atlanticcod haddock"
 
@@ -167,15 +166,7 @@ order strat_id psu_id id_code no_dup my_dom_id_string count_obs1 common
 
 replace my_dom_id_string=month+"_"+mode1+"_"+area_s+"_"+common_dom
 
-
 svyset psu_id [pweight= wp_int], strata(strat_id) singleunit(certainty)
-
-/*
-local vars sf_catch sf_keep sf_rel bsb_catch bsb_keep bsb_rel  scup_catch scup_keep scup_rel
-foreach v of local vars{
-	replace `v'=round(`v')
-}
-*/
 
 drop if wp_int==0
 encode my_dom_id_string, gen(my_dom_id)
@@ -265,7 +256,6 @@ rename my_dom_id_string2 mode
 rename my_dom_id_string3 area_s
 rename my_dom_id_string4 common_dom
 
-
 gen shoulder_month="10" if month=="11"
 
 
@@ -274,7 +264,6 @@ levelsof strata_id, local(stratz)
 
 tempfile missing_se
 save `missing_se', replace 
-
 
 * Round 1
 global impute
@@ -349,7 +338,6 @@ rename my_dom_id_string2 mode
 rename my_dom_id_string3 area_s
 rename my_dom_id_string4 common_dom
 
-
 keep if area_s=="WGOM"
 keep if common=="ATLCO"
 * Stop code if non-value mean harvest/discards/catch-per trip are missing standard errors
@@ -386,7 +374,7 @@ gen hadd_no_catch=1 if meanhadd_rel==0 & meanhadd_keep==0
 mvencode cod_only_keep cod_only_rel cod_keep_and_rel cod_no_catch hadd_only_keep hadd_only_rel hadd_keep_and_rel hadd_no_catch, mv(0) override
 
 merge 1:m my_dom_id_string using `basefile'
-// drop observations we don't need to export:
+*drop non-WGOM and non-dom catch
 drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1
 
 *condition for when keep and release are both positive for a stratum, but they never occur on the same trip
@@ -462,7 +450,7 @@ replace hadd_no_catch=1 if meancod_rel==0 & meancod_keep==0
 export excel "$misc_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
 import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first
 
-//tess to save as dta for futher processing
+//saving as dta for further processing
 save "$misc_data_cd\baseline_mrip_catch_processed.dta", replace 
 
 
