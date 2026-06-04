@@ -92,6 +92,8 @@ import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear fir
 keep my_dom_id_string-missing_sehadd_rel
 drop missing*
 duplicates drop
+drop if strmatch(my_dom_id_string, "*XX*")==1
+drop if strmatch(my_dom_id_string, "*ZZ*")==1
 split my, parse(_)
 rename my_dom_id_string1 month
 destring month, replace
