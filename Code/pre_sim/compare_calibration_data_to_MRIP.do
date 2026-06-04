@@ -261,7 +261,7 @@ replace disp="catch" if disp=="cat"
 gen domain=species+"_"+disp
 replace domain="dtrip" if domain=="NA_dtrip"
 
-ds mode month disp species domain, not
+ds mode month disp species domain, not has(type numeric)
 local var = r(varlist)
 foreach v of local var{
 	format `v' %14.0gc
@@ -418,7 +418,7 @@ replace disp="catch" if disp=="cat"
 gen domain=species+"_"+disp
 replace domain="dtrip" if domain=="NA_dtrip"
 
-ds mode disp species domain, not
+ds mode disp species domain, not has(type numeric)
 local var = r(varlist)
 foreach v of local var{
 	format `v' %14.0gc
@@ -578,7 +578,7 @@ replace disp="catch" if disp=="cat"
 gen domain=species+"_"+disp
 replace domain="dtrip" if domain=="NA_dtrip"
 
-ds mode season disp species domain, not
+ds mode season disp species domain, not has(type numeric)
 local var = r(varlist)
 foreach v of local var{
 	format `v' %14.0gc
