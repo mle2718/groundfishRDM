@@ -117,7 +117,7 @@ gen sim_ul=sim_total+1.96*sim_sd
 gen sim_ll=sim_total-1.96*sim_sd
 
 drop if mrip_total==0 & sim_total==0
-drop if disp=="cat"
+*drop if disp=="cat"
 drop if mrip_total==. & sim_total==0
 
 gen domain=species+"_"+disp
