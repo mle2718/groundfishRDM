@@ -42,12 +42,8 @@
 *global calibration_date_end td(31aug2025)
 
 /*Updated data years*/
-// note to tess: dashboard has at least some data for waves 2-6 in calendar years 2024 and 2025. 
-// going to make my own version of lou's calibration_year global, name it something else, and then update the year global when running this stuff for the dashboard
-// actually there is a problem: his outputs don't contain year so you will need to adjust code and put the year into things like my_dom_id_string
-//new tess year global. call it something else like dashboard_years and then replace calibration_year with that eventually
+//tess: for the dashboard we may want to pull in an additional year (2024). would need to adjust code and put year into the aggregation and my_dom_id_string. this is on backburner for now
 *global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5, 6)) | (year==2024 & inlist(wave, 1, 2, 3, 4, 5, 6))"  // all waves for 2024 and 2025
-//lou's:
 global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data  updated
 global calibration_date_start td(01nov2024)
 global calibration_date_end td(31oct2025)
@@ -76,15 +72,14 @@ global inflation_expansion=1.13
 
 * adjust project paths based on user
 *global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
-global input_code_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Code\pre_sim" /* Tess's local path */
+global input_code_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Code\pre_sim" /* Tess's path */
 *global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
 // these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
-// might be a lot to download whole folders to my machine. will try to just grab what I need 
-global misc_data_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\miscellaneous" /* Change to Tess's local data path */
-// Tess - don't think I need this for now
+global misc_data_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\miscellaneous" /* Tess's local data path */
 *global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
-
+global calib_catch_draws_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\calib_catch_draws" 
 *global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
+global figure_cd  "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\figures" 
 
 * set a global seed #
 global seed 03211990
@@ -100,23 +95,22 @@ global wavelist 1 2 3 4 5 6
 
 **************************************************Model calibration ************************************************** 
 // 1) Pull the MRIP data
-do "$input_code_cd\rdb_MRIP_data_wrapper.do"
+do "$input_code_cd\MRIP_data_wrapper.do"
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
-//tess commenting this out for now
-*do "$input_code_cd\directed_trips_calibration.do"
+do "$input_code_cd\directed_trips_calibration.do"
 		*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
 		*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
 *do "$input_code_cd\survey_trip_costs.do"
 
-// 4) Create draw of angler preference parameters 
-*do "$input_code_cd\estimate_angler_preferences.do" - only needs to be run once
+// 4) Create draw of angler preference parameters - only needs to be run once
+do "$input_code_cd\estimate_angler_preferences.do" 
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
-		do "$input_code_cd\rdb_calibration_catch_per_trip_part1.do"
+		do "$input_code_cd\calibration_catch_per_trip_part1.do"
 
 		//b) use copula model (in R) to simulate harvest and discards per-trip
 		* run copula_modeling_calibration.R
