@@ -106,7 +106,7 @@ do "$input_code_cd\directed_trips_calibration.do"
 *do "$input_code_cd\survey_trip_costs.do"
 
 // 4) Create draw of angler preference parameters - only needs to be run once
-do "$input_code_cd\estimate_angler_preferences.do" 
+*do "$input_code_cd\estimate_angler_preferences.do" 
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
@@ -116,19 +116,19 @@ do "$input_code_cd\estimate_angler_preferences.do"
 		* run copula_modeling_calibration.R
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-		*do "$input_code_cd\calibration_catch_per_trip_part2.do"
+		do "$input_code_cd\calibration_catch_per_trip_part2.do"
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-		*do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
+		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
 
 // 7) add additonal angler demographics based on results of utilty model
-		*do "$input_code_cd\additional_angler_dems.do" 
+		do "$input_code_cd\additional_angler_dems.do" 
 
 // 8) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
-		*do "$input_code_cd\catch_at_length_calibration.do"
+		do "$input_code_cd\catch_at_length_calibration.do"
 		
 // 9) Generate projection-year catch-at-length, incorporating the stock assessment data
-		*do "$input_code_cd\catch_at_length_projection.do"
+		do "$input_code_cd\catch_at_length_projection.do"
 
 // The calibration and projection routines can now be run in R. 		
 
