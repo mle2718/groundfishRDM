@@ -109,7 +109,7 @@ sort month mode common metric
 
 *export to excel
 export excel "$misc_data_cd\rdb_mrip_catch_per_trip.xlsx", firstrow(variables) replace
-*import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first
+*import excel using "$misc_data_cd\rdb_mrip_catch_per_trip.xlsx", clear first
 
 // need to get this on google drive
 
@@ -128,6 +128,118 @@ export excel "$misc_data_cd\rdb_mrip_catch_per_trip.xlsx", firstrow(variables) r
 // mode_fx is in strat_id, so I could separate the charter and headboats although I dont think we care about that
 
 
+
+
+
+//SIMULATED CATCH PER TRIP, not MRIP
+
+cd $misc_data_cd
+
+u simulated_catch_totals3.dta, clear
+
+
+*keep only necessary columns
+keep mode month dtrip cod_cat_sim hadd_cat_sim
+
+
+
+//collapse, get median, max, min cod_cat_sim hadd_cat_sim by mode and month 
+//do cod and haddock separately, and also do med/max/min separate. so 6 diff things.  generate the common variable and name it the value colmn, and add the metric and the units column  then append them 
+
+
+
+//for documentation. it's gonna be the median, UL, and LL of the 100 draws of  mean catch per trip
+
+//I mean. You could do the whole trip count by number of fish thing because you have d trip but I just dont know why we want to show it that way. Talk to Min yang next week
+
+*cod median
+preserve
+collapse (median) cod_cat_sim, by(month mode)
+*create metric column from cod_cat (check with group on this label)
+gen metric = "median catch per trip"   // later just change this whole column at the end to catch per trip?
+//or should median go in units so it's median number of fish???   ASK KIM HER PREFERENCE
+gen units="number of fish (median)"  // gen units="number of fish (UL)" gen units="number of fish (LL)" 
+// add columns for common, species_itis
+gen common = "atlanticcod"
+gen species_itis = 164712
+rename cod_cat_sim value
+*save a tempfile
+tempfile c_med
+save `c_med', replace 
+restore
+*cod min
+preserve
+collapse (min) cod_cat_sim, by(month mode)
+*create metric column from cod_cat (check with group on this label)
+gen metric = "min catch per trip"   // later just change this whole column at the end to catch per trip?
+//or should median go in units so it's median number of fish???   ASK KIM HER PREFERENCE
+gen units="number of fish (LL)" 
+// add columns for common, species_itis
+gen common = "atlanticcod"
+gen species_itis = 164712
+rename cod_cat_sim value
+*save a tempfile
+tempfile c_min
+save `c_min', replace 
+restore
+*cod max
+preserve
+collapse (max) cod_cat_sim, by(month mode)
+*create metric column from cod_cat (check with group on this label)
+gen metric = "max catch per trip"   // later just change this whole column at the end to catch per trip?
+//or should median go in units so it's median number of fish???   ASK KIM HER PREFERENCE
+gen units="number of fish (UL)"  
+// add columns for common, species_itis
+gen common = "atlanticcod"
+gen species_itis = 164712
+rename cod_cat_sim value
+*save a tempfile
+tempfile c_max
+save `c_max', replace 
+restore
+
+
+
+
+
+//then haddock
+
+
+//then append all 6 of them
+append using `codfile'
+
+
+
+//make the other dataframe columns
+//need year. is nov and dec from 2024? check baseline_mrip_catch_processed
+// 
+
+
+
+*add dataframe columns common to both species: data version (05-12-2026 for now), units, fishery, state
+gen units = "number of trips" //or just "trips"?
+gen fishery= "NE Groundfish"
+//ask lou when he pulled the dta's here. this folder says he saved them May 12: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
+//Did he pull in updated MRIP data that day? We should pull on same day and rerun the wrapper
+gen data_version="2026-05-12"
+//state will be NA
+gen state=.
+gen stock_abbrev=
+gen wave=
+
+
+*reorder columns. sort data on month, common, mode.
+order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units
+sort month common mode 
+
+
+
+//generate wave var based on month 
+//you have dtrip so you could multipl dtrip by cat (or just grab tot_cod_cat_sim and tot_hadd_cat_sim, then collapse sum those totals and dtrip at wave level then divide cat by trips. do it and you'll have both month and wave level. save them in separate dta's
+
+
+
+save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace 
 
 
 
