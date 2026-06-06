@@ -142,23 +142,14 @@ u simulated_catch_totals3.dta, clear
 keep mode month dtrip cod_cat_sim hadd_cat_sim
 
 
-
-//collapse, get median, max, min cod_cat_sim hadd_cat_sim by mode and month 
-//do cod and haddock separately, and also do med/max/min separate. so 6 diff things.  generate the common variable and name it the value colmn, and add the metric and the units column  then append them 
-
-
-
-//for documentation. it's gonna be the median, UL, and LL of the 100 draws of  mean catch per trip
-
-//I mean. You could do the whole trip count by number of fish thing because you have d trip but I just dont know why we want to show it that way. Talk to Min yang next week
+//get median, max, and min of cod catch per trip (cod_cat_sim) and haddock catch per trip (hadd_cat_sim) by mode and month, then append them 
 
 *cod median
 preserve
 collapse (median) cod_cat_sim, by(month mode)
-*create metric column from cod_cat (check with group on this label)
-gen metric = "median catch per trip"   // later just change this whole column at the end to catch per trip?
-//or should median go in units so it's median number of fish???   ASK KIM HER PREFERENCE
-gen units="number of fish (median)"  // gen units="number of fish (UL)" gen units="number of fish (LL)" 
+gen metric = "median catch per trip"   // later just change metric column at the end to catch per trip?
+//should median go in units so it's median number of fish??   ASK KIM HER PREFERENCE
+gen units="number of fish (median)" 
 // add columns for common, species_itis
 gen common = "atlanticcod"
 gen species_itis = 164712
@@ -167,70 +158,109 @@ rename cod_cat_sim value
 tempfile c_med
 save `c_med', replace 
 restore
+
 *cod min
 preserve
 collapse (min) cod_cat_sim, by(month mode)
-*create metric column from cod_cat (check with group on this label)
-gen metric = "min catch per trip"   // later just change this whole column at the end to catch per trip?
-//or should median go in units so it's median number of fish???   ASK KIM HER PREFERENCE
+gen metric = "min catch per trip" 
 gen units="number of fish (LL)" 
-// add columns for common, species_itis
 gen common = "atlanticcod"
 gen species_itis = 164712
 rename cod_cat_sim value
-*save a tempfile
 tempfile c_min
 save `c_min', replace 
 restore
+
 *cod max
 preserve
 collapse (max) cod_cat_sim, by(month mode)
-*create metric column from cod_cat (check with group on this label)
-gen metric = "max catch per trip"   // later just change this whole column at the end to catch per trip?
-//or should median go in units so it's median number of fish???   ASK KIM HER PREFERENCE
+gen metric = "max catch per trip"  
 gen units="number of fish (UL)"  
-// add columns for common, species_itis
 gen common = "atlanticcod"
 gen species_itis = 164712
 rename cod_cat_sim value
-*save a tempfile
 tempfile c_max
 save `c_max', replace 
 restore
 
 
+*haddock median
+preserve
+collapse (median) hadd_cat_sim, by(month mode)
+gen metric = "median catch per trip"
+gen units="number of fish (median)" 
+gen common = "haddock"
+gen species_itis = 164744
+rename hadd_cat_sim value
+*save a tempfile
+tempfile h_med
+save `h_med', replace 
+restore
 
+*haddock min
+preserve
+collapse (min) hadd_cat_sim, by(month mode)
+gen metric = "min catch per trip" 
+gen units="number of fish (LL)" 
+gen common = "haddock"
+gen species_itis = 164744
+rename hadd_cat_sim value
+tempfile h_min
+save `h_min', replace 
+restore
 
+*haddock max
+preserve
+collapse (max) hadd_cat_sim, by(month mode)
+gen metric = "max catch per trip" 
+gen units="number of fish (UL)"  
+gen common = "haddock"
+gen species_itis = 164744
+rename hadd_cat_sim value
+tempfile h_max
+save `h_max', replace 
+restore
 
-//then haddock
-
-
+clear
 //then append all 6 of them
-append using `codfile'
+append using `c_med' `c_min' `c_max' `h_med' `h_min' `h_max'
 
 
 
-//make the other dataframe columns
-//need year. is nov and dec from 2024? check baseline_mrip_catch_processed
-// 
+*add dataframe columns common to both species
+gen wave=1 if inlist(month, 1, 2)
+replace wave=2 if inlist(month, 3, 4)
+replace wave=3 if inlist(month, 5, 6)
+replace wave=4 if inlist(month, 7, 8)
+replace wave=5 if inlist(month, 9, 10)
+replace wave=6 if inlist(month, 11, 12)
 
+*wave 6 is from 2024
+gen year=2025 if month<=10
+replace year=2024 if month>=11
 
-
-*add dataframe columns common to both species: data version (05-12-2026 for now), units, fishery, state
-gen units = "number of trips" //or just "trips"?
+gen stock_abbrev="WGOM"
 gen fishery= "NE Groundfish"
+
 //ask lou when he pulled the dta's here. this folder says he saved them May 12: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
 //Did he pull in updated MRIP data that day? We should pull on same day and rerun the wrapper
 gen data_version="2026-05-12"
 //state will be NA
 gen state=.
-gen stock_abbrev=
-gen wave=
-
 
 *reorder columns. sort data on month, common, mode.
 order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units
 sort month common mode 
+
+
+save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace 
+
+
+
+
+//for documentation. it's the median, UL, and LL of the 100 draws of  mean catch per trip
+
+// You could do the whole trip count by number of fish thing because you have d trip but I just dont know if we want to show it that way. Talk to Min yang next week
 
 
 
@@ -239,7 +269,16 @@ sort month common mode
 
 
 
-save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace 
+
+
+
+//wave level
+cd $misc_data_cd
+
+u simulated_catch_totals3.dta, clear
+
+*keep only necessary columns
+keep mode month dtrip cod_cat_sim hadd_cat_sim tot_cod_cat_sim tot_hadd_cat_sim
 
 
 
