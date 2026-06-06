@@ -256,6 +256,9 @@ sort month common mode
 save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace 
 
 
+graph bar value if metric=="median catch per trip", over(month) by(mode) ytitle("Median catch per trip by mode-month")  scheme(stmono1) //xtitle("Month") 
+
+
 
 
 //for documentation. it's the median, UL, and LL of the 100 draws of  mean catch per trip
@@ -264,21 +267,140 @@ save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace
 
 
 
-//generate wave var based on month 
-//you have dtrip so you could multipl dtrip by cat (or just grab tot_cod_cat_sim and tot_hadd_cat_sim, then collapse sum those totals and dtrip at wave level then divide cat by trips. do it and you'll have both month and wave level. save them in separate dta's
 
 
-
-
-
-
-//wave level
+//mode-wave level
 cd $misc_data_cd
 
 u simulated_catch_totals3.dta, clear
 
 *keep only necessary columns
-keep mode month dtrip cod_cat_sim hadd_cat_sim tot_cod_cat_sim tot_hadd_cat_sim
+keep mode month dtrip cod_cat_sim hadd_cat_sim tot_cod_cat_sim tot_hadd_cat_sim draw
+
+gen wave=1 if inlist(month, 1, 2)
+replace wave=2 if inlist(month, 3, 4)
+replace wave=3 if inlist(month, 5, 6)
+replace wave=4 if inlist(month, 7, 8)
+replace wave=5 if inlist(month, 9, 10)
+replace wave=6 if inlist(month, 11, 12)
+
+collapse (sum) dtrip tot_cod_cat_sim tot_hadd_cat_sim, by(mode wave draw)
+
+gen cod_cat_sim=tot_cod_cat_sim/dtrip
+gen hadd_cat_sim=tot_hadd_cat_sim/dtrip
+
+//get median, max, and min of cod catch per trip (cod_cat_sim) and haddock catch per trip (hadd_cat_sim) by mode-wave, then append them 
+
+*cod median
+preserve
+collapse (median) cod_cat_sim, by(mode wave)
+gen metric = "median catch per trip"   // later just change metric column at the end to catch per trip?
+//should median go in units so it's median number of fish??   ASK KIM HER PREFERENCE
+gen units="number of fish (median)" 
+// add columns for common, species_itis
+gen common = "atlanticcod"
+gen species_itis = 164712
+rename cod_cat_sim value
+*save a tempfile
+tempfile c_med_w
+save `c_med_w', replace 
+restore
+
+*cod min
+preserve
+collapse (min) cod_cat_sim, by(mode wave)
+gen metric = "min catch per trip" 
+gen units="number of fish (LL)" 
+gen common = "atlanticcod"
+gen species_itis = 164712
+rename cod_cat_sim value
+tempfile c_min_w
+save `c_min_w', replace 
+restore
+
+*cod max
+preserve
+collapse (max) cod_cat_sim, by(mode wave)
+gen metric = "max catch per trip"  
+gen units="number of fish (UL)"  
+gen common = "atlanticcod"
+gen species_itis = 164712
+rename cod_cat_sim value
+tempfile c_max_w
+save `c_max_w', replace 
+restore
+
+
+*haddock median
+preserve
+collapse (median) hadd_cat_sim, by(mode wave)
+gen metric = "median catch per trip"
+gen units="number of fish (median)" 
+gen common = "haddock"
+gen species_itis = 164744
+rename hadd_cat_sim value
+*save a tempfile
+tempfile h_med_w
+save `h_med_w', replace 
+restore
+
+*haddock min
+preserve
+collapse (min) hadd_cat_sim, by(mode wave)
+gen metric = "min catch per trip" 
+gen units="number of fish (LL)" 
+gen common = "haddock"
+gen species_itis = 164744
+rename hadd_cat_sim value
+tempfile h_min_w
+save `h_min_w', replace 
+restore
+
+*haddock max
+preserve
+collapse (max) hadd_cat_sim, by(mode wave)
+gen metric = "max catch per trip" 
+gen units="number of fish (UL)"  
+gen common = "haddock"
+gen species_itis = 164744
+rename hadd_cat_sim value
+tempfile h_max_w
+save `h_max_w', replace 
+restore
+
+clear
+//then append all 6 of them
+append using `c_med_w' `c_min_w' `c_max_w' `h_med_w' `h_min_w' `h_max_w'
+
+
+*add dataframe columns common to both species
+*wave 6 is from 2024
+gen year=2025 if wave<=5
+replace year=2024 if wave==6
+
+gen stock_abbrev="WGOM"
+gen fishery= "NE Groundfish"
+
+//ask lou when he pulled the dta's here. this folder says he saved them May 12: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
+//Did he pull in updated MRIP data that day? We should pull on same day and rerun the wrapper
+gen data_version="2026-05-12"
+//state will be NA
+gen state=.
+
+*reorder columns. sort data on wave, common, mode.
+order fishery common species_itis stock_abbrev state mode data_version year wave metric value units
+sort wave common mode 
+
+save "$misc_data_cd\rdb_sim_catch_per_trip_wave.dta", replace 
+
+
+
+
+graph bar value if metric=="median catch per trip", over(wave) by(mode) ytitle("Median catch per trip by mode-wave")  scheme(stmono1) //xtitle("Month") 
+
+
+
+
 
 
 
