@@ -149,7 +149,7 @@ preserve
 collapse (median) cod_cat_sim, by(month mode)
 gen metric = "median catch per trip"   // later just change metric column at the end to catch per trip?
 //should median go in units so it's median number of fish??   ASK KIM HER PREFERENCE
-gen units="number of fish (median)" 
+gen units="number of fish" 
 // add columns for common, species_itis
 gen common = "atlanticcod"
 gen species_itis = 164712
@@ -163,7 +163,7 @@ restore
 preserve
 collapse (min) cod_cat_sim, by(month mode)
 gen metric = "min catch per trip" 
-gen units="number of fish (LL)" 
+gen units="number of fish" 
 gen common = "atlanticcod"
 gen species_itis = 164712
 rename cod_cat_sim value
@@ -175,7 +175,7 @@ restore
 preserve
 collapse (max) cod_cat_sim, by(month mode)
 gen metric = "max catch per trip"  
-gen units="number of fish (UL)"  
+gen units="number of fish"  
 gen common = "atlanticcod"
 gen species_itis = 164712
 rename cod_cat_sim value
@@ -188,7 +188,7 @@ restore
 preserve
 collapse (median) hadd_cat_sim, by(month mode)
 gen metric = "median catch per trip"
-gen units="number of fish (median)" 
+gen units="number of fish" 
 gen common = "haddock"
 gen species_itis = 164744
 rename hadd_cat_sim value
@@ -201,7 +201,7 @@ restore
 preserve
 collapse (min) hadd_cat_sim, by(month mode)
 gen metric = "min catch per trip" 
-gen units="number of fish (LL)" 
+gen units="number of fish" 
 gen common = "haddock"
 gen species_itis = 164744
 rename hadd_cat_sim value
@@ -213,7 +213,7 @@ restore
 preserve
 collapse (max) hadd_cat_sim, by(month mode)
 gen metric = "max catch per trip" 
-gen units="number of fish (UL)"  
+gen units="number of fish"  
 gen common = "haddock"
 gen species_itis = 164744
 rename hadd_cat_sim value
@@ -296,7 +296,7 @@ preserve
 collapse (median) cod_cat_sim, by(mode wave)
 gen metric = "median catch per trip"   // later just change metric column at the end to catch per trip?
 //should median go in units so it's median number of fish??   ASK KIM HER PREFERENCE
-gen units="number of fish (median)" 
+gen units="number of fish" 
 // add columns for common, species_itis
 gen common = "atlanticcod"
 gen species_itis = 164712
@@ -310,7 +310,7 @@ restore
 preserve
 collapse (min) cod_cat_sim, by(mode wave)
 gen metric = "min catch per trip" 
-gen units="number of fish (LL)" 
+gen units="number of fish" 
 gen common = "atlanticcod"
 gen species_itis = 164712
 rename cod_cat_sim value
@@ -322,7 +322,7 @@ restore
 preserve
 collapse (max) cod_cat_sim, by(mode wave)
 gen metric = "max catch per trip"  
-gen units="number of fish (UL)"  
+gen units="number of fish"  
 gen common = "atlanticcod"
 gen species_itis = 164712
 rename cod_cat_sim value
@@ -335,7 +335,7 @@ restore
 preserve
 collapse (median) hadd_cat_sim, by(mode wave)
 gen metric = "median catch per trip"
-gen units="number of fish (median)" 
+gen units="number of fish" 
 gen common = "haddock"
 gen species_itis = 164744
 rename hadd_cat_sim value
@@ -348,7 +348,7 @@ restore
 preserve
 collapse (min) hadd_cat_sim, by(mode wave)
 gen metric = "min catch per trip" 
-gen units="number of fish (LL)" 
+gen units="number of fish" 
 gen common = "haddock"
 gen species_itis = 164744
 rename hadd_cat_sim value
@@ -360,7 +360,7 @@ restore
 preserve
 collapse (max) hadd_cat_sim, by(mode wave)
 gen metric = "max catch per trip" 
-gen units="number of fish (UL)"  
+gen units="number of fish"  
 gen common = "haddock"
 gen species_itis = 164744
 rename hadd_cat_sim value
