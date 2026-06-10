@@ -55,6 +55,7 @@ zero_missing_cols <- function(dt, cols) {
 # -----------------------------------------------------------------------------
 
 read_projection_common_inputs_cod_hadd <- function(final_process_misc_cd,
+                                                   directed_trips,
                                                    season_draw,
                                                    mode_draw,
                                                    draws) {
@@ -90,7 +91,7 @@ read_projection_common_inputs_cod_hadd <- function(final_process_misc_cd,
   ]
   data.table::setkey(size_lookup, species, draw, season)
 
-  directed_trips <- as.data.table(read_fst(file.path(final_process_misc_cd,"directed_trip_draws.fst")))
+  #directed_trips <- as.data.table(read_fst(file.path(final_process_misc_cd,"directed_trip_draws.fst")))
   directed_trips[, season := cod_hadd_season(date_parsed)]
 
   check_required_cols(directed_trips, c("draw", "season", "mode", "date_parsed", "dtrip"), "directed_trips")
@@ -569,6 +570,7 @@ run_cod_hadd_projection <- function(season_draw = get("season_draw", envir = .Gl
       final_process_misc_cd = final_process_misc_cd,
       season_draw = season_draw,
       mode_draw = mode_draw,
+      directed_trips = directed_trips,
       draws = draws
     )
   }
