@@ -9,7 +9,7 @@ drive_auth(cache = here(".secrets"), email = TRUE)
 
 # Output folders on google drive
 base_outcomes_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","base_outcomes")
-n_choice_occasions_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","n_choice_occasions")
+n_choice_occasions_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","n_choice_occassions")
 calib_catch_draws_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","calib_catch_draws")
 miscellaneous_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","miscellaneous")
 
@@ -115,17 +115,20 @@ upload_folder_to_drive(
 upload_folder_to_drive(
   local_folder = final_process_outcomes_cd,
   drive_folder_id = base_outcomes_path,
-  pattern = "\\.fst$"
+  pattern = "\\.fst$",
+  if_exists = "overwrite"
 )
 
 upload_folder_to_drive(
   local_folder = final_process_choice_occasions_cd,
   drive_folder_id = n_choice_occasions_path,
-  pattern = "\\.fst$"
+  pattern = "\\.fst$",
+  if_exists = "overwrite"
 )
 
 upload_folder_to_drive(
   local_folder = final_process_calib_catch_cd,
   drive_folder_id = calib_catch_draws_path,
-  pattern = "\\.fst$"
+  pattern = "\\.fst$",
+  if_exists = "overwrite"
 )
