@@ -30,7 +30,6 @@ conflicts_prefer(dplyr::summarise)
 conflicts_prefer(dplyr::count)
 
 
-
 #Set up R globals for input/output data and code scripts
 code_cd=here("Code", "sim")
 
@@ -50,10 +49,8 @@ final_process_choice_occasions_cd=file.path(final_process_data_cd,"n_choice_occa
 final_process_misc_cd=file.path(final_process_data_cd,"miscellaneous")
 final_process_calib_catch_cd=file.path(final_process_data_cd,"calib_catch_draws")
 
-
 n_simulations<-5 # Number of model iterations
 n_draws<-50 # Number of simulated trips per day
-
 
 # helpers
 parse_date_any <- function(x) {
@@ -62,7 +59,6 @@ parse_date_any <- function(x) {
     tryFormats = c("%d%b%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y")
   ))
 }
-
 
 ### MODEL CALIBRATION ###
 # Simulation stratum are the groups in which we allocate and simulate choice occasions.
@@ -107,7 +103,6 @@ source(file.path(code_cd,"calibrate_rec_catch0.R"))
 # Output files:
 # calibration_comparison.fst
 
-
 # STEP 2
 # Re-run the simulation, but this time reallocate trip-level discards to harvest or harvest to discards,
 # until the difference between model-based harvest and MRIP-based harvest is within abs(5%) or <500 fish.
@@ -118,8 +113,6 @@ source(file.path(code_cd,"calibrate_rec_catch0.R"))
 
 # Retain calibrated baseline trip outcomes, n_choice_occasions, calibration statistics (e.g. r*, h*)
 
-#Files needed:
-
 source(file.path(code_cd,"calibration_routine.R"))
 
 # Output files:
@@ -128,6 +121,10 @@ source(file.path(code_cd,"calibration_routine.R"))
 # file.path(final_process_outcomes_cd, paste0("base_outcomes_", s, "_", md, "_", i, ".fst"))
 
 ### END MODEL CALIBRATION ###
+
+# Export files to Google Drive
+source(file.path(code_cd, "export_to_GoogleDrive.R"))
+
 
 
 
