@@ -117,6 +117,12 @@ do "$input_code_cd\directed_trips_calibration.do"
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
+		
+		//d) process catch-per-trip and format it for the rec dashboard
+		do "$input_code_cd\rdb_processing_catch_per_trip.do"
+		
+		//e) run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
+		* run rdb_catch_per_trip_to_drive.R
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
 		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
