@@ -1,5 +1,4 @@
-## (1) Read in catch per trip dta using haven
-## (2) Upload catch per trip as an Rds to google drive
+#This code reads in a catch per trip dta for the rec dashboard and uploads it to Google drive as an Rds
 
 
 #Load libraries
@@ -13,7 +12,6 @@ library(here)
 
 here::i_am("Code/pre_sim/rdb_catch_per_trip_to_drive.R")
 output_folder<-here("Data", "miscellaneous")
-#dir.create(file.path(output_folder), showWarnings = FALSE)
 
 input_file <- here("Data","miscellaneous","rdb_sim_catch_per_trip.dta")
 
@@ -27,10 +25,8 @@ SimCPTSaveFile<-glue("rdb_catch_per_trip_{file_date}")
 # convert character date to a date variable
 rdb_catch_per_trip$data_version<-as.Date(rdb_catch_per_trip$data_version)
 
-
 # Save dataframe as Rds
 write_rds(rdb_catch_per_trip, file=file.path(output_folder,glue("{SimCPTSaveFile}.Rds")))
-
 
 
 # Connect to Google Drive
