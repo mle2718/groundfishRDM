@@ -124,17 +124,20 @@ replace year=2024 if month>=11
 gen stock_abbrev="WGOM"
 gen fishery= "NE Groundfish"
 
-//ask lou when he pulled the dta's here. this folder says he saved them May 12: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
+//ask lou when he pulled the dta's here. this folder said he'd saved them May 12 when I copied them locally: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
 //Did he pull in updated MRIP data that day? 
 gen data_version="2026-05-12"
 //state will be NA
 gen state=.
-//what should source be? RDM? recDST? simulated?
-gen source="recDST"
+//what should source be? recDST? simulated? recDST/MRIP? RDM? - ask Min-Yang
+gen source="simulated"
 
 *reorder columns. sort data on month, common, mode.
 order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units source
-sort month common mode 
+sort month common mode
+
+//get rid of var label on value 
+label variable value ""
 
 
 save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace 
