@@ -9,7 +9,6 @@ library(googledrive)
 library(here)
 
 
-
 here::i_am("Code/pre_sim/rdb_catch_per_trip_to_drive.R")
 output_folder<-here("Data", "miscellaneous")
 
@@ -52,78 +51,4 @@ drive_upload(
   overwrite = TRUE
 )
 
-
-
-
-
-
-
-
-##CLEAN UP THE REST
-
-
-# DONT THINK WE WANT THIS Output folder on google drive
-rdb_gf_processed_path<-file.path("RecDST","recDST data dashboard","input_data","cod_haddock")
-folder_info <- drive_get(
-  path = rdb_gf_processed_path,
-  shared_drive = "RecDST"
-)
-
-#THIS I THINK
-# Output folder on google drive
-miscellaneous_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data",
-                               "groundfishRDM","miscellaneous")
-
-folder_info <- drive_get(
-  path = miscellaneous_path,
-  shared_drive = "NMFS NEC READ SSB"
-)
-miscellaneous_path<-folder_info$id
-
-
-
-## THIS is for reading things in FROM google drive
-# input save files
-file_in<-"rdb_sim_catch_per_trip.dta"
-
-#read in the assessment file
-readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
-file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
-
-
-# MIN YanG's Output folder on google drive
-groundfish_processed_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","input_data")
-folder_info <- drive_get(
-  path = groundfish_processed_path,
-  shared_drive = "NMFS NEC READ SSB"
-)
-groundfish_processed_path<-folder_info$id
-
-
-# save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace
-
-
-write_dta(NAA_long, path=file.path(output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA_long, file=file.path(output_folder,glue("{ProjectedNAASaveFile}.Rds")))
-
-### Example
-
-
-write_dta(NAA_long, path=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")))
-write_rds(NAA_long, file=file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")))
-
-#Put the historical NAA on google drive
-drive_upload(
-  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.Rds")),
-  path = as_id(groundfish_processed_path),
-  name = glue("{ProjectedNAASaveFile}.Rds"),
-  overwrite = TRUE
-)
-
-drive_upload(
-  media = file.path(assessment_output_folder,glue("{ProjectedNAASaveFile}.dta")),
-  path = as_id(groundfish_processed_path),
-  name = glue("{ProjectedNAASaveFile}.dta"),
-  overwrite = TRUE
-)
 
