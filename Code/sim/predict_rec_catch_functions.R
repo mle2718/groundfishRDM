@@ -607,3 +607,11 @@ run_cod_hadd_projection <- function(season_draw = get("season_draw", envir = .Gl
 
   data.table::rbindlist(predictions_list, use.names = TRUE, fill = TRUE)
 }
+
+
+in_season <- function(date, open, close) {
+  d <- lubridate::month(date) * 100 + lubridate::day(date)
+  o <- lubridate::month(lubridate::ymd(open))  * 100 + lubridate::day(lubridate::ymd(open))
+  cl <- lubridate::month(lubridate::ymd(close)) * 100 + lubridate::day(lubridate::ymd(close))
+  if (o <= cl) d >= o & d <= cl else d >= o | d <= cl
+}
