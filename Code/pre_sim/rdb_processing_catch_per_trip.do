@@ -128,9 +128,11 @@ gen fishery= "NE Groundfish"
 gen data_version="2026-05-12"
 //state will be NA
 gen state=.
+//what should source be? RDM? recDST? simulated?
+gen source="recDST"
 
 *reorder columns. sort data on month, common, mode.
-order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units
+order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units source
 sort month common mode 
 
 
@@ -269,9 +271,11 @@ gen fishery= "NE Groundfish"
 gen data_version="2026-05-12"
 //state will be NA
 gen state=.
+//what should source be? RDM? recDST? simulated?
+gen source="recDST"
 
 *reorder columns. sort data on wave, common, mode.
-order fishery common species_itis stock_abbrev state mode data_version year wave metric value units
+order fishery common species_itis stock_abbrev state mode data_version year wave metric value units source
 sort wave common mode 
 
 save "$misc_data_cd\rdb_sim_catch_per_trip_wave.dta", replace 
