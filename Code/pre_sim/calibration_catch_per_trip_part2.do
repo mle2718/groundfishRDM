@@ -288,7 +288,7 @@ forvalues i=1/$ndraws {
         merge m:1 wave wave_id using `dems50', keep(3) nogen
 
         preserve
-            import excel using "$calib_catch_draws_cd\calib_catch_draws_`i'.xlsx", clear firstrow
+            u "$calib_catch_draws_cd\calib_catch_draws_raw_`i'.dta", clear
             split my_dom_id_string, parse(_)
             rename my_dom_id_string1 month
             rename my_dom_id_string2 mode

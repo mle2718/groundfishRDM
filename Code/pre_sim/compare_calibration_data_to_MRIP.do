@@ -91,6 +91,8 @@ save `sim', replace
 import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first 
 keep my_dom_id_string-missing_sehadd_rel
 drop missing*
+drop if strmatch(my_dom_id_string, "*XX*")==1
+drop if strmatch(my_dom_id_string, "*ZZ*")==1
 duplicates drop
 split my, parse(_)
 rename my_dom_id_string1 month
@@ -115,7 +117,6 @@ gen sim_ul=sim_total+1.96*sim_sd
 gen sim_ll=sim_total-1.96*sim_sd
 
 drop if mrip_total==0 & sim_total==0
-drop if disp=="cat"
 drop if mrip_total==. & sim_total==0
 
 gen domain=species+"_"+disp
