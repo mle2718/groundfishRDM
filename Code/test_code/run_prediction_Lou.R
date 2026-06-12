@@ -10,6 +10,7 @@ library(tidyr)
 library(here)
 library(furrr)
 library(future)
+library(conflicted)
 conflicts_prefer(data.table::month)
 # Optional parallel backend is loaded only in the wrapper below.
 
