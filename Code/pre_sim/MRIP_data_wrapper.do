@@ -37,7 +37,7 @@ if _rc==0{
 
 else{
 	
-} 
+}
 
 capture confirm file "catch_`wave'.dta"
 if _rc==0{
