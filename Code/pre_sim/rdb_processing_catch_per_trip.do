@@ -130,7 +130,7 @@ gen data_version="2026-05-12"
 //state will be NA
 gen state=.
 //what should source be? recDST? simulated? recDST/MRIP? RDM? - ask Min-Yang
-gen source="simulated"
+gen source="model intermediate"
 
 *reorder columns. sort data on month, common, mode.
 order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units source
