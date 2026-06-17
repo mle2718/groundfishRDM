@@ -377,6 +377,8 @@ merge 1:m my_dom_id_string using `basefile'
 *drop non-WGOM and non-dom catch
 drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1
 
+drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1 
+
 *condition for when keep and release are both positive for a stratum, but they never occur on the same trip
 *Will model these distributions as independent
 gen tab=1 if cod_keep>0 & cod_keep!=. & cod_rel>0 & cod_rel!=.

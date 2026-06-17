@@ -50,10 +50,8 @@ keep if $calibration_year //ensure relevent year
  
 gen st2 = string(st,"%02.0f")
 
-
 * delineate WGOM versus non-WGOM fishing
-
-*New MRIP site allocations
+* New MRIP site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -69,7 +67,7 @@ restore
 
 merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into WGOM or not WGOM */
+* classify into WGOM or not WGOM 
 gen str3 area_s="XX"
 replace area_s="WGOM" if st2=="33"
 replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
@@ -80,7 +78,6 @@ replace mode1="fh" if inlist(mode_fx, "4", "5")
 
 * drop shore trips
 drop if mode1=="sh"
-
 
 * classify catch into the things I care about (common=="c" | "h") and things I don't care about "z" 
 gen common_dom="z"
@@ -100,6 +97,7 @@ replace l_cm_bin =0 if !inlist(common_dom, "c", "h")
 
 sort year w2 strat_id psu_id id_code
 
+* okay to drop non-target strata here because we are using only point estimates or raw lengths
 keep if area_s=="WGOM"
 drop if common_dom=="z"
 
@@ -220,7 +218,7 @@ gen st2 = string(st,"%02.0f")
 
 * delineate WGOM versus non-WGOM fishing
 
-*New MRIP site allocations
+* New MRIP site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -236,7 +234,7 @@ restore
 
 merge m:1 intsite state using `mrip_sites',  keep(1 3)
 
-/*classify into WGOM or not WGOM */
+* classify into WGOM or not WGOM 
 gen str3 area_s="XX"
 replace area_s="WGOM" if st2=="33"
 replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
@@ -266,6 +264,7 @@ replace l_cm_bin =0 if !inlist(common_dom, "c", "h")
 
 sort year w2 strat_id psu_id id_code
 
+* okay to drop non-target strata here because we are using only point estimates or raw lengths
 keep if area_s=="WGOM"
 drop if common_dom=="z"
 
@@ -399,7 +398,6 @@ save `observed_prob', replace
 restore
 
 
-
 * new code using MOM to avoid non-convergence 
 tempfile new
 save `new', replace
@@ -407,7 +405,7 @@ global fitted_sizes
 
 levelsof domain, local(regs)
 
-foreach r of local regs {
+qui foreach r of local regs {
     use `new', clear
     keep if domain=="`r'"
     di "`r'"
@@ -418,13 +416,9 @@ foreach r of local regs {
 	replace n_fish=round(n_fish)
 	su n_fish
 	local tot_n_fish=`r(sum)'
+	
     * Gamma needs strictly positive support
     drop if length<=0
-
-    * observed range (weighted or unweighted; here unweighted over remaining bins)
-    quietly summarize length
-    local minL = r(min)
-    local maxL = r(max)
 
     * --------
     * (A) Estimate gamma parameters robustly (MOM with freq weights)
@@ -461,16 +455,12 @@ foreach r of local regs {
     gen double gammafit = rgamma(`alpha', `beta')
     replace gammafit = round(gammafit)
 
-    * truncate to observed range
-    keep if gammafit>=`minL' & gammafit<=`maxL'
-
     * If rejection killed everything, try again with more draws (once)
     if _N==0 {
         clear
         set obs `=5*`ndraw''
         gen double gammafit = rgamma(`alpha', `beta')
         replace gammafit = round(gammafit)
-        keep if gammafit>=`minL' & gammafit<=`maxL'
         if _N==0 continue
     }
 
@@ -496,12 +486,65 @@ mvencode fitted_prob observed_prob, mv(0) override
 split domain, parse(_)
 replace species=domain1
 replace season=domain2
+replace domain=species+"_"+season+"_"+domain3
+
 destring domain3, replace
 replace draw=domain3
 sort species season draw fitted_length
 
 drop _merge domain1 domain2 domain3
+rename fitted_length length 
+sort species season draw length
 
+
+/*
+collapse (mean) observed* fitted* , by(species season length)
+gen domain=season+"_"+species
+
+levelsof domain , local(domz)
+foreach d of local domz{
+	twoway (scatter observed_prob length if domain=="`d'" ,   cmissing(no) connect(direct) lcol(gray) lwidth(med)  lpat(solid) msymbol(o) mcol(gray) $graphoptions) ///
+		    (scatter fitted_prob length if  domain=="`d'"  , cmissing(no) connect(direct) lcol(black)   lwidth(med)  lpat(solid) msymbol(i)   ///
+			xtitle("Length (cm)", yoffset(-2)) ytitle("Prob")    ylab(, angle(horizontal) labsize(vsmall)) ///
+			legend(lab(1 "observed_prob") lab(2 "fitted_prob") cols() yoffset(-2) region(color(none)))   title("`d'", size(small))  name(dom`d', replace))
+ local graphnames `graphnames' dom`d'
+}
+
+grc1leg `graphnames', rows(2)
+*/
+
+* truncate the fitted distribution to the observed range
+*replace domain=species+"_"+season
+
+levelsof domain, local(doms)
+foreach d of local doms{
+quietly summarize length if observed_prob!=0 & !missing(observed_prob) & domain=="`d'"
+return list
+local minL = `r(min)'
+local maxL = `r(max)'
+drop if (length<`minL' | length>`maxL' ) & domain=="`d'"
+}
+
+egen sum_fitted_prob=sum(fitted_prob), by(domain)
+replace fitted_prob=fitted_prob/sum_fitted_prob
+sort species season draw length
+
+
+/*
+collapse (mean) observed* fitted* , by(species season length)
+gen domain=season+"_"+species
+
+levelsof domain , local(domz)
+foreach d of local domz{
+	twoway (scatter observed_prob length if domain=="`d'" ,   cmissing(no) connect(direct) lcol(gray) lwidth(med)  lpat(solid) msymbol(o) mcol(gray) $graphoptions) ///
+		    (scatter fitted_prob length if  domain=="`d'"  , cmissing(no) connect(direct) lcol(black)   lwidth(med)  lpat(solid) msymbol(i)   ///
+			xtitle("Length (cm)", yoffset(-2)) ytitle("Prob")    ylab(, angle(horizontal) labsize(vsmall)) ///
+			legend(lab(1 "observed_prob") lab(2 "fitted_prob") cols() yoffset(-2) region(color(none)))   title("`d'", size(small))  name(dom`d', replace))
+ local graphnames `graphnames' dom`d'
+}
+
+grc1leg `graphnames', rows(2)
+*/
 
 /*
 * Graphs of the fitted observed/fitted probabilities
@@ -527,10 +570,17 @@ twoway `plots', ///
     ytitle("Probability", size(medium)) xtitle("Length (cm)", size(medium)) xlab(#40)
 
 */
+
+* save observed catch at length for creating projected catch-at-length
+
+preserve 
+keep length draw season species observed_prob n_fish
+export delimited using "$misc_data_cd/baseline_catch_at_length_observed.csv", replace 
+restore 
+
 drop if fitted_prob==0
-keep fitted_length fitted_prob draw season species observed_prob
-order draw season species fitted_length fitted_prob observed_prob	
-rename fitted_length length 
+keep length fitted_prob draw season species observed_prob 
+order draw season species length fitted_prob observed_prob	
 
 export delimited using "$misc_data_cd/baseline_catch_at_length.csv", replace 
 

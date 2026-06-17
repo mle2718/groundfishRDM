@@ -27,6 +27,7 @@ library(ggplot2)
 library(writexl)
 library(plyr)
 library(conflicted)
+library(haven)
 
 library(here)
 here::i_am("Code/pre_sim/copula_modeling_calibration.R")
@@ -707,8 +708,8 @@ for (s in unique(catch_draws_all$state)) {
     out_state_draw <- out_state %>%
       dplyr::filter(sim_id == d)
 
-    out_file <- file.path(output_dir, paste0("calib_catch_draws", "_", d, ".xlsx"))
-    writexl::write_xlsx(out_state_draw, path = out_file)
+    out_file <- file.path(output_dir, paste0("calib_catch_draws_raw", "_", d, ".dta"))
+    haven::write_dta(out_state_draw, path = out_file)
   }
 }
 
