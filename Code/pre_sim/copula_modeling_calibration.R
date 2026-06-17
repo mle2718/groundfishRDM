@@ -31,6 +31,7 @@ library(haven)
 
 library(here)
 here::i_am("Code/pre_sim/copula_modeling_calibration.R")
+source(here("Code", "helpers", "user_setup.R"))
 
 conflicts_prefer(here::here)
 conflicts_prefer(dplyr::filter)
@@ -45,14 +46,12 @@ n_reps  <- 200
 
 statez <- c("all") #holdover from SFRDM
 
-#input_file <- "E:/Lou_projects/groundfishRDM/2027_mgt_cycle/miscellaneous/baseline_mrip_catch_processed.xlsx"
-input_file <- here("Data","miscellaneous","baseline_mrip_catch_processed.xlsx")
+input_file <- file.path(data.dir,"miscellaneous","baseline_mrip_catch_processed.xlsx")
 
 
 full_df <- readxl::read_xlsx(input_file)
 full_df <- full_df %>% dplyr::mutate(state="all")
-#output_dir <- "E:/Lou_projects/groundfishRDM/2027_mgt_cycle/calib_catch_draws"
-output_dir<-file.path("Data","calib_catch_draws")
+output_dir<-file.path("data.dir","2027_mgt_cyle","calib_catch_draws")
 
 
 
