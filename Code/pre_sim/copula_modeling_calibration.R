@@ -30,14 +30,15 @@ library(conflicted)
 library(haven)
 
 library(here)
-here::i_am("Code/pre_sim/copula_modeling_calibration.R")
-source(here("Code", "helpers", "user_setup.R"))
 
 conflicts_prefer(here::here)
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::mutate)
 conflicts_prefer(dplyr::summarise)
+
+here::i_am("Code/pre_sim/copula_modeling_calibration.R")
+source(here("Code", "helpers", "user_setup.R"))
 
 # ---- controls ----
 n_sim   <- 5000
