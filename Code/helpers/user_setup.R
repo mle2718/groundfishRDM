@@ -12,3 +12,6 @@ if (user=="LCH"){
   data.dir<-here("Data")
 }
 
+message("Hello ", user, "Use the object <data.dir> in place of here(\"Data\").")
+
+message("The value of data.dir is: ", data.dir)
