@@ -8,11 +8,12 @@ library(glue)
 library(googledrive)
 library(here)
 
-
 here::i_am("Code/pre_sim/rdb_catch_per_trip_to_drive.R")
-output_folder<-here("Data", "miscellaneous")
+source(here("Code", "helpers", "user_setup.R"))
 
-input_file <- here("Data","miscellaneous","rdb_sim_catch_per_trip.dta")
+output_folder<-file.path(data.dir, "miscellaneous")
+
+input_file <- file.path(data.dir,"miscellaneous","rdb_sim_catch_per_trip.dta")
 
 # Read in my .dta file
 rdb_catch_per_trip <- read_dta(input_file)
