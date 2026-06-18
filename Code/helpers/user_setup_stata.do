@@ -10,9 +10,10 @@ if inlist("$user","LCH") {
 	global gfdatadir "E:\Lou_projects\groundfishRDM\2027_mgt_cycle"
 } 
 else if inlist("$user","TP", "ML","KB"){
-	global gfdatadir "${here}\Data"
+	global gfdatadir "${here}\Data\2027_mgt_cycle"
 }
-
+/* make this directory if it doesn't exist.*/
+capture mkdir $gfdatadir 
 
 
 display "Hello $user.  Use the global gfdatadir in place of \${here}\Data\YYYY mgmt cycle)."
