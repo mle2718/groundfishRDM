@@ -7,11 +7,12 @@
 
 stopifnot(user %in% c("TP", "LCH", "ML", "KB"))
 if (user=="LCH"){
-  data.dir<-"E:/Lou_projects/groundfishRDM"
+  gf.data.dir<-"E:/Lou_projects/groundfishRDM/2027_mgt_cycle"
 } else if (user %in% c("TP","ML", "KB")){
-  data.dir<-here("Data")
+  dir.create(here("Data","2027_mgt_cycle"), showWarnings = TRUE, recursive=TRUE)
+  gf.data.dir<-here("Data","2027_mgt_cycle")
 }
 
-message("Hello ", user, "Use the object <data.dir> in place of here(\"Data\").")
+message("Hello ", user, "Use the object <gf.data.dir> in place of here(\"Data\YYYY_mgt_cycle\").")
 
-message("The value of data.dir is: ", data.dir)
+message("The value of gf.data.dir is: ", gf.data.dir)
