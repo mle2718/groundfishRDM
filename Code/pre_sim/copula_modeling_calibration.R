@@ -47,12 +47,12 @@ n_reps  <- 200
 
 statez <- c("all") #holdover from SFRDM
 
-input_file <- file.path(data.dir,"miscellaneous","baseline_mrip_catch_processed.xlsx")
+input_file <- file.path(gf.data.dir,"miscellaneous","baseline_mrip_catch_processed.xlsx")
 
 
 full_df <- readxl::read_xlsx(input_file)
 full_df <- full_df %>% dplyr::mutate(state="all")
-output_dir<-file.path(data.dir,"2027_mgt_cyle","calib_catch_draws")
+output_dir<-file.path(gf.data.dir,"2027_mgt_cyle","calib_catch_draws")
 dir.create(output_dir, showWarnings = TRUE, recursive=TRUE)
 
 
