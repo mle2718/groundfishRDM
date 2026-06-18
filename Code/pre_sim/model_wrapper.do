@@ -71,10 +71,10 @@ do "${here}/Code/helpers/user_setup_stata.do"
 * adjust project paths based on user
 global input_code_cd "${here}/Code/pre_sim" 
 // these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
-global misc_data_cd "${datadir}/miscellaneous" 
-global calib_catch_draws_cd "{datadir}/miscellaneous/calib_catch_draws" 
+global misc_data_cd "${gfdatadir}/miscellaneous" 
+global calib_catch_draws_cd "${gfdatadir}/miscellaneous/calib_catch_draws" 
 *global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
-global figure_cd  "${datadir}/figures" 
+global figure_cd  "${gfdatadir}/figures" 
 
 * set a global seed #
 global seed 03211990
