@@ -1,3 +1,6 @@
+/* This uses the user written command here to set directories*/
+/* It is not as good as R's version. Before running this code, you must change directories into project directory */
+
 
 
 /**** Groundfish RDM input code wrapper ****/
@@ -59,16 +62,19 @@ global ndraws 100
 * source =https://www.bls.gov/data/inflation_calculator.htm
 global inflation_expansion=1.13
 
+
+/* find the root of the project */
+here, nogit
+
+do "${here}/Code/helpers/user_setup_stata.do"
+
 * adjust project paths based on user
-*global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
-global input_code_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Code\pre_sim" /* Tess's path */
-*global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
+global input_code_cd "${here}/Code/pre_sim" 
 // these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
-global misc_data_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\miscellaneous" /* Tess's local data path */
-*global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
-global calib_catch_draws_cd "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\calib_catch_draws" 
+global misc_data_cd "${gfdatadir}/miscellaneous" 
+global calib_catch_draws_cd "${gfdatadir}/miscellaneous/calib_catch_draws" 
 *global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
-global figure_cd  "C:\Users\theresa.petesch\Documents\GitHub\groundfishRDM\Data\figures" 
+global figure_cd  "${gfdatadir}/figures" 
 
 * set a global seed #
 global seed 03211990
