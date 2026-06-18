@@ -143,23 +143,23 @@ do "$input_code_cd\directed_trips_calibration.do"
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
-		
-		//d) process catch-per-trip and format it for the rec dashboard
-		do "$input_code_cd\rdb_processing_catch_per_trip.do"
-		
-		//e) run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
-		* run rdb_catch_per_trip_to_drive.R
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
 		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
+		
+// 7) Process catch-per-trip and format it for the rec dashboard
+		do "$input_code_cd\rdb_processing_catch_per_trip.do"
+		
+		//run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
+		* run rdb_catch_per_trip_to_drive.R
 
-// 7) add additonal angler demographics based on results of utilty model
+// 8) add additonal angler demographics based on results of utilty model
 		do "$input_code_cd\additional_angler_dems.do" 
 
-// 8) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
+// 9) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
 		do "$input_code_cd\catch_at_length_calibration.do"
 		
-// 9) Generate projection-year catch-at-length, incorporating the stock assessment data
+// 10) Generate projection-year catch-at-length, incorporating the stock assessment data
 		do "$input_code_cd\catch_at_length_projection.do"
 
 // The calibration and projection routines can now be run in R. 		
