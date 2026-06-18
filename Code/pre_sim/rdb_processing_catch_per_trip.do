@@ -3,7 +3,7 @@
 /*
 This code pulls the median, minimum, and maximum of the 100 draws of simulated mean catch per trip (ie, harvest + discards, or A + B1 + B2) at the the mode-month level for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM). 
 
-This code cleans the simulated catch per trip data compiled in calibration_catch_per_trip_part2.do and saved in simulated_catch_totals3.dta and formats the data for use in the rec dashboard. 
+This code cleans the simulated catch per trip data compiled in compare_calibration_data_to_MRIP.do and saved in simulated_catch_totals3.dta and formats the data for use in the rec dashboard. 
 
 
  Name: rdb_processing_catch_per_trip.do
