@@ -7,15 +7,15 @@ The processed data takes up alot of space, so whoever processes the data will ne
 assert inlist("$user", "LCH", "TP", "ML", "KB")
 
 if inlist("$user","LCH") {
-	global datadir "E:\Lou_projects\groundfishRDM\2027_mgt_cycle"
+	global gfdatadir "E:\Lou_projects\groundfishRDM\2027_mgt_cycle"
 } 
 else if inlist("$user","TP", "ML","KB"){
-	global datadir "${here}\Data"
+	global gfdatadir "${here}\Data"
 }
 
 
 
-display "Hello $user.  Use the global datadir in place of \${here}\Data)."
-display "The value of datadir is: $datadir"
+display "Hello $user.  Use the global gfdatadir in place of \${here}\Data\YYYY mgmt cycle)."
+display "The value of datadir is: $gfdatadir"
 
 
