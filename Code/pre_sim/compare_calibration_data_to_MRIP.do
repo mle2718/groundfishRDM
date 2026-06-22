@@ -94,6 +94,8 @@ drop missing*
 drop if strmatch(my_dom_id_string, "*XX*")==1
 drop if strmatch(my_dom_id_string, "*ZZ*")==1
 duplicates drop
+drop if strmatch(my_dom_id_string, "*XX*")==1
+drop if strmatch(my_dom_id_string, "*ZZ*")==1
 split my, parse(_)
 rename my_dom_id_string1 month
 destring month, replace
@@ -260,7 +262,7 @@ replace disp="catch" if disp=="cat"
 gen domain=species+"_"+disp
 replace domain="dtrip" if domain=="NA_dtrip"
 
-ds mode month disp species domain, not
+ds mode disp species domain area_s common_dom, not
 local var = r(varlist)
 foreach v of local var{
 	format `v' %14.0gc
@@ -417,7 +419,7 @@ replace disp="catch" if disp=="cat"
 gen domain=species+"_"+disp
 replace domain="dtrip" if domain=="NA_dtrip"
 
-ds mode disp species domain, not
+ds mode disp species domain area_s common_dom, not
 local var = r(varlist)
 foreach v of local var{
 	format `v' %14.0gc
@@ -577,7 +579,7 @@ replace disp="catch" if disp=="cat"
 gen domain=species+"_"+disp
 replace domain="dtrip" if domain=="NA_dtrip"
 
-ds mode season disp species domain, not
+ds mode disp species domain area_s common_dom season, not
 local var = r(varlist)
 foreach v of local var{
 	format `v' %14.0gc
