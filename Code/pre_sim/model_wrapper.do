@@ -23,10 +23,10 @@
 	*Windows, just mount \\net.nefsc.noaa.gov\mrfss to A:\
 
 * Dependencies
-*ssc install xsvmat 
-*ssc install gammafit 
-
-
+* ssc install xsvmat 
+* ssc install gammafit 
+* ssc install grc1leg
+set varabbrev on
 
 **Set globals **
 * these need to be changed every year 
@@ -72,17 +72,23 @@ do "${here}/Code/helpers/user_setup_stata.do"
 global input_code_cd "${here}/Code/pre_sim" 
 // these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
 global misc_data_cd "${gfdatadir}/miscellaneous" 
-global calib_catch_draws_cd "${gfdatadir}/miscellaneous/calib_catch_draws" 
-*global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
+global calib_catch_draws_cd "${gfdatadir}/calib_catch_draws" 
 global figure_cd  "${gfdatadir}/figures" 
+
+
+/* make directories if necessary */
+capture mkdir $misc_data_cd
+capture mkdir $calib_catch_draws_cd
+capture mkdir $figure_cd
+
 
 * set a global seed #
 global seed 03211990
 
 * years/waves of MRIP data. 
 global yr_wvs 20231 20232 20233 20234 20235 20236  ///
-					 20241 20242 20243 20244 20245 20246  ///
-					 20251 20252 20253 20254 20255 20256
+			  20241 20242 20243 20244 20245 20246  ///
+			  20251 20252 20253 20254 20255 20256
 					 
 global yearlist 2023 2024 2025
 global wavelist 1 2 3 4 5 6
