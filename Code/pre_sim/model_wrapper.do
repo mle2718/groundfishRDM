@@ -1,9 +1,8 @@
+/**** Groundfish RDM input code wrapper ****/
+
+
 /* This uses the user written command here to set directories*/
 /* It is not as good as R's version. Before running this code, you must change directories into project directory */
-
-
-
-/**** Groundfish RDM input code wrapper ****/
 
 **Data availability**
 
@@ -26,6 +25,8 @@
 * ssc install xsvmat 
 * ssc install gammafit 
 * ssc install grc1leg
+* ssc install rscript
+
 set varabbrev on
 
 **Set globals **
@@ -121,11 +122,11 @@ loc estimate_dtrips = 1				// Estimate Directed Trips
 loc costs_per_trip = 0  			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
-loc copula_in_R = 0					// Copula model in R
+loc copula_in_R = 1					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
 loc prep_cpt_for_dashboard= 1		// prep data for dashboard
-loc Rpush_to_gdrive =0 				// Push to google drive in R
+loc Rpush_to_gdrive =1 				// Push to google drive in R
 loc angler_demogs	=1				// add additonal angler demographics
 loc generate_baseline=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1			// Generate projection-year catch-at-length
@@ -182,7 +183,8 @@ if `catch_per_trip1' {
 }
 		//b) use copula model (in R) to simulate harvest and discards per-trip
 if `copula_in_R' {
-		* run copula_modeling_calibration.R
+	 /* this takes a while and will look like it's hung. it's not */
+		rscript using "$input_code_cd\copula_modeling_calibration.R"
 }		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 if `catch_per_trip2' {
@@ -199,7 +201,7 @@ if `prep_cpt_for_dashboard'{
 }
 		//run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
 if `Rpush_to_gdrive'{
-		 run rdb_catch_per_trip_to_drive.R
+		rscript using "$input_code_cd\rdb_catch_per_trip_to_drive.R"
 }
 // 8) add additonal angler demographics based on results of utilty model
 if `angler_demogs'{
