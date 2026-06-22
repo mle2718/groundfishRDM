@@ -107,8 +107,7 @@ foreach s of local filestubs {
     local myfile : subinstr local myfile `"""' "", all // remove embedded quotes
     local fullpath `"`google_folder'/`myfile'"' // build full path
     di as text "Loading: `fullpath'" 
-    use `"`fullpath'"', clear
-    save `"$misc_data_cd/`s'.dta"', replace // save standardized filename
+	cp "`fullpath'" `"$misc_data_cd/`s'.dta"' //copy files from google drive to misc_data_cd
 }
 
 * set the baseline year and projection year numbers-at-age globals 
