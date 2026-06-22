@@ -23,9 +23,9 @@
 	*Windows, just mount \\net.nefsc.noaa.gov\mrfss to A:\
 
 * Dependencies
-*ssc install xsvmat 
-*ssc install gammafit 
-
+* ssc install xsvmat 
+* ssc install gammafit 
+* ssc install grc1leg
 set varabbrev on
 
 **Set globals **
