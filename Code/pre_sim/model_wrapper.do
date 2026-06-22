@@ -107,55 +107,107 @@ global hadd_NAA_proj_year 2026
 global trawl_survey_start_year 2022
 
 
+
+**********************************************************************
+************************ EXECUTION CONTROL ***************************
+**********************************************************************
+
+// Control which modules to run (set to 0 to skip)
+loc pull_assessment = 0		 		// Pull Assessment data
+loc processMRIP = 0		 			// deal with casing MRIP data
+loc assemblemriplists = 1		 	// deal with casing MRIP data
+
+loc estimate_dtrips = 1				// Estimate Directed Trips 
+loc costs_per_trip = 0  			// Create Distributions of costs per trip (run 1x)
+loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
+loc catch_per_trip1 = 1				// Part 1 of catch per trip
+loc copula_in_R = 0					// Copula model in R
+loc catch_per_trip2 = 1				// Part 2 of catch per trip
+loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
+loc prep_cpt_for_dashboard= 1		// prep data for dashboard
+loc Rpush_to_gdrive =0 				// Push to google drive in R
+loc angler_demogs	=1				// add additonal angler demographics
+loc generate_baseline=1				// Generate baseline-year catch-at-length
+loc catch_at_length_project=1			// Generate projection-year catch-at-length
+
+
+
+
 **************************************************Model calibration ************************************************** 
+
+// 0) Pull Assessment data from google.
+if `pull_assessment' {
+	do "$input_code_cd\get_assessment_from_gdrive.do"
+}
+
 // 1) Pull the MRIP data
-do "$input_code_cd\MRIP_data_wrapper.do"
+
+
+if `processMRIP' {
+	do "$input_code_cd\MRIP_column_cases.do"
+}
+
+if `assemblemriplists' {
+	do "$input_code_cd\MRIP_lists.do"
+}
+
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
-do "$input_code_cd\directed_trips_calibration.do"
-		*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
-		*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
+
+if `estimate_dtrips' {
+	*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
+	*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
+	do "$input_code_cd\directed_trips_calibration.do"
+}
+
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
-*do "$input_code_cd\survey_trip_costs.do"
-
+if `costs_per_trip' {
+	do "$input_code_cd\survey_trip_costs.do"
+}
 // 4) Create draw of angler preference parameters - only needs to be run once
-*do "$input_code_cd\estimate_angler_preferences.do" 
-
+if `draw_angler_preferences' {
+	do "$input_code_cd\estimate_angler_preferences.do" 
+}
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
-		do "$input_code_cd\calibration_catch_per_trip_part1.do"
-
+if `catch_per_trip1' {
+	do "$input_code_cd\calibration_catch_per_trip_part1.do"
+}
 		//b) use copula model (in R) to simulate harvest and discards per-trip
+if `copula_in_R' {
 		* run copula_modeling_calibration.R
-		
+}		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
+if `catch_per_trip2' {
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
-
+}
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
+if `compare_calibration_MRIP' {
+
 		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
-		
+}		
 // 7) Process catch-per-trip and format it for the rec dashboard
+if `prep_cpt_for_dashboard'{
 		do "$input_code_cd\rdb_processing_catch_per_trip.do"
-		
+}
 		//run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
-		* run rdb_catch_per_trip_to_drive.R
-
+if `Rpush_to_gdrive'{
+		 run rdb_catch_per_trip_to_drive.R
+}
 // 8) add additonal angler demographics based on results of utilty model
+if `angler_demogs'{
 		do "$input_code_cd\additional_angler_dems.do" 
-
+}
 // 9) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
+if `generate_baseline'{
 		do "$input_code_cd\catch_at_length_calibration.do"
-		
+}
 // 10) Generate projection-year catch-at-length, incorporating the stock assessment data
+if `catch_at_length_project'{
 		do "$input_code_cd\catch_at_length_projection.do"
-
+}
 // The calibration and projection routines can now be run in R. 		
-
-
-		
-
-
 
 
 
