@@ -106,7 +106,8 @@ save `base', replace
     *-----------------------------------------
     * 2) Loop draws
     *-----------------------------------------
-forvalues i=1/$ndraws {
+quietly forvalues i=1/$ndraws {
+	 noisily disp "Draw `i' started"
 		*local i 16
         use `base', clear
         keep if draw==`i'
@@ -385,6 +386,7 @@ forvalues i=1/$ndraws {
 		compress
 	
 		save "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", replace
+  	    noisily disp "Draw `i' finished"
 		
 }		
 
