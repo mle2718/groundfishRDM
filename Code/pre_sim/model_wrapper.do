@@ -72,7 +72,7 @@ do "${here}/Code/helpers/user_setup_stata.do"
 global input_code_cd "${here}/Code/pre_sim" 
 // these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
 global misc_data_cd "${gfdatadir}/miscellaneous" 
-global calib_catch_draws_cd "${gfdatadir}/miscellaneous/calib_catch_draws" 
+global calib_catch_draws_cd "${gfdatadir}/calib_catch_draws" 
 global figure_cd  "${gfdatadir}/figures" 
 
 
