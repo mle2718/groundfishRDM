@@ -1,3 +1,6 @@
+/* This uses the user written command here to set directories*/
+/* It is not as good as R's version. Before running this code, you must change directories into project directory */
+
 
 
 /**** Groundfish RDM input code wrapper ****/
@@ -20,10 +23,10 @@
 	*Windows, just mount \\net.nefsc.noaa.gov\mrfss to A:\
 
 * Dependencies
-*ssc install xsvmat 
-*ssc install gammafit 
-
-
+* ssc install xsvmat 
+* ssc install gammafit 
+* ssc install grc1leg
+set varabbrev on
 
 **Set globals **
 * these need to be changed every year 
@@ -59,19 +62,33 @@ global ndraws 100
 * source =https://www.bls.gov/data/inflation_calculator.htm
 global inflation_expansion=1.13
 
+
+/* find the root of the project */
+here, nogit
+
+do "${here}/Code/helpers/user_setup_stata.do"
+
 * adjust project paths based on user
-global input_code_cd "C:\Users\andrew.carr-harris\Desktop\Git\groundfishRDM\Code\pre_sim"
-global misc_data_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\miscellaneous" /* Lou's local data path */
-global calib_catch_draws_cd "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\calib_catch_draws"
-global figure_cd  "E:\Lou_projects\groundfishRDM\2027_mgt_cycle\figures"
+global input_code_cd "${here}/Code/pre_sim" 
+// these two folders in here: https://drive.google.com/drive/folders/1Bz2AL9_JB3drKq9jaggt57oTMm42oHSd?usp=drive_link
+global misc_data_cd "${gfdatadir}/miscellaneous" 
+global calib_catch_draws_cd "${gfdatadir}/calib_catch_draws" 
+global figure_cd  "${gfdatadir}/figures" 
+
+
+/* make directories if necessary */
+capture mkdir $misc_data_cd
+capture mkdir $calib_catch_draws_cd
+capture mkdir $figure_cd
+
 
 * set a global seed #
 global seed 03211990
 
 * years/waves of MRIP data. 
 global yr_wvs 20231 20232 20233 20234 20235 20236  ///
-					 20241 20242 20243 20244 20245 20246  ///
-					 20251 20252 20253 20254 20255 20256
+			  20241 20242 20243 20244 20245 20246  ///
+			  20251 20252 20253 20254 20255 20256
 					 
 global yearlist 2023 2024 2025
 global wavelist 1 2 3 4 5 6
@@ -90,8 +107,7 @@ foreach s of local filestubs {
     local myfile : subinstr local myfile `"""' "", all // remove embedded quotes
     local fullpath `"`google_folder'/`myfile'"' // build full path
     di as text "Loading: `fullpath'" 
-    use `"`fullpath'"', clear
-    save `"$misc_data_cd/`s'.dta"', replace // save standardized filename
+	cp "`fullpath'" `"$misc_data_cd/`s'.dta"' //copy files from google drive to misc_data_cd
 }
 
 * set the baseline year and projection year numbers-at-age globals 
@@ -120,8 +136,8 @@ do "$input_code_cd\directed_trips_calibration.do"
 // 3) Create distributions of costs per trip across strata - only needs to be run once
 *do "$input_code_cd\survey_trip_costs.do"
 
-// 4) Create draw of angler preference parameters 
-*do "$input_code_cd\estimate_angler_preferences.do" - only needs to be run once
+// 4) Create draw of angler preference parameters - only needs to be run once
+*do "$input_code_cd\estimate_angler_preferences.do" 
 
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
@@ -135,14 +151,20 @@ do "$input_code_cd\directed_trips_calibration.do"
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
 		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
+		
+// 7) Process catch-per-trip and format it for the rec dashboard
+		do "$input_code_cd\rdb_processing_catch_per_trip.do"
+		
+		//run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
+		* run rdb_catch_per_trip_to_drive.R
 
-// 7) add additonal angler demographics based on results of utilty model
+// 8) add additonal angler demographics based on results of utilty model
 		do "$input_code_cd\additional_angler_dems.do" 
 
-// 8) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
+// 9) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
 		do "$input_code_cd\catch_at_length_calibration.do"
 		
-// 9) Generate projection-year catch-at-length, incorporating the stock assessment data
+// 10) Generate projection-year catch-at-length, incorporating the stock assessment data
 		do "$input_code_cd\catch_at_length_projection.do"
 
 // The calibration and projection routines can now be run in R. 		
