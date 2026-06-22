@@ -132,6 +132,12 @@ loc catch_at_length_project=1			// Generate projection-year catch-at-length
 
 
 
+// Prototyping
+local proto = 1
+
+if `proto' {
+	global ndraws 3
+}
 
 **************************************************Model calibration ************************************************** 
 
