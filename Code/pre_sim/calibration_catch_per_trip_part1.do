@@ -109,7 +109,7 @@ merge m:1 intsite state using `mrip_sites',  keep(1 3) nogen
 
 /*classify into WGOM or not WGOM */
 gen str3 area_s="XX"
-replace area_s="WGOM" if st2=="33"
+replace area_s="WGOM" if st2=="33" /*classify all NH sites as WGOM */
 replace area_s=nmfs_stock_area if inlist(st2, "25", "23") 
 
 tostring wave, gen(wv2)
@@ -374,6 +374,8 @@ gen hadd_no_catch=1 if meanhadd_rel==0 & meanhadd_keep==0
 mvencode cod_only_keep cod_only_rel cod_keep_and_rel cod_no_catch hadd_only_keep hadd_only_rel hadd_keep_and_rel hadd_no_catch, mv(0) override
 
 merge 1:m my_dom_id_string using `basefile'
+*drop non-WGOM and non-dom catch
+drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1
 
 drop if strmatch(my_dom_id_string, "*XX*")==1 | strmatch(my_dom_id_string, "*ZZ*")==1 
 
@@ -449,6 +451,9 @@ replace hadd_no_catch=1 if meancod_rel==0 & meancod_keep==0
 
 export excel "$misc_data_cd\baseline_mrip_catch_processed.xlsx", firstrow(variables) replace
 import excel using "$misc_data_cd\baseline_mrip_catch_processed.xlsx", clear first
+
+//saving as dta for further processing
+save "$misc_data_cd\baseline_mrip_catch_processed.dta", replace 
 
 
 ************** Part B  **************
