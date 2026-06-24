@@ -10,10 +10,12 @@ local filestubs  "GOM_Haddock_historical_NAA GOM_Haddock_projected_NAA WGOM_Cod_
 foreach s of local filestubs {
     clear
     local files : dir "`google_folder'" files "`s'_*.dta" // find matching file
-    local myfile : word -1 of `files' // grab last match
-    local myfile : subinstr local myfile `"""' "", all // remove embedded quotes
+    local last: word count `files'
+	local myfile : word `last' of `files' // grab last match
+    di "`myfile'"
+	local myfile : subinstr local myfile `"""' "", all // remove embedded quotes
     local fullpath `"`google_folder'/`myfile'"' // build full path
     di as text "Loading: `fullpath'" 
-	cp "`fullpath'" `"$misc_data_cd/`s'.dta"' //copy files from google drive to misc_data_cd
+	copy "`fullpath'" `"$misc_data_cd/`s'.dta"' , replace //copy files from google drive to misc_data_cd
 }
 
