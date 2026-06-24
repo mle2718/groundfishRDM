@@ -148,10 +148,14 @@ if `proto' {
 **************************************************Model calibration ************************************************** 
 
 // 0) Pull Assessment data from google.
+
+/* This code requires you to mount your google drive to D on your computer */
 if `pull_assessment' {
 	di "Pulling Assessment data from google"
 	do "$input_code_cd\get_assessment_from_gdrive.do"
 }
+
+
 
 // 1) Pull the MRIP data
 
