@@ -119,22 +119,22 @@ global trawl_survey_start_year 2022
 **********************************************************************
 
 // Control which modules to run (set to 0 to skip)
-loc pull_assessment = 0		 		// Pull Assessment data
-loc processMRIP = 0		 			// deal with casing MRIP data
+loc pull_assessment = 1		 		// Pull Assessment data
+loc processMRIP = 1		 			// deal with casing MRIP data
 loc assemblemriplists = 1		 	// deal with casing MRIP data
 
 loc estimate_dtrips = 1				// Estimate Directed Trips 
-loc costs_per_trip = 0  			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
-loc catch_per_trip1 = 0				// Part 1 of catch per trip
-loc copula_in_R = 0					// Copula model in R
-loc catch_per_trip2 = 0				// Part 2 of catch per trip
-loc compare_calibration_MRIP = 0	// compare calibration output to MRIP
-loc prep_cpt_for_dashboard= 0		// prep data for dashboard
-loc Rpush_to_gdrive =0 				// Push to google drive in R
-loc angler_demogs	=0				// add additonal angler demographics
-loc generate_baseline=0				// Generate baseline-year catch-at-length
-loc catch_at_length_project=0			// Generate projection-year catch-at-length
+loc costs_per_trip = 1  			// Create Distributions of costs per trip (run 1x)
+loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
+loc catch_per_trip1 = 1				// Part 1 of catch per trip
+loc copula_in_R = 1					// Copula model in R
+loc catch_per_trip2 = 1				// Part 2 of catch per trip
+loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
+loc prep_cpt_for_dashboard= 1		// prep data for dashboard
+loc Rpush_to_gdrive =1 				// Push to google drive in R
+loc angler_demogs	=1				// add additonal angler demographics
+loc generate_baseline=1				// Generate baseline-year catch-at-length
+loc catch_at_length_project=1			// Generate projection-year catch-at-length
 
 
 
