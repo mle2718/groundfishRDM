@@ -1,18 +1,15 @@
-
-cd $misc_data_cd
-
 /*catchlist -- this assembles names of files that are needed in the catchlist */
 /*Check to see if the file exists */	/* If the file exists, add the filename to the list if there are observations */
 global catchlist
 foreach year in $yearlist{
 	foreach wave in $wavelist{
-	capture confirm file "catch_`year'`wave'.dta"
+	capture confirm file "$misc_data_cd/catch_`year'`wave'.dta"
 	if _rc==0{
-		use "catch_`year'`wave'.dta", clear
+		use "$misc_data_cd/catch_`year'`wave'.dta", clear
 		quietly count
 		scalar tt=r(N)
 		if scalar(tt)>0{
-			global catchlist "$catchlist "catch_`year'`wave'.dta " " 
+			global catchlist "$catchlist "$misc_data_cd/catch_`year'`wave'.dta" " 
 		}
 		else{
 		}
@@ -28,13 +25,13 @@ foreach year in $yearlist{
 global triplist
 foreach year in $yearlist{
 	foreach wave in  $wavelist{
-	capture confirm file "trip_`year'`wave'.dta"
+	capture confirm file "$misc_data_cd/trip_`year'`wave'.dta"
 	if _rc==0{
-		use "trip_`year'`wave'.dta", clear
+		use "$misc_data_cd/trip_`year'`wave'.dta", clear
 		quietly count
 		scalar tt=r(N)
 		if scalar(tt)>0{
-			global triplist "$triplist "trip_`year'`wave'.dta " " 
+			global triplist "$triplist "$misc_data_cd/trip_`year'`wave'.dta" " 
 		}
 		else{
 		}
@@ -49,13 +46,13 @@ foreach year in $yearlist{
 global b2list
 foreach year in $yearlist{
 	foreach wave in $wavelist{
-	capture confirm file "size_b2_`year'`wave'.dta"
+	capture confirm file "$misc_data_cd/size_b2_`year'`wave'.dta"
 	if _rc==0{
-		use "size_b2_`year'`wave'.dta", clear
+		use "$misc_data_cd/size_b2_`year'`wave'.dta", clear
 		quietly count
 		scalar tt=r(N)
 		if scalar(tt)>0{
-			global b2list "$b2list "size_b2_`year'`wave'.dta " " 
+			global b2list "$b2list "$misc_data_cd/size_b2_`year'`wave'.dta " " 
 		}
 		else{
 		}
@@ -71,13 +68,13 @@ foreach year in $yearlist{
 global sizelist
 foreach year in $yearlist{
 	foreach wave in $wavelist{
-	capture confirm file "size_`year'`wave'.dta"
+	capture confirm file "$misc_data_cd/size_`year'`wave'.dta"
 	if _rc==0{
-	use "size_`year'`wave'.dta", clear
+	use "$misc_data_cd/size_`year'`wave'.dta", clear
 	quietly count
 	scalar tt=r(N)
 	if scalar(tt)>0{
-		global sizelist "$sizelist "size_`year'`wave'.dta " " 
+		global sizelist "$sizelist "$misc_data_cd/size_`year'`wave'.dta" " 
 		}
 		else{
 		}
@@ -87,6 +84,3 @@ foreach year in $yearlist{
 	
 }
 }
-
-/* better to not use the cd at the top, but this is a little patch */
-cd $here
