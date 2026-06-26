@@ -2,7 +2,6 @@
 
 
 /* This uses the user written command here to set directories*/
-/* It is not as good as R's version. Before running this code, you must change directories into project directory */
 
 **Data availability**
 
@@ -64,7 +63,10 @@ global ndraws 100
 global inflation_expansion=1.13
 
 
-/* find the root of the project */
+
+/* find the root of the project 
+prior to running the wrapper, you must change to $groundfishRDMdir so here picks up the project
+*/
 here, nogit
 
 do "${here}/Code/helpers/user_setup_stata.do"
