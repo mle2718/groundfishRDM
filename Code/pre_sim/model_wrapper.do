@@ -191,7 +191,6 @@ if `estimate_dtrips' {
 	di "Estimating Directed trips"
 	*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year. 
 	*THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
-	cd $here
 
 	do "$input_code_cd\directed_trips_calibration.do"
 	di "Directed trips Estimated"
@@ -202,7 +201,6 @@ if `estimate_dtrips' {
 // 3) Create distributions of costs per trip across strata - only needs to be run once
 if `costs_per_trip' {
 	di "Creating distributions of cost per trip"
-	cd $here
 
 	do "$input_code_cd\survey_trip_costs.do"
 	di "distributions of cost per trip Done"
@@ -211,7 +209,6 @@ if `costs_per_trip' {
 // 4) Create draw of angler preference parameters - only needs to be run once
 if `draw_angler_preferences' {
 	di "Creating draws of angler preference parameters"
-	cd $here
 	do "$input_code_cd\estimate_angler_preferences.do" 
 	di "Draws of angler preference parameters Done"
 
@@ -220,7 +217,6 @@ if `draw_angler_preferences' {
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
 if `catch_per_trip1' {
 	di "Estimate catch-per-trip at the month and mode level"
-	cd $here
 
 	do "$input_code_cd\calibration_catch_per_trip_part1.do"
 	di "catch-per-trip at the month and mode level Done"
@@ -230,7 +226,6 @@ if `catch_per_trip1' {
 if `copula_in_R' {
 	 /* this takes a while and will look like it's hung. it's not */
     	di "Estimating copula in R. This takes a while and will look like it's hung"
-	cd $here
 
 		rscript using "$input_code_cd\copula_modeling_calibration.R"
     	di "Copula in R estimated"
@@ -239,7 +234,6 @@ if `copula_in_R' {
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 if `catch_per_trip2' {
     	di "Generating estimates of simulated total harvest based on random draws"
-	cd $here
 
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
     	di "Estimates of simulated total harvest Done"
@@ -257,7 +251,6 @@ if `compare_calibration_MRIP' {
 // 7) Process catch-per-trip and format it for the rec dashboard
 if `prep_cpt_for_dashboard'{
     	di "Processing and formatting catch-per-trip for dashboard"
-	cd $here
 
 		do "$input_code_cd\rdb_processing_catch_per_trip.do"
     	di "Processing and formatting catch-per-trip for dashboard done"
@@ -266,7 +259,6 @@ if `prep_cpt_for_dashboard'{
 		//run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
 if `Rpush_to_gdrive'{
     	di "Pushing rec dashboard data to gdrive using R" 
-	cd $here
 
 		rscript using "$input_code_cd\rdb_catch_per_trip_to_drive.R"
 	    di "Rec dashboard data pushed to gdrive " 
@@ -275,7 +267,6 @@ if `Rpush_to_gdrive'{
 // 8) add additonal angler demographics based on results of utilty model
 if `angler_demogs'{
     	di "Adding additional angler demographics" 
-	cd $here
 
 		do "$input_code_cd\additional_angler_dems.do" 
     	di "Additional angler demographics done" 
@@ -284,7 +275,6 @@ if `angler_demogs'{
 // 9) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
 if `generate_baseline'{
     	di "Generating baseline catch-at-length" 
-	cd $here
 
 		do "$input_code_cd\catch_at_length_calibration.do"
     	di "Baseline catch-at-length generated " 
@@ -293,7 +283,6 @@ if `generate_baseline'{
 // 10) Generate projection-year catch-at-length, incorporating the stock assessment data
 if `catch_at_length_project'{
 		di "Generating projection year catch-at-length" 
-	cd $here
 
 		do "$input_code_cd\catch_at_length_projection.do"
     	di "Projection year catch-at-length generated " 
