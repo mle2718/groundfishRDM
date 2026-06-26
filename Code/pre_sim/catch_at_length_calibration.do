@@ -8,8 +8,6 @@ set seed $seed
 * MRIP discard lengths  
 **************************
 
-cd $misc_data_cd
-
 clear
 
 mata: mata clear

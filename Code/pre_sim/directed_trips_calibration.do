@@ -10,7 +10,6 @@
 		
 set seed $seed 
 
-cd $misc_data_cd
 
 clear
 global fluke_effort
@@ -474,7 +473,6 @@ export delimited using "$misc_data_cd\next_year_calendar_adjustments.csv",  repl
 ****Part C****
 *Compute totals estimates to compare with simulated calibration output
 * estimates by mode
-cd $input_data_cd
 
 clear
 global fluke_effort
@@ -643,7 +641,6 @@ save "$misc_data_cd\mrip_dtrip_by_mode.dta", replace
 
 
 * estimates by mode and month 
-cd $misc_data_cd
 
 clear
 global fluke_effort
@@ -812,7 +809,6 @@ save "$misc_data_cd\mrip_dtrip_by_mode_month.dta", replace
 
 
 * estimates by mode and summer/winter season
-cd $misc_data_cd
 
 clear
 global fluke_effort
