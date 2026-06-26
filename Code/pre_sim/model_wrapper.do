@@ -160,7 +160,6 @@ if `proto' {
 /* This code requires you to mount your google drive to D on your computer */
 if `pull_assessment' {
 	di "Pulling Assessment data from google"
-	cd $here
 
 	do "$input_code_cd\get_assessment_from_gdrive.do"
 }
@@ -172,7 +171,6 @@ if `pull_assessment' {
 
 if `processMRIP' {
 	di "Processing MRIP data"
-	cd $here
 
 	do "$input_code_cd\MRIP_column_cases.do"
 	di "MRIP data processed"
@@ -180,7 +178,6 @@ if `processMRIP' {
 
 if `assemblemriplists' {
 	di "Assembling Lists of MRIP files"
-	cd $here
 
 	do "$input_code_cd\MRIP_lists.do"
 	di "Lists of MRIP files assembled"
