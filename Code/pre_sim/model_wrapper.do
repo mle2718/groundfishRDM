@@ -2,6 +2,12 @@
 
 
 /* This uses the user written command here to set directories*/
+/* It is not as good as R's version. Before running this code, you must change directories into project directory 
+One easy way to do this is to add a line to your profile do that store that directory in the 
+global groundfishRDMdir "path to this project"
+and then cd "$groundfishRDMdir" right before running this code
+
+*/
 
 **Data availability**
 
