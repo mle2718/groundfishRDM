@@ -132,3 +132,93 @@ upload_folder_to_drive(
   pattern = "\\.fst$",
   if_exists = "overwrite"
 )
+
+
+
+
+# Identify expected and actual files on Google Drive, print files that are missing to manually upload
+library(googledrive)
+library(data.table)
+
+# Expected draw IDs
+draws <- 1:101
+modes <- c("pr", "fh")
+seasons <- c("summer", "winter")
+
+# Expected file names
+expected_calib <- data.table(
+  folder = "calib_catch_draws",
+  file_name = paste0("calib_catch_draws_", draws, ".fst")
+)
+
+expected_base <- CJ(
+  season = seasons,
+  mode = modes,
+  draw = draws
+)[
+  ,
+  .(
+    folder = "base_outcomes",
+    file_name = paste0("base_outcomes_", season, "_", mode, "_", draw, ".fst")
+  )
+]
+
+expected_choice <- CJ(
+  season = seasons,
+  mode = modes,
+  draw = draws
+)[
+  ,
+  .(
+    folder = "n_choice_occassions",
+    file_name = paste0("n_choice_occasions_", season, "_", mode, "_", draw, ".fst")
+  )
+]
+
+expected_files <- rbindlist(
+  list(expected_calib, expected_base, expected_choice),
+  fill = TRUE
+)
+
+# Get actual files currently on Google Drive
+get_drive_file_names <- function(drive_folder_id, folder_label) {
+  x <- googledrive::drive_ls(
+    path = googledrive::as_id(drive_folder_id)
+  )
+
+  data.table(
+    folder = folder_label,
+    file_name = x$name,
+    drive_id = x$id
+  )
+}
+
+actual_files <- rbindlist(list(
+  get_drive_file_names(calib_catch_draws_path, "calib_catch_draws"),
+  get_drive_file_names(base_outcomes_path, "base_outcomes"),
+  get_drive_file_names(n_choice_occasions_path, "n_choice_occassions")
+))
+
+# Identify missing files
+missing_files <- expected_files[
+  !actual_files,
+  on = c("folder", "file_name")
+]
+
+# Print summary
+cat("\nExpected files by folder:\n")
+print(expected_files[, .N, by = folder])
+
+cat("\nActual files found on Google Drive by folder:\n")
+print(actual_files[, .N, by = folder])
+
+cat("\nMissing files by folder:\n")
+print(missing_files[, .N, by = folder])
+
+# Print missing file names
+if (nrow(missing_files) == 0) {
+  cat("\nNo missing files detected.\n")
+} else {
+  cat("\nMissing files:\n")
+  print(missing_files[order(folder, file_name)])
+}

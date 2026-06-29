@@ -62,7 +62,7 @@ global fed_holidays_y2 "inlist(day1, td(25may2026), td(19jun2026), td(03jul2026)
 global leap_yr_days "td(29feb2024)" 
 
 * set number of model iterations to create
-global ndraws 100
+global ndraws 101
 
 * adjust 2022 survey trip costs to account for inflation (January 2022 - January 2025)
 * source =https://www.bls.gov/data/inflation_calculator.htm
@@ -90,6 +90,9 @@ capture mkdir $misc_data_cd
 capture mkdir $calib_catch_draws_cd
 capture mkdir $figure_cd
 capture mkdir $log_dir
+
+timer clear 1        // Resets timer #1
+timer on 1           // Starts timing
 
 /* start log */
 cap log close
@@ -143,11 +146,12 @@ loc Rpush_to_gdrive =1 				// Push to google drive in R
 loc angler_demogs	=1				// add additonal angler demographics
 loc generate_baseline=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1			// Generate projection-year catch-at-length
+loc run_calibration=1						// Run calibration routine in R
 
 
 
 // Prototyping
-local proto = 1
+local proto = 0
 
 if `proto' {
 	global ndraws 3
@@ -303,5 +307,19 @@ if `catch_at_length_project'{
 
 		}
 di "The calibration and projection routines can now be run in R " 
+// 11) Run the calibration routine in R, export files to Google Drive
+if `run_calibration'{
+		di "Running calibration routine in R" 
+	cd $here
+
+		rscript using "$here\Code\sim\R code wrapper.R" 
+    	di "Simulation model calibrated and files exported to Google Drive" 
+
+		}
+
 
 log close
+
+
+timer off 1          // Stops timing
+timer list 1         // Displays elapsed time in seconds
