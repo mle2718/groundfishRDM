@@ -76,6 +76,8 @@ stock_stats_df<-tibble(
   source = "2024 Assessment",
   data_version= data_version
 )
+# Save 3 years years of historical NAA
+yearinwindow<-3
 
 
 #names of output save files
@@ -432,11 +434,9 @@ historical_NAA <- historical_NAA %>%
 # add in stock statistics
 historical_NAA<-historical_NAA %>%
   arrange(-year) %>%
-  slice_head(n=5)%>%
+  slice_head(n=yearinwindow)%>%
   cross_join(stock_stats_df)%>%
   mutate(metric="Historical Mean Numbers of Age")
-
-
 
 historical_NAA_long<-pivot_naa_long(historical_NAA)
 
