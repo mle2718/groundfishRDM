@@ -19,9 +19,8 @@ This code cleans the simulated catch per trip data compiled in compare_calibrati
   
 */
 
-cd $misc_data_cd
 
-u simulated_catch_totals3.dta, clear
+u "$misc_data_cd\simulated_catch_totals3.dta", clear
 
 *keep only necessary columns
 keep mode month dtrip cod_cat_sim hadd_cat_sim

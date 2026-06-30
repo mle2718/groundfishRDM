@@ -94,6 +94,8 @@ stock_stats_df<-tibble(
   data_version= data_version
 )
 
+# Save 3 years years of historical NAA
+yearinwindow<-3
 
 #names of output save files
 assessment_file_in<-"mod_base_2023_noBLLS.rds"
@@ -114,10 +116,6 @@ folder_info <- drive_get(
   shared_drive = "NMFS NEC READ SSB"
 )
 groundfish_processed_path<-folder_info$id
-
-# input save files
-assessment_file_in<-"mod_base_2023_noBLLS.rds"
-ASAP_file_in<-"WGOM_COD_ASAP_2023_SEL3_2023.DAT"
 
 #read in the assessment file
 readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
@@ -421,7 +419,7 @@ historical_NAA <- historical_NAA %>%
 # add in stock statistics
 historical_NAA<-historical_NAA %>%
   arrange(-year) %>%
-  slice_head(n=5)%>%
+  slice_head(n=yearinwindow)%>%
   cross_join(stock_stats_df)%>%
   mutate(metric="Historical Mean Numbers of Age")
 

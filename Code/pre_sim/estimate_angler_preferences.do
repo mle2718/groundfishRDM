@@ -5,21 +5,42 @@ set seed 03211990
 u "$misc_data_cd\CE_survey_data.dta", clear 
 
 *test specification - linear in preferences	
+/*
 gen cod_hadd_kpt=codkpt*hadkpt
 mixlogit choice cost ///
 				nofish_age nofish_male nofish_total_days12 nofish_likely_to_fish nofish_fish_pref_more nofish_inc_med nofish_inc_high ///
 				nofish_educ_coll nofish_educ_grad nofish_own_boat if no_choice!=1, ///
 				group(gid) id(qtid) rand(codkpt codrel hadkpt hadrel cod_hadd_kpt nofish) nrep(250)			
-		
+*/		
 				
 				
 *Final specification used for 2026 mgt. cycle
+/*
 mixlogit choice cost ///
 				nofish_age nofish_male nofish_total_days12 nofish_likely_to_fish nofish_fish_pref_more nofish_inc_med nofish_inc_high ///
 				nofish_educ_coll nofish_educ_grad nofish_own_boat if no_choice!=1, ///
 				group(gid) id(qtid) rand(sqrt_codkpt sqrt_codrel sqrt_hadkpt sqrt_hadrel sqrt_cod_hadd_kpt nofish) nrep(250)
-
+*/
 		
+*Preferred spec using cmxtmixlogit 
+global max_options ///
+    difficult intmethod(halton) intpoints(500) ///
+    technique(bhhh 15 nr 5) iterate(25) ///
+    nrtolerance(1e-3)
+	
+cmset qtid scenario alt
+eststo m0_gf: cmxtmixlogit choice cost /// 
+					 nofish_age nofish_male ///
+					 nofish_total_days12 ///
+					 nofish_likely_to_fish ///
+					 nofish_fish_pref_more ///
+					 nofish_inc_med nofish_inc_high ///
+					nofish_educ_coll ///
+					nofish_educ_grad ///
+					nofish_own_boat if no_choice!=1, ///
+					random(sqrt_codkpt sqrt_codrel sqrt_hadkpt sqrt_hadrel sqrt_cod_hadd_kpt nofish) noconstant $max_options
+					
+estimates save "$misc_data_cd\m0_gf.ster", replace 			
 
 global params
 forv x=1/$ndraws{
@@ -59,7 +80,7 @@ mat iid_err=J(`K',1,0)
 		gen beta_nofish_inc_high=0
 		gen beta_nofish_educ_coll=beta_draw[9,1]
 		gen beta_nofish_educ_grad=beta_draw[10,1]
-		gen beta_nofish_own_boat=beta_draw[11,1]
+		gen beta_nofish_own_boat=0
 		gen beta_cod_keep=rnormal(beta_draw[12,1], abs(beta_draw[18,1]))
 		gen beta_cod_rel=rnormal(beta_draw[13,1], 0)
 		gen beta_hadd_keep=rnormal(beta_draw[14,1], abs(beta_draw[20,1]))

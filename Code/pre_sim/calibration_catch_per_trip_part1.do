@@ -20,7 +20,6 @@ set seed $seed
 
 * Pull in MRIP data
 
-cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -460,7 +459,6 @@ save "$misc_data_cd\baseline_mrip_catch_processed.dta", replace
 * Compute MRIP estimates for comparison with simulated estimates 
 
 * Estimates by mode
-cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -685,7 +683,6 @@ save "$misc_data_cd\mrip_catch_by_mode.dta", replace
 
 
 * Estimates by mode and month 
-cd $misc_data_cd
 
 clear
 mata: mata clear
@@ -906,7 +903,6 @@ save "$misc_data_cd\mrip_catch_by_mode_month.dta", replace
 
 
 * Estimates by mode and season 
-cd $misc_data_cd
 
 clear
 mata: mata clear

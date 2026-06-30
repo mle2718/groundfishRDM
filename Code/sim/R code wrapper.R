@@ -49,7 +49,7 @@ final_process_choice_occasions_cd=file.path(final_process_data_cd,"n_choice_occa
 final_process_misc_cd=file.path(final_process_data_cd,"miscellaneous")
 final_process_calib_catch_cd=file.path(final_process_data_cd,"calib_catch_draws")
 
-n_simulations<-5 # Number of model iterations
+n_simulations<-101 # Number of model iterations
 n_draws<-50 # Number of simulated trips per day
 
 # helpers
@@ -133,7 +133,7 @@ source(file.path(code_cd, "export_to_GoogleDrive.R"))
 # n_choice_occasions, calibration statistics,  population-adjusted catch-at-length distributions,
 # projection year calendar adjustments
 
-source(file.path(code_cd, "predict_rec_catch.R"))
+#source(file.path(code_cd, "predict_rec_catch.R"))
 
 
 
