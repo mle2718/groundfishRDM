@@ -9,7 +9,7 @@ library(googledrive)
 library(here)
 
 here::i_am("Code/pre_sim/rdb_catch_per_trip_to_drive.R")
-source(here("Code", "helpers", "user_setup.R"))
+source(here("Code", "helpers", "developer_setup.R"))
 
 output_folder<-file.path(gf.data.dir, "miscellaneous")
 
