@@ -26,6 +26,8 @@ collapse (median) n_fish, by(length season species)
 tostring length, gen(length1)
 gen metric = length1+" "+"cm"
 gen units="number of fish" 
+rename n_fish value
+
 
 // add columns for common, species_itis
 gen common = "atlanticcod" if species=="cod"
@@ -34,8 +36,27 @@ gen species_itis = 164712 if species=="cod"
 replace species_itis = 164744 if species=="hadd"
 drop species
 
+graph bar value if common=="atlanticcod", over(length) by(season) ytitle("number of fish")  scheme(stmono1) 
 
-*test 1
+graph bar value if common=="haddock", over(length) ytitle("number of fish")  scheme(stmono1) 
+
+
+//Update this 
+gen data_version="2026-06-29"
+
+gen wave=.
+gen state=.
+gen mode=.
+gen year=.
+gen month=.
+gen source="model intermediate"
+gen stock_abbrev="WGOM"
+gen fishery= "NE Groundfish"
+
+
+drop length length1
+
+order fishery common species_itis stock_abbrev state mode data_version year season wave month metric value units source
 
 
 
