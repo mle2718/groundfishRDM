@@ -313,6 +313,8 @@ sort  season species l_cm_bin
 * merge harvest lengths to discards lengths
 merge 1:1 l_cm_bin species season using `b2'
 
+save "$misc_data_cd\rdb_raw_cat_len.dta", replace // save raw discards and harvest at length for dashboard
+
 sort species  season l
 
 gen panel_var=species+"_"+season
