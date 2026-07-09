@@ -1,7 +1,7 @@
 *********** WGOM COD & HADDOCK CATCH AT LENGTH ***********
 
 /*
-This code pulls the median of the 101 draws of simulated mean catch at length for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM). 
+This code pulls the median of 101 draws of simulated catch at length for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM). We take the observed probabilities of catch at length and the smoothed catch at length probability distribution. We also take the raw observed numbers of fish discarded at length and harvested at length (unweighted for cod and weighted for haddock). 
 
 This code cleans the simulated catch at length data compiled in catch_at_length_calibration.do and saved in baseline_catch_at_length_observed.csv and formats the data for use in the rec dashboard. 
 
@@ -19,7 +19,134 @@ This code cleans the simulated catch at length data compiled in catch_at_length_
 */
 
 
+
+// changed everything to 0 in execution control in model wrapper other than assemblemriplists and generate_baseline
+
+//raw observed numbers of fish
+u "$misc_data_cd\rdb_raw_cat_len.dta", clear //  raw discards and harvest numbers at length for dashboard
+
+rename l_cm_bin length
+rename nfish_ab1 harvest 
+rename nfish_b2 discards
+
+replace season="summer" if season=="sum"
+replace season="winter" if season=="win"
+
+replace harvest = 0 if missing(harvest)
+replace discards = 0 if missing(discards)
+
+sort species season length
+
+twoway line harvest discards length if species=="cod" & season=="summer"
+twoway line harvest discards length if species=="cod" & season=="winter"
+
+twoway line harvest discards length if species=="hadd" & season=="summer"
+twoway line harvest discards length if species=="hadd" & season=="winter"
+
+//cant have discards and harvest numbers on same plot bc harvest is so high for some lengths
+
+
+
+//numbers of fish. this one is multiplied by total harvest and total discards
+u "$misc_data_cd\rdb_cat_len.dta", clear // file for processing catch at at length for dashboard
+
+gen tot_cat=ab1+b2
+rename l_cm_bin length
+rename n_ab1 harvest 
+rename n_b2 discards
+
+collapse (median) harvest discards tot_cat, by(season species length)
+tostring length, gen(length1)
+gen metric = length1+" "+"cm"
+gen units="number of fish"
+
+//opposite here, discards way higher than harvest
+twoway line harvest discards length if species=="cod" & season=="summer"
+twoway line harvest discards length if species=="cod" & season=="winter"
+
+//looks good for haddock
+twoway line harvest discards length if species=="hadd" & season=="summer"
+twoway line harvest discards length if species=="hadd" & season=="winter"
+
+
+
+
+
+//median observed probabilities
+u "$misc_data_cd\rdb_cat_len.dta", clear // file for processing catch at at length for dashboard
+
+// grab median proportions
+
+gen tot_cat=ab1+b2
+gen prop_cal=n_fish/tot_cat
+
+rename l_cm_bin length
+
+collapse (median) prop_cal prop_ab1 prop_b2, by(season species length)
+tostring length, gen(length1)
+gen metric = length1+" "+"cm"
+gen units="proportion of catch (observed)" 
+
+egen sum=sum(prop_cal), by(species season ) 
+
+twoway line prop_cal length if species=="cod" & season=="summer"
+
+twoway line prop_ab1 prop_b2 prop_cal length if species=="cod" & season=="summer"
+twoway line prop_ab1 prop_b2 prop_cal length if species=="cod" & season=="winter"
+twoway line prop_ab1 prop_b2 prop_cal length if species=="hadd" & season=="summer"
+twoway line prop_ab1 prop_b2 prop_cal length if species=="hadd" & season=="winter"
+
+
+rename prop_ab1 harvest
+rename prop_b2 discards
+
+//it's bad for cod summer bc over 80% of harvest is one length
+twoway line harvest discards length if species=="cod" & season=="summer"
+twoway line harvest discards length if species=="cod" & season=="winter"
+
+twoway line harvest discards length if species=="hadd" & season=="summer"
+twoway line harvest discards length if species=="hadd" & season=="winter"
+
+
+
+// this is the same numbers as above but trims the ends of the length distribution with 0's
 import delimited "$misc_data_cd\baseline_catch_at_length_observed.csv", clear
+collapse (median) observed_prob, by(season species length)
+tostring length, gen(length1)
+gen metric = length1+" "+"cm"
+gen units="proportion of catch (observed)" 
+
+egen sum=sum(observed_prob), by(species season ) 
+
+twoway line observed_prob length if species=="cod" & season=="summer"
+
+
+
+
+//getting the fitted prob
+import delimited "$misc_data_cd\baseline_catch_at_length.csv", clear
+
+collapse (median) observed_prob fitted_prob, by(season species length)
+tostring length, gen(length1)
+gen metric = length1+" "+"cm"
+gen units="proportion of catch (observed)" 
+
+egen sum=sum(observed_prob), by(species season ) 
+egen sum1=sum(fitted_prob), by(species season ) 
+
+twoway line observed_prob length if species=="cod" & season=="summer"
+
+twoway line fitted_prob length if species=="cod" & season=="summer"
+twoway line fitted_prob length if species=="hadd" & season=="summer"
+
+
+
+
+
+
+
+//stuff from thurs
+//import delimited "$misc_data_cd\baseline_catch_at_length_observed.csv", clear
 
 
 collapse (median) n_fish, by(length season species)
