@@ -51,6 +51,18 @@ x <- mrip_microdata(
 # all lower case
 x <- map(x, ~ rename_with(.x, tolower))
 
+# destring
+destring_col <- function(col) {
+  if (!is.character(col)) return(col)
+  converted <- suppressWarnings(as.numeric(col))
+  new_nas <- is.na(converted) & !is.na(col)
+  if (any(new_nas)) col else converted
+}
+
+x <- map(x, ~ mutate(.x, across(where(is.character), destring_col)))
+
+
+
 # append the date ran to the object
 
 x$DateRan<-Sys.Date()
