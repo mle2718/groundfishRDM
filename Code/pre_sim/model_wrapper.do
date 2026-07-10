@@ -106,8 +106,10 @@ global seed 03211990
 global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 			  20241 20242 20243 20244 20245 20246  ///
 			  20251 20252 20253 20254 20255 20256
-					 
-global yearlist 2023 2024 2025
+global first_mrip_year 2023
+global last_mrip_year 2025
+numlist "$first_mrip_year/$last_mrip_year"
+global yearlist  `r(numlist)'
 global wavelist 1 2 3 4 5 6
 
 * set the baseline year and projection year numbers-at-age globals 
@@ -135,6 +137,7 @@ loc processMRIP = 1		 			// deal with casing MRIP data
 loc assemblemriplists = 1		 	// deal with casing MRIP data
 
 loc estimate_dtrips = 1				// Estimate Directed Trips 
+loc pull_MRIP = 1		 		// Pull MRIP data
 loc costs_per_trip = 1  			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
@@ -168,9 +171,17 @@ if `pull_assessment' {
 	do "$input_code_cd\get_assessment_from_gdrive.do"
 }
 
+// 0) Pull MRIP data from Oracle (takes a while).
+
+if `pull_MRIP' {
+	di "Pulling MRIP data from oracle"
+		rscript using "$input_code_cd\get_mrip_oracle.R", args($first_mrip_year $last_mrip_year)
+
+}
 
 
-// 1) Pull the MRIP data
+
+// 1) Process MRIP data
 
 
 if `processMRIP' {
