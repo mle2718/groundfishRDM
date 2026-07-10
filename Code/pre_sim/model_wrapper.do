@@ -132,24 +132,24 @@ global trawl_survey_start_year 2022
 **********************************************************************
 
 // Control which modules to run (set to 0 to skip)
-loc pull_assessment = 1		 		// Pull Assessment data
-loc processMRIP = 1		 			// deal with casing MRIP data
-loc assemblemriplists = 1		 	// deal with casing MRIP data
+loc pull_assessment = 0		 		// Pull Assessment data
+loc pull_MRIP = 0		 			// Pull MRIP data
 
+loc processMRIP = 0		 			// deal with casing MRIP data
+loc assemblemriplists =0		 	// deal with casing MRIP data
 loc estimate_dtrips = 1				// Estimate Directed Trips 
-loc pull_MRIP = 1		 		// Pull MRIP data
-loc costs_per_trip = 1  			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
+loc costs_per_trip = 0  			// Create Distributions of costs per trip (run 1x)
+loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
-loc copula_in_R = 1					// Copula model in R
-loc catch_per_trip2 = 1				// Part 2 of catch per trip
+loc copula_in_R = 2					// Copula model in R
+loc catch_per_trip2 = 2				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
 loc prep_cpt_for_dashboard= 1		// prep data for dashboard
-loc Rpush_to_gdrive =1 				// Push to google drive in R
-loc angler_demogs	=1				// add additonal angler demographics
+loc Rpush_to_gdrive =0 				// Push to google drive in R
+loc angler_demogs	=0				// add additonal angler demographics
 loc generate_baseline=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1			// Generate projection-year catch-at-length
-loc run_calibration=1						// Run calibration routine in R
+loc run_calibration=0						// Run calibration routine in R
 
 
 
@@ -173,11 +173,23 @@ if `pull_assessment' {
 
 // 0) Pull MRIP data from Oracle (takes a while).
 
+
+
+
+global catchlist "$misc_data_cd/mrip_catch.dta"
+global triplist  "$misc_data_cd/mrip_trip.dta"
+global b2list  "$misc_data_cd/mrip_size.dta"
+global sizelist  "$misc_data_cd/mrip_size_b2.dta"
+
+
+
 if `pull_MRIP' {
 	di "Pulling MRIP data from oracle"
 		rscript using "$input_code_cd\get_mrip_oracle.R", args($first_mrip_year $last_mrip_year)
-
+	do "$input_code_cd"\tidyup_mrip_data_fromR.do"
+	
 }
+
 
 
 
