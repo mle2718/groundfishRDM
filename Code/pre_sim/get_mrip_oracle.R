@@ -1,21 +1,26 @@
 # this R helper file pulls MRIP data from Oracle using the mriptacklebox.
 # it takes 2 arguments, first_year and last_year, in sequence.
+# because it takes 2 arguments, you'll have to run it from the command line with
+# Rscript get_mrip_oracle.R 2023 2025
+# or you can run it from stata
 
 
+# Define arguments
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 2) {
   stop("Error: This script requires exactly two arguments.", call. = FALSE)
 }
 
+#read in arguments. Ensure they are numeric
 first_yr  <- as.numeric(args[1])
-last_yr   <-  as.numeric(args[2])# Convert to numeric if needed
+last_yr   <-  as.numeric(args[2])
 
-
+# Show them, just in case.
 cat("First Year:", first_yr, "\n")
 cat("Last Year:", last_yr, "\n")
 
 
-
+# Load libraries
 # install the mt2 (dev) branch
 #remotes::install_github("NEFSC/READ-PDB-mriptacklebox@mt2",
 #                        , upgrade="never")
@@ -28,11 +33,14 @@ library("glue")
 library("haven")
 library("conflicted")
 
+
+# standard "here"
 here::i_am("Code/pre_sim/get_mrip_oracle.R")
 source(here("Code", "helpers", "developer_setup.R"))
 
 output_folder<-file.path(gf.data.dir, "miscellaneous")
 
+# Connect to Oracle
 drv<-dbDriver("Oracle")
 con_name<-eval(nefscdb_con)
 
@@ -40,52 +48,42 @@ con_name<-eval(nefscdb_con)
 yearlist<-first_yr:last_yr
 wavelist<-1:6
 
-x <- mrip_microdata(
+# pull data and then disconnect
+mrip_pull <- mrip_microdata(
   years = yearlist, waves = wavelist,
   typ = c('trip', 'catch', 'size', 'size_b2'),
   format = c('nefsc_db'),
   nefsc_db_con=con_name
 )
+dbDisconnect(con_name)
 
+
+# A little data munging
 
 # all lower case
-x <- map(x, ~ rename_with(.x, tolower))
+mrip_pull <- map(mrip_pull, ~rename_with(.x, tolower)
+                 )
 
-# destring
-destring_col <- function(col) {
-  if (!is.character(col)) return(col)
-  converted <- suppressWarnings(as.numeric(col))
-  new_nas <- is.na(converted) & !is.na(col)
-  if (any(new_nas)) col else converted
-}
+#append DateRan into all elements
+mrip_pull <- map(mrip_pull, ~ mutate(
+  .x, DateRan = as.character(Sys.Date()))
+  )
 
-x <- map(x, ~ mutate(.x, across(where(is.character), destring_col)))
+#force certain things to character
+mrip_pull <- map(mrip_pull, ~ mutate(
+  .x, across(c(strat_id, psu_id, id_code,zip), as.character))
+  )
 
 
+# write all the elements of x to a dta file
+walk2(mrip_pull, names(mrip_pull), ~ write_dta(
+  .x,
+  path=file.path(output_folder, glue("{.y}.dta"))
+  )
+)
 
-# append the date ran to the object
+# append the DateRan to the mrip_pull object
 
-x$DateRan<-Sys.Date()
+mrip_pull$DateRan<-Sys.Date()
 # write this to an rds file.
-write_rds(x, file=file.path(output_folder, glue("mrip_pull.Rds")))
-
-# write this to an dtas file.
-write_dta(x$trip,
-          path=file.path(output_folder,
-                         glue("mrip_trip.dta"))
-)
-
-write_dta(x$catch,
-          path=file.path(output_folder,
-              glue("mrip_catch.dta"))
-          )
-
-write_dta(x$size,
-          path=file.path(output_folder,
-                         glue("mrip_size.dta"))
-)
-write_dta(x$size_b2,
-          path=file.path(output_folder,
-                         glue("mrip_size_b2.dta"))
-)
-
+write_rds(mrip_pull, file=file.path(output_folder, glue("mrip_pull.Rds")))
