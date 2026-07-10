@@ -38,26 +38,29 @@ x <- mrip_microdata(
 # all lower case
 x <- map(x, ~ rename_with(.x, tolower))
 
+# append the date ran to the object
+
+x$date_ran<-Sys.Date()
 # write this to an rds file.
 write_rds(x, file=file.path(output_folder, glue("mrip_pull.Rds")))
 
 # write this to an dtas file.
 write_dta(x$trip,
           path=file.path(output_folder,
-                         glue("mrip_trip{first_yr}_{last_yr}.dta"))
+                         glue("mrip_trip_{first_yr}_{last_yr}.dta"))
 )
 
 write_dta(x$catch,
           path=file.path(output_folder,
-              glue("mrip_catch{first_yr}_{last_yr}.dta"))
+              glue("mrip_catch_{first_yr}_{last_yr}.dta"))
           )
 
 write_dta(x$size,
           path=file.path(output_folder,
-                         glue("mrip_size{first_yr}_{last_yr}.dta"))
+                         glue("mrip_size_{first_yr}_{last_yr}.dta"))
 )
 write_dta(x$size_b2,
           path=file.path(output_folder,
-                         glue("mrip_size_b2{first_yr}_{last_yr}.dta"))
+                         glue("mrip_size_b2_{first_yr}_{last_yr}.dta"))
 )
 
