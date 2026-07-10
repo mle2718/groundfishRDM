@@ -1,20 +1,28 @@
 # this R helper file pulls MRIP data from Oracle using the mriptacklebox.
 
 
-# install the database_testing branch
-remotes::install_github("NEFSC/READ-PDB-mriptacklebox@database_testing",
-                        , upgrade="never")
-
+# install the mt2 (dev) branch
+#remotes::install_github("NEFSC/READ-PDB-mriptacklebox@mt2",
+#                        , upgrade="never")
+library("here")
 library("mriptacklebox")
 library("ROracle")
 library("tidyverse")
-library("conflicted")
 library("DBI")
+library("glue")
+library("haven")
+library("conflicted")
+
+here::i_am("Code/pre_sim/get_mrip_oracle.R")
+source(here("Code", "helpers", "developer_setup.R"))
+
+output_folder<-file.path(gf.data.dir, "miscellaneous")
+
 
 drv<-dbDriver("Oracle")
 con_name<-eval(nefscdb_con)
 
-yearlist<-2024:2025
+yearlist<-2023:2026
 wavelist<-1:6
 
 x <- mrip_microdata(
@@ -25,9 +33,8 @@ x <- mrip_microdata(
 )
 
 
-
 # all lower case
 x <- map(x, ~ rename_with(.x, tolower))
 
-
+write_rds(x, file=file.path(output_folder, glue("mrip_pull.Rds")))
 # write this to an rds file.
