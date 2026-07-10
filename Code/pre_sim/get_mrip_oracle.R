@@ -1,4 +1,19 @@
 # this R helper file pulls MRIP data from Oracle using the mriptacklebox.
+# it takes 2 arguments, first_year and last_year, in sequence.
+
+
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 2) {
+  stop("Error: This script requires exactly two arguments.", call. = FALSE)
+}
+
+first_yr  <- as.numeric(args[1])
+last_yr   <-  as.numeric(args[2])# Convert to numeric if needed
+
+
+cat("First Year:", first_yr, "\n")
+cat("Last Year:", last_yr, "\n")
+
 
 
 # install the mt2 (dev) branch
@@ -17,8 +32,6 @@ here::i_am("Code/pre_sim/get_mrip_oracle.R")
 source(here("Code", "helpers", "developer_setup.R"))
 
 output_folder<-file.path(gf.data.dir, "miscellaneous")
-first_yr<-2023
-last_yr<-2026
 
 drv<-dbDriver("Oracle")
 con_name<-eval(nefscdb_con)
@@ -40,27 +53,27 @@ x <- map(x, ~ rename_with(.x, tolower))
 
 # append the date ran to the object
 
-x$date_ran<-Sys.Date()
+x$DateRan<-Sys.Date()
 # write this to an rds file.
 write_rds(x, file=file.path(output_folder, glue("mrip_pull.Rds")))
 
 # write this to an dtas file.
 write_dta(x$trip,
           path=file.path(output_folder,
-                         glue("mrip_trip_{first_yr}_{last_yr}.dta"))
+                         glue("mrip_trip.dta"))
 )
 
 write_dta(x$catch,
           path=file.path(output_folder,
-              glue("mrip_catch_{first_yr}_{last_yr}.dta"))
+              glue("mrip_catch.dta"))
           )
 
 write_dta(x$size,
           path=file.path(output_folder,
-                         glue("mrip_size_{first_yr}_{last_yr}.dta"))
+                         glue("mrip_size.dta"))
 )
 write_dta(x$size_b2,
           path=file.path(output_folder,
-                         glue("mrip_size_b2_{first_yr}_{last_yr}.dta"))
+                         glue("mrip_size_b2.dta"))
 )
 
