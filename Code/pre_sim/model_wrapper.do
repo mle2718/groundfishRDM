@@ -186,7 +186,8 @@ global sizelist  "$misc_data_cd/mrip_size_b2.dta"
 if `pull_MRIP' {
 	di "Pulling MRIP data from oracle"
 		rscript using "$input_code_cd\get_mrip_oracle.R", args($first_mrip_year $last_mrip_year)
-	do "$input_code_cd"\tidyup_mrip_data_fromR.do"
+	
+	do "$input_code_cd\tidyup_mrip_data_fromR.do"
 	
 }
 
