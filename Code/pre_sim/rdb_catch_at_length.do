@@ -126,22 +126,7 @@ twoway line prop_ab1 prop_b2 prop_cal length if species=="hadd", sort by(season,
 
 egen sum=sum(prop_cal), by(species season ) 
 
-/// delete
-twoway line prop_ab1 prop_b2 length if species=="cod" & season=="summer"
-twoway line prop_cal length if species=="cod" & season=="summer"
-twoway line prop_ab1 prop_b2 prop_cal length if species=="cod" & season=="summer"
-twoway line prop_ab1 prop_b2 prop_cal length if species=="cod" & season=="winter"
-twoway line prop_ab1 prop_b2 prop_cal length if species=="hadd" & season=="summer"
-twoway line prop_ab1 prop_b2 prop_cal length if species=="hadd" & season=="winter"
 
-/// delete 
-rename prop_ab1 harvest
-rename prop_b2 discards
-//it's bad for cod summer bc over 80% of harvest is one length
-twoway line harvest discards length if species=="cod" & season=="summer"
-twoway line harvest discards length if species=="cod" & season=="winter"
-twoway line harvest discards length if species=="hadd" & season=="summer"
-twoway line harvest discards length if species=="hadd" & season=="winter"
 
 
 
@@ -152,8 +137,9 @@ twoway line harvest discards length if species=="hadd" & season=="winter"
 import delimited "$misc_data_cd\baseline_catch_at_length.csv", clear
 
 collapse (median) observed_prob fitted_prob, by(season species length)
+replace length=length/2.54
 tostring length, gen(length1)
-gen metric = length1+" "+"cm"
+gen metric = season+" at "+length1+" "+"cm"
 gen units="proportion of catch" 
 
 egen sum=sum(observed_prob), by(species season ) 
@@ -170,14 +156,29 @@ twoway line observed_prob fitted_prob length if species=="hadd", sort by(season,
 
 
 
+// add columns for common, species_itis
+gen common = "atlanticcod" if species=="cod"
+replace common = "haddock" if species=="hadd"
+gen species_itis = 164712 if species=="cod"
+replace species_itis = 164744 if species=="hadd"
+drop species
+
+//Update this 
+gen data_version="2026-06-29"
+
+gen source="model intermediate"
+gen stock_abbrev="WGOM"
+gen fishery= "NE Groundfish"
+
+order fishery common species_itis stock_abbrev state mode data_version year season wave month metric value units source
 
 
 
 
 
+//DELETE
 //stuff from thurs. has some of the dashboard columns
 //import delimited "$misc_data_cd\baseline_catch_at_length_observed.csv", clear
-
 
 collapse (median) n_fish, by(length season species)
 tostring length, gen(length1)
