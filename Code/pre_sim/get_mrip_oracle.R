@@ -82,7 +82,7 @@ mrip_pull <- map(mrip_pull, ~ mutate(
 # write all the elements of x to a dta file
 walk2(mrip_pull, names(mrip_pull), ~ write_dta(
   .x,
-  path=file.path(output_folder, glue("{.y}.dta"))
+  path=file.path(output_folder, glue("mrip_{.y}.dta"))
   )
 )
 
