@@ -19,30 +19,6 @@ This code cleans the simulated catch at length data compiled in catch_at_length_
 */
 
 
-//To test change everything to 0 in execution control in model wrapper other than prep_cal_for_dashboard and Rpush_cal_to_gdrive if you've already run the catch-at-length calibration code you will have what you need. And if not you can save the baseline_catch_at_length.csv from the misc folder locally
-
-/*
-loc pull_assessment = 0		 		// Pull Assessment data
-loc processMRIP = 0		 			// deal with casing MRIP data
-loc assemblemriplists = 0		 	// deal with casing MRIP data
-
-loc estimate_dtrips = 0				// Estimate Directed Trips 
-loc costs_per_trip = 0  			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
-loc catch_per_trip1 = 0				// Part 1 of catch per trip
-loc copula_in_R = 0					// Copula model in R
-loc catch_per_trip2 = 0				// Part 2 of catch per trip
-loc compare_calibration_MRIP = 0	// compare calibration output to MRIP
-loc prep_cpt_for_dashboard= 0		// prep data for dashboard
-loc Rpush_cpt_to_gdrive =0 			// Push to google drive in R
-loc angler_demogs	=0				// add additonal angler demographics
-loc generate_baseline=0				// Generate baseline-year catch-at-length
-loc prep_cal_for_dashboard= 1		// Prep catch at length data for dashboard
-loc Rpush_cal_to_gdrive =1 			// Push to google drive in R
-loc catch_at_length_project=0			// Generate projection-year catch-at-length
-loc run_calibration=0						// Run calibration routine in R
-*/
-
 
 import delimited "$misc_data_cd\baseline_catch_at_length.csv", clear
 
