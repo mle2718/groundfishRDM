@@ -22,8 +22,8 @@ cat("Last Year:", last_yr, "\n")
 
 # Load libraries
 # install the main branch
-#remotes::install_github("NEFSC/READ-PDB-mriptacklebox",
-#                        , upgrade="never")
+#remotes::install_github("NEFSC/READ-PDB-mriptacklebox")
+
 library("here")
 library("mriptacklebox")
 library("ROracle")
@@ -34,7 +34,7 @@ library("haven")
 library("conflicted")
 
 
-# standard "here"
+# standard "here", username setup, and paths
 here::i_am("Code/pre_sim/get_mrip_oracle.R")
 source(here("Code", "helpers", "developer_setup.R"))
 
