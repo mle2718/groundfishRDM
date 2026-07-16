@@ -32,6 +32,8 @@ library("DBI")
 library("glue")
 library("haven")
 library("conflicted")
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::lag)
 
 
 # standard "here", username setup, and paths
@@ -91,7 +93,7 @@ colnames(datestamp)<-"mrip_pull_date"
 mrip_pull$mrip_pull_date<-datestamp
 
 # write this to an rds file.
-write_rds(mrip_pull, file=file.path(output_folder, glue("mrip_pull.Rds")))
+write_rds(mrip_pull, file=file.path(output_folder, glue("mrip_pull{todaysdate}.Rds")))
 
-message("MRIP data pulled on: ", format(todaysdate,"%B %d, %Y") )
+message("MRIP data successfully pulled on: ", format(todaysdate,"%B %d, %Y") )
 
