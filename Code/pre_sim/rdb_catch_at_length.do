@@ -111,7 +111,7 @@ gen year=2025
 
 order fishery common species_itis stock_abbrev data_version year metric value units source
 
-save "$misc_data_cd\rdb_cat_len.dta.dta", replace 
+save "$misc_data_cd\rdb_cat_len.dta", replace 
 
 
 
