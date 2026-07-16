@@ -21,8 +21,8 @@ cat("Last Year:", last_yr, "\n")
 
 
 # Load libraries
-# install the mt2 (dev) branch
-#remotes::install_github("NEFSC/READ-PDB-mriptacklebox@mt2",
+# install the main branch
+#remotes::install_github("NEFSC/READ-PDB-mriptacklebox",
 #                        , upgrade="never")
 library("here")
 library("mriptacklebox")
