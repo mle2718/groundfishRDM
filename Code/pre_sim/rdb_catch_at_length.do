@@ -29,17 +29,17 @@ This code cleans the simulated catch at length data compiled in catch_at_length_
 // observed is same as if you generated from rdb_cat_len.dta like above but this one trims the rows at the ends of the length distribution that are 0's
 import delimited "$misc_data_cd\baseline_catch_at_length.csv", clear
 
-
 collapse (median) observed_prob fitted_prob, by(season species length)
 gen inches=length/2.54
+gen inches_r = round(inches)
 * CANT tostring the length in inches because now it has a bunch of decimals. do I round? round up? ask lou 
-tostring inches, gen(length1)
+tostring inches_r, gen(length1)
 gen metric = season+" at "+length1+" "+"in"
 gen units="proportion of catch" 
 
 
-egen sum=sum(observed_prob), by(species season ) 
-egen sum1=sum(fitted_prob), by(species season ) 
+//egen sum=sum(observed_prob), by(species season ) 
+//egen sum1=sum(fitted_prob), by(species season ) 
 
 
 twoway line observed_prob fitted_prob length if species=="cod", sort by(season, title("Cod catch at length")) legend( label(1 "Observed") label(2 "Fitted")) xtitle("Length (cm)")
@@ -47,6 +47,17 @@ twoway line observed_prob fitted_prob length if species=="cod", sort by(season, 
 twoway line observed_prob fitted_prob length if species=="hadd", sort by(season, title("Hadd catch at length")) legend( label(1 "Observed") label(2 "Fitted")) xtitle("Length (cm)")
 
 
+//collapse to inches bins
+collapse (sum) observed_prob fitted_prob, by(season species inches_r)
+tostring inches_r, gen(length1)
+gen metric = season+" at "+length1+" "+"in"
+gen units="proportion of catch" 
+rename inches_r length 
+
+//now the fitted doesn't look smooth. need to switch to inches in the cal calibration do
+twoway line observed_prob fitted_prob length if species=="cod", sort by(season, title("Cod catch at length")) legend( label(1 "Observed") label(2 "Fitted")) xtitle("Length (in)")
+
+twoway line observed_prob fitted_prob length if species=="hadd", sort by(season, title("Hadd catch at length")) legend( label(1 "Observed") label(2 "Fitted")) xtitle("Length (in)")
 
 
 
