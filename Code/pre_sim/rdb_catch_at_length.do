@@ -104,6 +104,9 @@ gen source="model intermediate"
 gen stock_abbrev="WGOM"
 gen fishery= "NE Groundfish"
 
+//get rid of var label on value 
+label variable value ""
+
 //should year go in?
 gen year=2025
 
