@@ -32,6 +32,7 @@ conflicts_prefer(dplyr::count)
 
 #Set up R globals for input/output data and code scripts
 code_cd=here("Code", "sim")
+source(here("Code", "helpers", "developer_setup.R"))
 
 #Data folders
   #input miscellaneous - contains:
@@ -43,7 +44,7 @@ code_cd=here("Code", "sim")
   #n_choice_occasions - stores # of choice occasions per day from calibration
   #calib_catch_draws - stores catch-per-trip datasets (currently the same for calibration and projection year)
 
-final_process_data_cd="E:/Lou_projects/groundfishRDM/2027_mgt_cycle"
+final_process_data_cd=gf.data.dir
 final_process_outcomes_cd=file.path(final_process_data_cd, "base_outcomes")
 final_process_choice_occasions_cd=file.path(final_process_data_cd,"n_choice_occasions")
 final_process_misc_cd=file.path(final_process_data_cd,"miscellaneous")
