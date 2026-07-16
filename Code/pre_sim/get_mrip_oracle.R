@@ -37,8 +37,10 @@ library("conflicted")
 # standard "here", username setup, and paths
 here::i_am("Code/pre_sim/get_mrip_oracle.R")
 source(here("Code", "helpers", "developer_setup.R"))
-
 output_folder<-file.path(gf.data.dir, "miscellaneous")
+
+#for help with versioning
+todaysdate<-Sys.Date()
 
 # Connect to Oracle
 drv<-dbDriver("Oracle")
@@ -64,9 +66,9 @@ dbDisconnect(con_name)
 mrip_pull <- map(mrip_pull, ~rename_with(.x, tolower)
                  )
 
-#append DateRan into all elements
+#append mrip_pull_date into all elements. Force it to July 16, 2026 format
 mrip_pull <- map(mrip_pull, ~ mutate(
-  .x, DateRan = as.character(Sys.Date()))
+  .x, mrip_pull_date =as.character(format(todaysdate,"%B %d, %Y") ) )
   )
 
 #force certain things to character
@@ -82,8 +84,14 @@ walk2(mrip_pull, names(mrip_pull), ~ write_dta(
   )
 )
 
-# append the DateRan to the mrip_pull object
+# append the mrip_pull_date to the mrip_pull list as a tibble
 
-mrip_pull$DateRan<-Sys.Date()
+datestamp<-as_tibble(todaysdate)
+colnames(datestamp)<-"mrip_pull_date"
+mrip_pull$mrip_pull_date<-datestamp
+
 # write this to an rds file.
 write_rds(mrip_pull, file=file.path(output_folder, glue("mrip_pull.Rds")))
+
+message("MRIP data pulled on: ", format(todaysdate,"%B %d, %Y") )
+
