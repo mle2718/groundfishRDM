@@ -313,8 +313,6 @@ sort  season species l_cm_bin
 * merge harvest lengths to discards lengths
 merge 1:1 l_cm_bin species season using `b2'
 
-
-
 sort species  season l
 
 gen panel_var=species+"_"+season
