@@ -313,7 +313,7 @@ sort  season species l_cm_bin
 * merge harvest lengths to discards lengths
 merge 1:1 l_cm_bin species season using `b2'
 
-save "$misc_data_cd\rdb_raw_cat_len.dta", replace // save raw discards and harvest at length for dashboard
+
 
 sort species  season l
 
@@ -376,7 +376,7 @@ sort draw season species l
 gen n_ab1=ab1*prop_ab1
 gen n_b2=b2*prop_b2
 gen n_fish=n_ab1+n_b2
-save "$misc_data_cd\rdb_cat_len.dta", replace // save file for processing catch at at length for dashboard
+
 drop prop_ab1 prop_b2 n_ab1 n_b2
 
 * fit catch-at-lengths to gamma distribution 
