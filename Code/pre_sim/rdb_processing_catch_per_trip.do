@@ -123,12 +123,10 @@ replace year=2024 if month>=11
 gen stock_abbrev="WGOM"
 gen fishery= "NE Groundfish"
 
-//ask lou when he pulled the dta's here. this folder said he'd saved them May 12 when I copied them locally: https://drive.google.com/drive/folders/1wIlpn5Q8_iBnZ0NUlKVVpzyI7x97zAdi   
-//Did he pull in updated MRIP data that day? 
+//Update this 
 gen data_version="2026-05-12"
 //state will be NA
 gen state=.
-//what should source be? recDST? simulated? recDST/MRIP? RDM? - ask Min-Yang
 gen source="model intermediate"
 
 *reorder columns. sort data on month, common, mode.
