@@ -106,8 +106,10 @@ global seed 03211990
 global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 			  20241 20242 20243 20244 20245 20246  ///
 			  20251 20252 20253 20254 20255 20256
-					 
-global yearlist 2023 2024 2025
+global first_mrip_year 2023
+global last_mrip_year 2025
+numlist "$first_mrip_year/$last_mrip_year"
+global yearlist  `r(numlist)'
 global wavelist 1 2 3 4 5 6
 
 * set the baseline year and projection year numbers-at-age globals 
@@ -131,10 +133,11 @@ global trawl_survey_start_year 2022
 
 // Control which modules to run (set to 0 to skip)
 loc pull_assessment = 1		 		// Pull Assessment data
-loc processMRIP = 1		 			// deal with casing MRIP data
-loc assemblemriplists = 1		 	// deal with casing MRIP data
+loc pull_MRIP = 1		 			// Pull MRIP data
 
-loc estimate_dtrips = 1				// Estimate Directed Trips 
+loc processMRIP = 0		 			// deal with casing MRIP data
+loc assemblemriplists =0		 	// deal with casing MRIP data
+loc estimate_dtrips = 1				// Estimate Directed Trips
 loc costs_per_trip = 1  			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
@@ -168,9 +171,30 @@ if `pull_assessment' {
 	do "$input_code_cd\get_assessment_from_gdrive.do"
 }
 
+// 0) Pull MRIP data from Oracle (takes a while).
 
 
-// 1) Pull the MRIP data
+
+
+global catchlist "$misc_data_cd/mrip_catch.dta"
+global triplist  "$misc_data_cd/mrip_trip.dta"
+global b2list  "$misc_data_cd/mrip_size.dta"
+global sizelist  "$misc_data_cd/mrip_size_b2.dta"
+
+
+
+if `pull_MRIP' {
+	di "Pulling MRIP data from oracle"
+		rscript using "$input_code_cd\get_mrip_oracle.R", args($first_mrip_year $last_mrip_year)
+	
+	do "$input_code_cd\tidyup_mrip_data_fromR.do"
+	
+}
+
+
+
+
+// 1) Process MRIP data
 
 
 if `processMRIP' {

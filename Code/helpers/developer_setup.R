@@ -9,7 +9,7 @@ stopifnot(developer %in% c("TP", "LCH", "ML", "KB"))
 if (developer=="LCH"){
   gf.data.dir<-"E:/Lou_projects/groundfishRDM/2027_mgt_cycle"
 } else if (developer %in% c("TP","ML", "KB")){
-  dir.create(here("Data","2027_mgt_cycle"), showWarnings = TRUE, recursive=TRUE)
+  dir.create(here("Data","2027_mgt_cycle"), showWarnings = FALSE, recursive=TRUE)
   gf.data.dir<-here("Data","2027_mgt_cycle")
 }
 
