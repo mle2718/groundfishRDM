@@ -181,8 +181,8 @@ loc prep_cpt_for_dashboard= 1		// prep data for dashboard
 loc Rpush_cpt_to_gdrive =1 			// Push to google drive in R
 loc angler_demogs	=1				// add additonal angler demographics
 loc generate_baseline=1				// Generate baseline-year catch-at-length
-loc prep_cal_for_dashboard= 1		// Prep catch at length data for dashboard
-loc Rpush_cal_to_gdrive =1 			// Push to google drive in R
+loc prep_catch_at_length_for_dash= 1		// Prep catch at length data for dashboard
+loc Rpush_catch_at_length_to_gdrive =1 			// Push catch at length data to  google drive in R
 loc catch_at_length_project=1			// Generate projection-year catch-at-length
 loc run_calibration=1						// Run calibration routine in R
 
@@ -347,7 +347,7 @@ if `generate_baseline'{
 
 		}
 		//Process catch at length and format it for the rec dashboard
-if `prep_cal_for_dashboard'{
+if `prep_catch_at_length_for_dash'{
     	di "Processing and formatting catch-at-length for dashboard"
 
 		do "$input_code_cd\rdb_catch_at_length.do"
@@ -355,8 +355,8 @@ if `prep_cal_for_dashboard'{
 
 		}
 		//run this script in R to read in the catch at length processed for the rec dashboard, save it as an Rds, and push it to Google Drive
-if `Rpush_cal_to_gdrive'{
-    	di "Pushing rec dashboard catch at length data to gdrive using R" 
+if `Rpush_catch_at_length_to_gdrive'{
+    	di "Pushing rec dashboard catch at length data to gdrive using R"
 
 		rscript using "$input_code_cd\rdb_catch_at_len_to_drive.R"
 	    di "Rec dashboard catch at length data pushed to gdrive " 
