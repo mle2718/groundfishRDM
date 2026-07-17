@@ -181,8 +181,8 @@ loc prep_cpt_for_dashboard= 1		// prep data for dashboard
 loc Rpush_cpt_to_gdrive =1 			// Push to google drive in R
 loc angler_demogs	=1				// add additonal angler demographics
 loc generate_baseline=1				// Generate baseline-year catch-at-length
-loc prep_cal_for_dashboard= 1		// Prep catch at length data for dashboard
-loc Rpush_cal_to_gdrive =1 			// Push to google drive in R
+loc prep_catch_at_length_for_dash= 1		// Prep catch at length data for dashboard
+loc Rpush_catch_at_length_to_gdrive =1 			// Push catch at length data to  google drive in R
 loc catch_at_length_project=1			// Generate projection-year catch-at-length
 loc run_calibration=1						// Run calibration routine in R
 
