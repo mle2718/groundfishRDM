@@ -29,7 +29,7 @@ else{
 	
 }
 
-capture confirm file ""${misc_data_cd}/size_b2_`wave'.dta"
+capture confirm file "${misc_data_cd}/size_b2_`wave'.dta"
 if _rc==0{
 	use "${misc_data_cd}/size_b2_`wave'.dta", clear
 	renvarlab, lower
