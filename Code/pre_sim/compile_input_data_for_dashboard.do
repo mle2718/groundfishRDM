@@ -19,9 +19,11 @@
 * input catch per trip data
 cd "E:\Lou_projects\groundfishRDM\process_data"
 
-clear 
-tempfile base 
+clear
+tempfile base
 save `base', replace emptyok
+
+display "Compiling catch-per-trip from 201 per-draw Excel files (this can take a while) ..."
 
 forv i = 1/201{
 	
@@ -41,7 +43,9 @@ forv i = 1/201{
 	save `base', replace
 }
 
-u `base', clear 
+display "Finished compiling per-draw catch-per-trip; exporting CSV."
+
+u `base', clear
 
 export delimited using "E:\Lou_projects\groundfishRDM\input_data\mean_catch_per_trip.csv", replace 
 

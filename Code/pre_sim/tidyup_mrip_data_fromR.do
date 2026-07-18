@@ -18,6 +18,8 @@
                directly following the get_mrip_oracle.R Oracle pull.
 *******************************************************************************/
 
+display "Tidying MRIP catch/trip/size files (type enforcement + year-wave filter) ..."
+
 foreach l in $catchlist $triplist $b2list $sizelist {
 
 	use `l', clear
@@ -48,3 +50,5 @@ foreach l in $catchlist $triplist $b2list $sizelist {
 	
 save `l', replace
 }
+
+display "Finished tidying MRIP files."

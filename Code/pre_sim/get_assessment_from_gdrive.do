@@ -19,12 +19,14 @@
 local google_folder "D:/Shared drives/NMFS NEC READ SSB/socialsci/RecreationalDST/2027_management_cycle_data/groundfishRDM/input_data"
 local filestubs  "GOM_Haddock_historical_NAA GOM_Haddock_projected_NAA WGOM_Cod_projected_NAA WGOM_Cod_historical_NAA"
 
+display "Pulling latest assessment NAA files from Google Drive ..."
+
 foreach s of local filestubs {
     clear
     local files : dir "`google_folder'" files "`s'_*.dta" /* find matching file */
     local last: word count `files'
-	// Filenames are date-suffixed and `dir' returns them sorted, so the last
-	// entry is the most recent assessment vintage.
+	/* Filenames are date-suffixed and `dir' returns them sorted, so the last
+	   entry is the most recent assessment vintage. */
 	local myfile : word `last' of `files' // grab last match
     di "`myfile'"
 	local myfile : subinstr local myfile `"""' "", all /* remove embedded quotes */
@@ -32,4 +34,6 @@ foreach s of local filestubs {
     di as text "Loading: `fullpath'" 
 	copy "`fullpath'" `"$misc_data_cd/`s'.dta"' , replace /*copy files from google drive to misc_data_cd*/
 }
+
+display "Finished copying assessment NAA files to misc_data_cd."
 

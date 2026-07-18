@@ -45,6 +45,7 @@ write_rds(rdb_catch_per_trip, file=file.path(output_folder,glue("{SimCPTSaveFile
 
 # Connect to Google Drive
 # NOTE: Relies on cached credentials in .secrets. Will prompt interactive auth if missing or expired.
+message("Uploading catch-per-trip Rds to Google Drive ...")
 drive_auth(cache = here(".secrets"), email = TRUE)
 
 # Output folder on google drive
@@ -65,5 +66,6 @@ drive_upload(
   name = glue("{SimCPTSaveFile}.Rds"),
   overwrite = TRUE
 )
+message("Catch-per-trip upload complete.")
 
 
