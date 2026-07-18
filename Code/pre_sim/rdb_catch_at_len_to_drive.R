@@ -1,5 +1,20 @@
-#This code reads in a catch at length dta for the recDST data dashboard and uploads it to Google drive as an Rds
-
+################################################################################
+# Script:       rdb_catch_at_len_to_drive.R
+# Purpose:      Reads the dashboard-formatted catch-at-length .dta, saves it as
+#               an .Rds stamped with its data_version, and uploads that .Rds to
+#               the shared Google Drive miscellaneous folder for the rec
+#               dashboard.
+# Inputs:       <gf.data.dir>/miscellaneous/rdb_cat_len.dta
+# Outputs:      <gf.data.dir>/miscellaneous/rdb_catch_at_length_<date>.Rds,
+#               and a copy of that file uploaded to Google Drive.
+# Dependencies: Packages tidyverse, haven, glue, googledrive, here. Sources
+#               developer_setup.R (for gf.data.dir). Requires a cached Drive
+#               token in .secrets (see googledrivesetup.R).
+# Pipeline:     Step in model_wrapper.do gated by `Rpush_catch_at_length_to_gdrive'
+#               (default ON), run via `rscript using`. Near-identical twin of
+#               rdb_catch_per_trip_to_drive.R (differs only in the input file and
+#               object names).
+################################################################################
 
 #Load libraries
 library(tidyverse)

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ Script:       compile_input_data_for_dashboard.do
+ Purpose:      Compiles the per-draw calibrated catch-per-trip Excel files into
+               a single mean_catch_per_trip.csv for the dashboard: averages cod
+               and haddock catch by month/mode within each draw, stacks all
+               draws, and exports.
+ Inputs:       calib_catch_draws_1.xlsx ... calib_catch_draws_201.xlsx
+               (in the hardcoded process_data directory below).
+ Outputs:      mean_catch_per_trip.csv (in the hardcoded input_data directory).
+ Dependencies: None via globals. NOTE: paths are hardcoded developer-specific
+               absolute paths (E:\Lou_projects\...), so this file is not
+               portable as written.
+ Pipeline:     Standalone / unwrapped — no confirmed caller (per
+               DATAFLOW_GROUNDFISH.md). Runs after the catch-per-trip
+               calibration steps have produced the per-draw Excel files.
+*******************************************************************************/
 
 
 * input catch per trip data
