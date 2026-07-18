@@ -1,9 +1,33 @@
 
-***This code creates trip cost distributions based on the Sabrina's 2017 trip expenditure survey data
+/*******************************************************************************
+ Script:       survey_trip_costs.do
+ Purpose:      Builds simulated trip-cost distributions by mode/species-domain
+               from the survey expenditure data using a two-part ("hurdle")
+               model: a survey-weighted probability of any spending, plus a
+               lognormal for positive costs calibrated so the simulated
+               positive-cost mean matches the survey estimate. Adjusts for
+               inflation and caps simulated costs at the observed max by mode.
+ Inputs:       $misc_data_cd/gulf_atl_2022.dta (expenditure survey),
+               $misc_data_cd/prim1.dta, $misc_data_cd/prim2.dta.
+ Outputs:      $misc_data_cd/trip_costs.dta
+ Dependencies: Globals $seed, $inflation_expansion, $misc_data_cd
+               (set in model_wrapper.do).
+ Pipeline:     Wrapped by model_wrapper.do, gated by `costs_per_trip' (default ON;
+               commented in the wrapper as a "run 1x" step).
+ Note:         The original comment described this as "Sabrina's 2017 trip
+               expenditure survey," but the code loads gulf_atl_2022.dta and later
+               comments reference the 2022 data — the "2017" appears stale.
+*******************************************************************************/
 
 set seed $seed
 
-*Enter a directory with the expenditure survey data 
+/******************************************************************************/
+/******************************************************************************/
+/* Section A: Load and clean the survey expenditure data */
+/******************************************************************************/
+/******************************************************************************/
+
+*Enter a directory with the expenditure survey data
 u "$misc_data_cd\gulf_atl_2022.dta", clear
 renvarlab *, lower
 
@@ -90,8 +114,14 @@ save `domains', replace
 restore
 
 
+/******************************************************************************/
+/******************************************************************************/
+/* Section B: Survey-weighted observed cost means by mode-species domain */
+/******************************************************************************/
+/******************************************************************************/
+
 preserve
-svy: mean total_exp, over(domain2)  
+svy: mean total_exp, over(domain2)
 
 xsvmat, from(r(table)') rownames(rname) names(col) norestor
 split rname, parse("@")
@@ -116,6 +146,12 @@ tempfile observed
 save `observed', replace 
 restore
 
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section C: Two-part hurdle parameters (spend probability + lognormal) */
+/******************************************************************************/
+/******************************************************************************/
 
 *Two-part ("hurdle") simulation with a calibrated lognormal for positive costs, by mode domain.
 drop domain
@@ -253,6 +289,13 @@ merge 1:1 dom2 using `meanpos', nogen
 *simulated positive-cost mean should line up with the survey-estimated positive-cost mean (up to Monte Carlo error), while keeping the estimated log-variance sig2_hat
 gen double mu_adj = ln(mean_pos) - 0.5*sig2_hat
 
+/******************************************************************************/
+/******************************************************************************/
+/* Section D: Simulate trip costs (two-part hurdle) and cap at observed max */
+/******************************************************************************/
+/******************************************************************************/
+
+display "Simulating trip-cost distributions by domain ..."
 local n_draws = 10000
 
 expand `n_draws'

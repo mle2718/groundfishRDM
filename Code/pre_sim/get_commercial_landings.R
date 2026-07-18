@@ -1,16 +1,30 @@
-###################################################
-### Code to pull in annual commercial landings and assumed discards from the commercial sector
-##  For WGOM Cod and GOM Haddock.
-##  This bit of code is useful to bridge between the terminal year of the assessment and the projection year.
-##  It is especially useful for when
-##
-# Old GOM cod is : 511,512,513,514,515,465,464
-# Old GB cod is everything else
+################################################################################
+# Script:       get_commercial_landings.R
+# Purpose:      Pulls annual commercial landings and assumed discards for WGOM cod
+#               and GOM haddock from Oracle (CAMS), recodes coarse stat areas into
+#               finer stock units, and aggregates to calendar-year and fishing-year
+#               removals in metric tons. Bridges the terminal assessment year to
+#               the projection year.
+# Inputs:       Oracle CAMS tables: cams_garfo.cfg_statarea_stock,
+#               cams_garfo.cams_land, cams_garfo.cams_discard_all_years,
+#               cams_garfo.cams_subtrip.
+# Outputs:      commercial_CY_removals_<date>.Rds and
+#               commercial_FY_removals_<date>.Rds in the BLAST source_data folder.
+# Dependencies: Packages ROracle, glue, tidyverse, here, conflicted. Oracle
+#               credentials (id, novapw, tns_alias) and network access to the
+#               BLAST share (//nefscfile/...).
+# Pipeline:     Standalone / unwrapped — no confirmed caller (per
+#               DATAFLOW_GROUNDFISH.md).
+# Note:         Contradiction corrected in a comment only (code unchanged): the
+#               stock-area recode in the "Get data" section (~line 105) assigns
+#               "SNE" but its original trailing comment read "#Western GOM".
+################################################################################
 
-# Itis codes:
-# cod is 164712
-# haddock is 164744
 ###################################################
+
+# Reference codes used throughout:
+#   ITIS: cod = 164712, haddock = 164744
+#   "Old" GOM cod stat areas: 511,512,513,514,515,465,464 (GB cod = everything else)
 
 ###################################################
 # Setup: Load libraries, hear, and date vintage.
@@ -90,6 +104,7 @@ discard_query<-glue("select cd.year, EXTRACT(month FROM cd.date_trip) as month, 
 
 # get the data
 # stock_areas
+message("Querying CAMS commercial landings/discards from Oracle ...")
 stock_area_definitions<-dbGetQuery(nova_conn, area_query)
 
 stock_area_definitions<-stock_area_definitions %>%
@@ -102,7 +117,7 @@ stock_area_definitions<-stock_area_definitions %>%
     itis_tsn=="164712" & area %in% c("513", "514", "515","521","526","541") ~ "WGOM", #Western GOM
     itis_tsn=="164712" & area %in% c("464","522","525","542", "543","551","552","561","562") ~ "GB", #GB
     itis_tsn=="164712" & area %in% c("533", "534", "537","538","539","611","612","613","614","615","616","621","622","623","624",
-                                     "625","626","627","628","629","631","632","633","634","635","636","637","638","639","640") ~ "SNE", #Western GOM
+                                     "625","626","627","628","629","631","632","633","634","635","636","637","638","639","640") ~ "SNE", #Southern New England
     .default = area_name  )
   )
 
@@ -142,6 +157,8 @@ species_area_catch<-species_area_catch %>%
 
 
 # construct fishing year
+# The groundfish fishing year runs May 1 - April 30, so January-April landings
+# belong to the previous fishing year.
 species_area_catch<-species_area_catch %>%
   mutate(fishing_year=case_when(
   month<=4 ~ year-1,

@@ -1,28 +1,35 @@
-*********** WGOM COD & HADDOCK CATCH AT LENGTH ***********
-
-/*
-This code pulls the median of 101 draws of simulated catch at length probabilities for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM). We take the observed probabilities of catch at length and the fitted (smoothed) probabilities of catch at length in inches. 
-
-This code cleans the simulated catch at length data compiled in catch_at_length_calibration.do and saved in baseline_catch_at_length.csv and formats the data for use in the recDST data dashboard. 
-
-
- Name: rdb_catch_at_length.do
- Inputs: baseline_catch_at_length_observed.csv
- Outputs: rdb_cat_len.dta.dta
- Description: Grabs the median proportions caught at length for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM), based on 101 random draws of mean simulated total catch.
- General strategy:
-  1. Read in data
-  2. Collapse data to get median probabilities caught at length (observed and fitted) for Cod and Haddock
-  3. Add descriptive columns for dashboard
-  4. Run rdb_catch_at_len_to_drive.R to push the processed data to Google Drive as an Rds
-  
-*/
+/*******************************************************************************
+ Script:       rdb_catch_at_length.do
+ Purpose:      Cleans the simulated catch-at-length data and formats it for the
+               recDST dashboard: takes medians across 101 draws of the observed
+               and fitted (smoothed) catch-at-length probabilities for WGOM cod
+               and haddock, converts lengths from cm to inches, stacks observed
+               and fitted, and adds descriptive columns.
+ Inputs:       $misc_data_cd/baseline_catch_at_length.csv (written by
+               catch_at_length_calibration.do).
+ Outputs:      $misc_data_cd/rdb_cat_len.dta
+ Dependencies: Global $misc_data_cd (set in model_wrapper.do).
+ Pipeline:     Wrapped by model_wrapper.do, gated by `prep_catch_at_length_for_dash'
+               (default ON). Followed by rdb_catch_at_len_to_drive.R, which pushes
+               the output to Google Drive as an Rds.
+ Note:         The prior header comment listed the input as
+               baseline_catch_at_length_observed.csv and the output as
+               rdb_cat_len.dta.dta; the code actually reads
+               baseline_catch_at_length.csv and writes rdb_cat_len.dta (header
+               updated to match the code).
+*******************************************************************************/
 
 
 
 import delimited "$misc_data_cd\baseline_catch_at_length.csv", clear
 
-*Take medians of 101 draws of the observed and fitted probabilities for catch at length 
+*Take medians of 101 draws of the observed and fitted probabilities for catch at length
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section A: Median observed catch-at-length probability */
+/******************************************************************************/
+/******************************************************************************/
 
 //observed probability
 preserve
@@ -39,6 +46,12 @@ rename observed_prob value
 tempfile obs
 save `obs', replace 
 restore
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section B: Median fitted (smoothed) catch-at-length probability */
+/******************************************************************************/
+/******************************************************************************/
 
 //fitted (smoothed) probability
 collapse (median) fitted_prob, by(season species length)
@@ -65,6 +78,12 @@ twoway (line value length if species=="hadd" & units=="observed proportion of ca
 drop season1-season4
 */
 
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section C: Add descriptive columns for the dashboard and save */
+/******************************************************************************/
+/******************************************************************************/
 
 // Add columns for dashboard
 gen common = "atlanticcod" if species=="cod"

@@ -1,5 +1,30 @@
-/*catchlist -- this assembles names of files that are needed in the catchlist */
-/*Check to see if the file exists */	/* If the file exists, add the filename to the list if there are observations */
+/*******************************************************************************
+ Script:       MRIP_lists.do
+ Purpose:      Rebuilds the MRIP file-list globals $catchlist/$triplist/$b2list/
+               $sizelist as space-separated lists of one .dta per year x wave that
+               both exists and has observations. This is the multi-file
+               alternative to the single consolidated-file defaults set in
+               model_wrapper.do.
+ Inputs:       $misc_data_cd/{catch,trip,size_b2,size}_<year><wave>.dta for each
+               year in $yearlist and wave in $wavelist.
+ Outputs:      Globals only: $catchlist, $triplist, $b2list, $sizelist.
+ Dependencies: Globals $misc_data_cd, $yearlist, $wavelist (set in model_wrapper.do).
+ Pipeline:     Wrapped by model_wrapper.do but gated by `assemblemriplists', which
+               is DEFAULT OFF. The developers label this "dead code"; unless it is
+               enabled, the wrapper's single-file defaults are used instead.
+               DATAFLOW_GROUNDFISH.md flags these four globals as the codebase's
+               main global-reassignment risk.
+*******************************************************************************/
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section A: catchlist */
+/******************************************************************************/
+/******************************************************************************/
+
+/* For each candidate file: if it exists and has observations, append its quoted
+   path to the running $catchlist. The nested quotes build a space-separated list
+   of quoted file paths (the same accumulate idiom repeats for the three lists below). */
 global catchlist
 foreach year in $yearlist{
 	foreach wave in $wavelist{
@@ -20,8 +45,11 @@ foreach year in $yearlist{
 }
 }
 
-/*Triplist -- this assembles then names of files that are needed in the Triplist */
-/*Check to see if the file exists */	/* If the file exists, add the filename to the list if there are observations */
+/******************************************************************************/
+/******************************************************************************/
+/* Section B: triplist */
+/******************************************************************************/
+/******************************************************************************/
 global triplist
 foreach year in $yearlist{
 	foreach wave in  $wavelist{
@@ -42,7 +70,11 @@ foreach year in $yearlist{
 }
 }
 
-/*B2 Files*/
+/******************************************************************************/
+/******************************************************************************/
+/* Section C: b2list (released-fish size files) */
+/******************************************************************************/
+/******************************************************************************/
 global b2list
 foreach year in $yearlist{
 	foreach wave in $wavelist{
@@ -64,7 +96,11 @@ foreach year in $yearlist{
 }
 
 
-/*SIZE_LIST */
+/******************************************************************************/
+/******************************************************************************/
+/* Section D: sizelist (kept-fish size files) */
+/******************************************************************************/
+/******************************************************************************/
 global sizelist
 foreach year in $yearlist{
 	foreach wave in $wavelist{
