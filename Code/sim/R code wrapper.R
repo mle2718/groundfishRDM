@@ -9,9 +9,18 @@
 #               calib_catch_draws/calib_catch_draws_<i>.dta (i = 1..n_simulations),
 #               miscellaneous/Discard_Mortality.csv,
 #               miscellaneous/next_year_calendar_adjustments.csv.
-# Outputs:      FST copies of the above inputs; downstream outputs are written by
-#               the sourced scripts (e.g. calibration_comparison.fst,
-#               calibrated_model_stats.fst, base_outcomes_*, n_choice_occasions_*).
+# Outputs:      Under gf.data.dir: miscellaneous/directed_trip_draws.fst,
+#               calib_catch_draws/calib_catch_draws_<i>.fst (i = 1..n_simulations),
+#               miscellaneous/Discard_Mortality.fst,
+#               miscellaneous/calendar_adj.fst.
+#               These are FST copies of the four inputs above, written by
+#               Section C for speed. Note that the calendar adjustments file is
+#               renamed on the way through, so its two names do not match.
+#               Written by the sourced scripts rather than here:
+#               calibration_comparison.fst (calibrate_rec_catch0.R),
+#               calibrated_model_stats.fst (calibration_routine.R),
+#               base_outcomes_<s>_<md>_<i>.fst and
+#               n_choice_occasions_<s>_<md>_<i>.fst (calibrate_rec_catch1.R).
 # Dependencies: Object `developer` set in the session; sources developer_setup.R,
 #               calibrate_rec_catch0.R, calibration_routine.R,
 #               export_to_GoogleDrive.R. The Stata pre-sim pipeline must have run
