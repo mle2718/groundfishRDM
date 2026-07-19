@@ -1,3 +1,26 @@
+################################################################################
+################################################################################
+# Script:       RecDST/model_run.R
+# Purpose:      Standalone driver that runs the recreational cod/haddock catch
+#               projection for one named policy scenario. Loads the scenario's
+#               regulation settings from a saved CSV, rewrites each directed-trip
+#               day's bag and minimum-size limits by season/mode, runs the
+#               projection (optionally in parallel), writes the raw output, and
+#               builds a baseline-vs-projected comparison table.
+# Inputs:       Data/miscellaneous/directed_trip_draws.fst (directed trips),
+#               saved_regs/regs_<policy_name>.csv (scenario regulation inputs),
+#               Data/miscellaneous/calibrated_model_stats.fst (baseline stats),
+#               Code/sim/predict_rec_catch_functions.R (sourced functions).
+# Outputs:      directed_trips_before.csv, directed_trips_after.csv,
+#               output/output_<policy_name>_<timestamp>.csv.
+# Dependencies: predict_rec_catch_functions.R supplies run_cod_hadd_projection(),
+#               in_season() and safe_divide().
+# Pipeline:     RecDST = Recreational Decision Support Tool. This is the
+#               script-mode counterpart to app.R's server logic: it exercises the
+#               same projection engine outside the Shiny app for one hard-coded
+#               scenario (see policy_name below).
+################################################################################
+################################################################################
 
 
 library(data.table)
@@ -20,9 +43,14 @@ final_process_choice_occasions_cd=here::here("Data/n_choice_occassions")
 final_process_misc_cd=here::here("Data/miscellaneous")
 final_process_calib_catch_cd=here::here("Data/calib_catch_draws")
 
-# -----------------------------------------------------------------------------
-# User-facing controls
-# -----------------------------------------------------------------------------
+################################################################################
+################################################################################
+# Section A: User-facing controls and inputs
+################################################################################
+################################################################################
+# The `if (exists(...))` guards let an outer caller (e.g. the Shiny app) inject
+# these objects into the environment before sourcing; the literals here are the
+# stand-alone defaults used when this script is run on its own.
 draws         <- 1:5
 n_simulations <- 5
 mode_draw     <- c("pr", "fh")
@@ -43,11 +71,20 @@ had_lw_b <- if (exists("had_lw_b")) had_lw_b else 3.0205
 
 
 
+################################################################################
+################################################################################
+# Section B: Load the scenario's regulations and apply them to directed trips
+################################################################################
+################################################################################
+
 saved_regs <- read.csv(here::here(paste0("saved_regs/regs_", policy_name, ".csv")))
 # for (a in seq_len(nrow(saved_regs))) {
 #   assign(saved_regs$input[a], saved_regs$value[a])
 # }
 
+# Push each row of saved_regs into the environment as a named variable
+# (input name -> value), so the case_when() blocks below can reference the
+# season open/close dates and limits (e.g. codFH_seas3_op) by bare name.
 list2env(setNames(as.list(saved_regs$value), saved_regs$input), envir = environment())
 
 directed_trips <- as.data.table(read_fst(file.path(final_process_misc_cd,"directed_trip_draws.fst")))
@@ -58,6 +95,12 @@ directed_trips_before <- directed_trips %>%
   dplyr::mutate(date_adj = date_parsed)
 write.csv(directed_trips_before, here::here("directed_trips_before.csv"))
 
+# Overwrite each day's bag/size limits with the scenario's rules. Within each
+# case_when the seasons are tested 3 -> 2 -> 1 so that, if seasons overlap, the
+# later-numbered season wins (first matching condition applies). The final
+# TRUE ~ 0 (bag) / 100 (min size) are the closed-fishery defaults: bag 0 and a
+# 100 cm minimum no fish reaches, matching set_regulations.do. Size limits are
+# stored in inches and converted to cm (* 2.54).
 directed_trips_after <- directed_trips_before %>%
   dplyr::mutate(
     cod_bag = dplyr::case_when(
@@ -94,6 +137,9 @@ directed_trips_after <- directed_trips_before %>%
       TRUE ~ 100)
   )
 
+# Superseded implementation of the block above: an earlier version that used
+# explicit date comparisons (lubridate::ymd) and chained case_when() calls
+# instead of the in_season() helper. Kept for reference; not executed.
 # directed_trips_after <- directed_trips_before %>%
 #   dplyr::mutate(
 #     cod_bag = dplyr::case_when(
@@ -197,9 +243,12 @@ directed_trips_after <- directed_trips_before %>%
 #       TRUE ~ hadd_min)
 #   )
 write.csv(directed_trips_after, here::here("directed_trips_after.csv"))
-# -----------------------------------------------------------------------------
-# Main projection execution
-# -----------------------------------------------------------------------------
+
+################################################################################
+################################################################################
+# Section C: Run the projection
+################################################################################
+################################################################################
 
 # In an Azure Shiny app, set n_workers from an environment variable or app option,
 # e.g. Sys.getenv("RDM_N_WORKERS", unset = parallel::detectCores(logical = FALSE) - 1).
@@ -212,6 +261,8 @@ n_workers <- 4   # or however many Azure workers/cores you want available
 n_workers <- if (exists("n_workers")) n_workers else max(1L, parallel::detectCores(logical = FALSE) - 1L)
 use_parallel <- if (exists("use_parallel")) use_parallel else TRUE
 
+message("Running cod/haddock projection for policy '", policy_name,
+        "' over ", length(draws), " draw(s); this may take a while ...")
 system.time({
   prediction_draws <- run_cod_hadd_projection(
     season_draw  = season_draw,
@@ -222,13 +273,24 @@ system.time({
     common_inputs = NULL
   )
 })
+message("Projection complete.")
 
 prediction_draws$policy_name <- policy_name
 time_saver<-format(Sys.time(), "%Y%m%d_%H%M%S")
 write_csv(prediction_draws, file = here::here("output", paste0("output_", policy_name, "_", time_saver, ".csv")))
 
 
-#### Testing only
+################################################################################
+################################################################################
+# Section D: Build baseline-vs-projected comparison table (testing/diagnostics)
+################################################################################
+################################################################################
+# Reshapes the projection output to long form, maps the raw metric codes to
+# human-readable labels, joins the calibrated baseline stats, and computes
+# per-metric differences and percent differences (overall and averaged across
+# draws). Marked "Testing only" by the developers: diagnostic output, not a
+# saved pipeline product.
+
 prediction_long <- copy(prediction_draws)
 prediction_long[, metric := as.character(metric)]
 prediction_long[, species := data.table::fcase(

@@ -1,16 +1,67 @@
+/******************************************************************************/
+/******************************************************************************/
+/* Script:  catch_at_length_projection.do                                     */
+/*                                                                            */
+/* Purpose: Produces the projection-year catch-at-length probability          */
+/*          distribution for WGOM cod and GOM haddock. The idea is to hold    */
+/*          recreational selectivity at length fixed at what was observed in  */
+/*          the calibration year, and let the length composition of the catch */
+/*          change only because the projected stock has a different age (and  */
+/*          therefore length) composition.                                    */
+/*                                                                            */
+/* Method (the numbered sections below follow these steps):                   */
+/*   1. Read baseline recreational catch-at-length.                           */
+/*   2. Build cod and haddock age-length keys (ALKs) from recent NEFSC trawl  */
+/*      data: pull the survey data, smooth counts across lengths within each  */
+/*      age with a LOWESS (bandwidth 0.3), then compute the proportion of     */
+/*      fish of age a that are length l.                                      */
+/*   3. Convert baseline stock assessment numbers-at-age (NAA) into baseline  */
+/*      numbers-at-length (NAL).                                              */
+/*   4. Merge baseline NAL to observed baseline catch-at-length and compute   */
+/*      an empirical recreational selectivity ("fraction caught") at length   */
+/*      by species, season, draw and length.                                  */
+/*   5. Convert projected NAA into projected NAL using the same ALKs.         */
+/*   6. Apply baseline selectivity-at-length to projected NAL to obtain       */
+/*      projected catch-at-length.                                            */
+/*   7. Smooth projected catch-at-length into a probability distribution by   */
+/*      fitting a gamma to each species-season-draw.                          */
+/*   8. Export projected fitted probabilities by draw/species/season/length.  */
+/*                                                                            */
+/* Inputs:  $misc_data_cd/baseline_catch_at_length_observed.csv               */
+/*          $misc_data_cd/baseline_catch_at_length.csv                        */
+/*          $misc_data_cd/NEFSC_cruises.csv                                   */
+/*          $misc_data_cd/NEFSC_trawl_cod.csv, NEFSC_trawl_hadd.csv           */
+/*          $misc_data_cd/WGOM_Cod_historical_NAA.dta,                        */
+/*                       WGOM_Cod_projected_NAA.dta                           */
+/*          $misc_data_cd/GOM_Haddock_historical_NAA.dta,                     */
+/*                       GOM_Haddock_projected_NAA.dta                        */
+/*                                                                            */
+/* Outputs: $misc_data_cd/projected_catch_at_length.csv                       */
+/*                                                                            */
+/* Dependencies: catch_at_length_calibration.do (writes both baseline CSVs)   */
+/*          and the assessment scripts get_cod_assessment_data.R /            */
+/*          get_haddock_assessment_data.R (write the NAA files). Expects      */
+/*          $seed, $ndraws, $misc_data_cd, $trawl_survey_start_year,          */
+/*          $cod_NAA_base_year, $hadd_NAA_base_year, $cod_NAA_proj_year and   */
+/*          $hadd_NAA_proj_year to be set by model_wrapper.do.                */
+/*                                                                            */
+/* Pipeline: Pre-simulation, immediately after catch_at_length_calibration.do */
+/*          The exported CSV is what the R simulation reads to decide the     */
+/*          size composition of projection-year catch.                        */
+/*                                                                            */
+/* Note 1:  Two renames in this file (see Sections 3 and 5) rely on Stata's   */
+/*          variable-name abbreviation rather than being no-ops; they are     */
+/*          annotated where they occur.                                       */
+/* Note 2:  The gamma-fitting loop in Section 7 shares the tempfile-naming    */
+/*          issue flagged in catch_at_length_calibration.do.                  */
+/******************************************************************************/
+/******************************************************************************/
 
-** Steps to produce projected catch at length probabilty distribution
-*1. Read baseline recreational catch-at-length 
-*2. Build cod and haddock age-length keys (ALKs) from recent NEFSC trawl data.
-*3. Convert baseline stock assessment numbers-at-age (NAA) into baseline numbers-at-length (NAL).
-*4. Merge baseline NAL to observed baseline catch-at-length and compute an empirical recreational selectivity at length by species, season, draw, and length.
-*5. Convert projected NAA into projected NAL using the same ALKs.
-*6. Apply baseline selectivity-at-length to projected NAL to obtain projected catch-at-length.
-*7. Convert projected catch-at-length into a probability distribution over lengths, using a gamma-smoothed fitted distribution.
-*8. Export projected fitted probabilities by draw/species/season/length.
-
- 
-* 1. Pull in baseline catch-at-lengths
+/******************************************************************************/
+/******************************************************************************/
+/* Section 1: Pull in baseline catch-at-lengths                               */
+/******************************************************************************/
+/******************************************************************************/
 
 set seed $seed
 
@@ -22,16 +73,23 @@ tempfile cal
 save `cal', replace 
 
 
-*2. Create age-length keys from NEFSC trawl survey data
-	*a. Pull in NEFSC trawl survey data from the last X of data available
-	*b. Smooth counts across age classes over the range of observed catch-at-lengths for a given state-species using a LOWESS bandwidth=0.3
-	*c. Compute the proportion of fish of age a that are length l
+/******************************************************************************/
+/******************************************************************************/
+/* Section 2: Age-length keys from NEFSC trawl survey data                    */
+/******************************************************************************/
+/******************************************************************************/
 
-* cod ALK - age 1 through 6+ 
-* there are few obs. for age 7+, combine these into 6+ category
+	/* a. Pull in NEFSC trawl survey data from $trawl_survey_start_year on
+	   b. Smooth counts across lengths within each age using LOWESS, bandwidth 0.3
+	   c. Compute the proportion of fish of age a that are length l           */
+
+di "catch_at_length_projection: building cod and haddock age-length keys ..."
+
+/* Cod ALK - ages 1 through 6+. There are few observations at age 7+, so those
+   ages are pooled into a 6+ plus-group. */
 
 *2a
-import delimited using "$misc_data_cd/NEFSC_cruises.csv", clear 
+import delimited using "$misc_data_cd/NEFSC_cruises.csv", clear
 renvarlab, lower
 tempfile cruises
 sort year 
@@ -54,13 +112,18 @@ replace age=6 if age>=6
 collapse (sum) count, by (age length)
 drop if age==. | length==.
 
+/* Treat age as the panel and length as the time index so tsfill inserts the
+   length bins with no sampled fish; mvencode then makes those counts zero, so
+   every age spans the same contiguous length range before smoothing. */
 tsset age length
 tsfill, full
 
 sort age length 
 mvencode count, mv(0) override 
 
-*2b.
+/* 2b. lowess writes its smoothed values into a separate variable per age, and
+   each of those is missing outside that age's rows; the rowtotal below folds
+   them back into one column. Negative smoothed counts are truncated at zero. */
 levelsof age, local(ages)
 foreach a of local ages{
 	lowess count length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
@@ -97,8 +160,8 @@ tempfile al_cod
 save `al_cod', replace 
 
 
-* Haddock ALK - age 1 through 9 
-*2a. 
+/* Haddock ALK - ages 1 through 9, with a 9+ plus-group */
+*2a.
 import delimited using "$misc_data_cd/NEFSC_cruises.csv", clear 
 renvarlab, lower
 tempfile cruises
@@ -121,13 +184,18 @@ replace age=9 if age>=9
 collapse (sum) count, by (age length)
 drop if age==. | length==.
 
+/* Treat age as the panel and length as the time index so tsfill inserts the
+   length bins with no sampled fish; mvencode then makes those counts zero, so
+   every age spans the same contiguous length range before smoothing. */
 tsset age length
 tsfill, full
 
 sort age length 
 mvencode count, mv(0) override 
 
-*2b.
+/* 2b. lowess writes its smoothed values into a separate variable per age, and
+   each of those is missing outside that age's rows; the rowtotal below folds
+   them back into one column. Negative smoothed counts are truncated at zero. */
 levelsof age, local(ages)
 foreach a of local ages{
 	lowess count length if age==`a' , adjust bwidth(.3) gen(s`a') nograph
@@ -164,9 +232,14 @@ tempfile al_hadd
 save `al_hadd', replace 
 
 
-* 3.  Convert baseline stock assessment numbers-at-age (NAA) into baseline numbers-at-length (NAL).
+/******************************************************************************/
+/******************************************************************************/
+/* Section 3: Baseline numbers-at-age -> baseline numbers-at-length           */
+/******************************************************************************/
+/******************************************************************************/
+
 * cod
-use "$misc_data_cd/WGOM_Cod_historical_NAA.dta", clear 
+use "$misc_data_cd/WGOM_Cod_historical_NAA.dta", clear
 keep if year==$cod_NAA_base_year
 split metric, parse(" ")
 rename metric6 age
@@ -174,10 +247,15 @@ keep age value year
 destring age, replace
 reshape wide value, i(year) j(age)
 
+/* Collapse ages 6-9 into the 6+ plus-group used by the cod ALK. The rename
+   is not a no-op: value6 has just been dropped, so "value6" abbreviates
+   uniquely to value6_plus, which is renamed back to value6 so the subsequent
+   reshape produces age==6. */
 egen value6_plus=rowtotal(value6-value9)
 drop value6 value7 value8 value9
 rename value6 value6
 reshape long value, i(year) j(new)
+/* Assessment NAA are reported in thousands of fish */
 replace value=value*1000
 rename value nfish
 rename new age 
@@ -194,6 +272,10 @@ collapse (sum) base_nal*, by(length)
 
 sort length 
 gen species="cod"
+/* NAA are annual, so the same numbers-at-length are copied to both seasons.
+   Seasonal differences in catch composition therefore come entirely from the
+   season-specific selectivity estimated in Section 4. The same expand is
+   repeated for haddock and for both projected series below. */
 expand 2, gen(dup)
 gen season="winter" if dup==0
 replace season="summer" if dup==1
@@ -233,7 +315,13 @@ append using  `naa_cod'
 tempfile base_naa
 save `base_naa', replace 
 
-* 4. Merge baseline NAL to observed baseline catch-at-length and selectivity at length by species, season, draw, and length.
+/******************************************************************************/
+/******************************************************************************/
+/* Section 4: Empirical selectivity at length (fraction of the population     */
+/*            at each length that the recreational fishery caught)            */
+/******************************************************************************/
+/******************************************************************************/
+
 merge 1:m species season length using `cal', keep(2 3)
 drop if draw==.
 
@@ -248,10 +336,14 @@ sort species season  draw length
 drop if catch==0
 mvencode frac_caught*, mv(0) override
 
-* catch_l > population_l adjustment 
-* This block reassigns catch lengths where base_nal_smooth == 0 and the catch falls outside the population length support. 
-* It does not  address cases where `catch > base_nal_smooth` at lengths where population is nonzero but small. This will produce `frac_caught_smooth > 1`.
-* This is acceptable because "fraction caught" is only a scaling factor
+/* catch_l > population_l adjustment.
+   MRIP occasionally reports caught fish at lengths where the assessment-derived
+   population is exactly zero, which would make the fraction caught undefined.
+   This block moves any such catch to the nearest length inside the population's
+   support, so it is retained rather than dropped.
+   It does not address cases where catch > base_nal_smooth at lengths where the
+   population is nonzero but small, which produce frac_caught_smooth > 1. That
+   is acceptable because "fraction caught" is only used as a scaling factor. */
 
 egen min_length_pop=min(length) if base_nal_smooth!=0, by(species season draw)
 egen max_length_pop=max(length) if base_nal_smooth!=0, by(species season draw)
@@ -259,6 +351,10 @@ egen max_length_pop=max(length) if base_nal_smooth!=0, by(species season draw)
 egen min_length_catch=min(length) if catch!=0, by(species season draw)
 egen max_length_catch=max(length) if catch!=0, by(species season draw)
 
+/* The egens above are defined only on the rows satisfying their if-condition;
+   this loop broadcasts each one to every row of its species-season-draw group.
+   Note the list names max_length_pop twice and the *_catch bounds are never
+   used below; both are harmless, and left as-is. */
 local vars min_length_pop max_length_pop min_length_catch max_length_pop max_length_catch
 foreach v of local vars{
 	egen mean_`v'=mean(`v'), by(species season draw)
@@ -284,9 +380,16 @@ tempfile selectivity
 save `selectivity', replace
 
 
-*5. Convert projected NAA into projected NAL
+/******************************************************************************/
+/******************************************************************************/
+/* Section 5: Projected numbers-at-age -> projected numbers-at-length         */
+/******************************************************************************/
+/******************************************************************************/
+
+di "catch_at_length_projection: converting projected NAA to numbers-at-length ..."
+
 * cod
-use "$misc_data_cd/WGOM_Cod_projected_NAA.dta", clear 
+use "$misc_data_cd/WGOM_Cod_projected_NAA.dta", clear
 keep if year==$cod_NAA_proj_year
 
 split metric, parse(" ")
@@ -294,7 +397,10 @@ rename metric5 age
 keep age value year replicate
 destring age, replace
 reshape wide value, i(year replicate) j(age)
-sample $ndraws, count 
+/* The assessment projection supplies many stochastic replicates; take a random
+   $ndraws of them and treat each as one model draw. This is how assessment
+   uncertainty propagates into the recreational model. */
+sample $ndraws, count
 gen draw=_n
 egen value6_plus=rowtotal(value6-value9)
 drop value6 value7 value8 value9
@@ -313,6 +419,8 @@ rename replicate cod_replicate
 
 preserve 
 u `al_cod', clear 
+/* One ALK is estimated for all draws, so replicate it across draws to make the
+   merge to the per-draw projected NAA a clean 1:m. */
 expand $ndraws
 bysort length age: gen draw=_n
 tempfile al_cod_expand
@@ -353,7 +461,10 @@ destring age, replace
 *replace nfish=nfish*20 if age>=6
 
 reshape wide nfish, i( replicate) j(age)
-sample $ndraws, count 
+/* The assessment projection supplies many stochastic replicates; take a random
+   $ndraws of them and treat each as one model draw. This is how assessment
+   uncertainty propagates into the recreational model. */
+sample $ndraws, count
 gen draw=_n
 reshape long nfish, i( draw replicate) j(new)
 rename new age 
@@ -361,6 +472,8 @@ rename replicate hadd_replicate
 
 preserve 
 u `al_hadd', clear 
+/* One ALK is estimated for all draws, so replicate it across draws to make the
+   merge to the per-draw projected NAA a clean 1:m. */
 expand $ndraws
 bysort length age: gen draw=_n
 tempfile al_hadd_expand
@@ -387,10 +500,16 @@ sort season draw length
 append using  `proj_naa_cod' 
 
 
-* 6. Apply baseline empirical fraction-caught-at-length to projected population NAL.
-		* This assumes that the length-specific recreational catchability/selectivity observed
-		* in the baseline year remains constant in the projection year, while projected stock
-		* composition changes according to projected NAA translated to NAL using the ALK.
+/******************************************************************************/
+/******************************************************************************/
+/* Section 6: Apply baseline selectivity-at-length to projected NAL           */
+/******************************************************************************/
+/******************************************************************************/
+
+	/* This assumes that the length-specific recreational catchability/
+	   selectivity observed in the baseline year remains constant in the
+	   projection year, while projected stock composition changes according to
+	   projected NAA translated to NAL using the ALK. */
 
 merge 1:1 species season length draw using `selectivity'
 sort species season draw length
@@ -419,9 +538,17 @@ save `observed_prob', replace
 restore
 
 
-*7. Convert projected catch-at-length into a probability distribution over lengths, using gamma-smoothed fitted distribution.
+/******************************************************************************/
+/******************************************************************************/
+/* Section 7: Smooth projected catch-at-length with a fitted gamma            */
+/******************************************************************************/
+/******************************************************************************/
 
-* MOM approach to avoid non-convergence 
+di "catch_at_length_projection: fitting gamma distributions by domain; this may take a while ..."
+
+/* Same method-of-moments gamma fit as catch_at_length_calibration.do, applied
+   here to projected rather than baseline catch. MOM is used because the
+   maximum-likelihood fit failed to converge for the sparser domains. */
 tempfile new
 save `new', replace
 
@@ -470,7 +597,10 @@ qui foreach r of local regs {
         local beta  = `v'/`mu'
     }
 
-    *Simulate a truncated gamma sample via rejection sampling
+    /* Simulate from the fitted gamma and re-tabulate to get a discrete
+       probability per 1 cm length bin. No rejection sampling actually happens
+       here despite the retry guard below; truncation to the observed range is
+       applied later instead. */
     local ndraw = `tot_n_fish'   // sample size for the simulated distribution
     clear
     set obs `ndraw'
@@ -480,7 +610,8 @@ qui foreach r of local regs {
     replace gammafit = round(gammafit)
 
 
-    * If rejection killed everything, try again with more draws (once)
+    /* Defensive retry inherited from an earlier rejection-sampling version;
+       set obs guarantees _N>0, so this branch is not currently reachable. */
     if _N==0 {
         clear
         set obs `=5*`ndraw''
@@ -495,7 +626,11 @@ qui foreach r of local regs {
     gen double fitted_prob = nfish/sumnfish
     gen domain = "`r'"
 
-    tempfile fitted_sizes_`=_N'   
+    /* NOTE (flagged, code unchanged): the tempfile is keyed on the number of
+       distinct fitted lengths, which is not unique across domains, so two
+       domains with the same number of length bins collide. Same issue as in
+       catch_at_length_calibration.do. */
+    tempfile fitted_sizes_`=_N'
     save `fitted_sizes_`=_N'', replace
     global fitted_sizes "$fitted_sizes `fitted_sizes_`=_N''"
 }
@@ -548,7 +683,10 @@ foreach v of local vars{
 }
 
 
-* truncate the fitted distribution to the observed range
+/* Truncate the fitted distribution to the range of lengths actually observed
+   in the baseline catch, then renormalize so each domain's probabilities sum
+   to one. This keeps the gamma's unbounded tails from putting mass on lengths
+   the fishery has never encountered. */
 levelsof domain, local(doms)
 foreach d of local doms{
 quietly summarize length if observed_prob_base!=0 & !missing(observed_prob_base) & domain=="`d'"
@@ -653,10 +791,17 @@ twoway (scatter prop_base_nal_smooth length if domain=="`d'" ,   connect(direct)
 grc1leg `graphnames', rows(2)
 */
 
-* 8. Export projected fitted probabilities
-keep draw length species season  fitted_prob_proj 
+/******************************************************************************/
+/******************************************************************************/
+/* Section 8: Export projected fitted probabilities                           */
+/******************************************************************************/
+/******************************************************************************/
+
+keep draw length species season  fitted_prob_proj
 drop if missing(fitted_prob_proj) | fitted_prob_proj == 0
 rename fitted_prob_proj fitted_prob
 compress
-export delimited using "$misc_data_cd/projected_catch_at_length.csv", replace 
+export delimited using "$misc_data_cd/projected_catch_at_length.csv", replace
+
+di "catch_at_length_projection: done."
 
