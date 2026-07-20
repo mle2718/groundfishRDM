@@ -60,7 +60,7 @@ year_end<-2025
 
 #Set up the oracle connection
 drv<-dbDriver("Oracle")
-nova_conn<-dbConnect(drv, id, password=novapw, dbname=tns_alias)
+con_name<-eval(nefscdb_con)
 
 # Set up the sql queries
 # Query to pull statistical areas and stock names
@@ -90,7 +90,7 @@ discard_query<-glue("select cd.year, EXTRACT(month FROM cd.date_trip) as month, 
 
 # get the data
 # stock_areas
-stock_area_definitions<-dbGetQuery(nova_conn, area_query)
+stock_area_definitions<-dbGetQuery(con_name, area_query)
 
 stock_area_definitions<-stock_area_definitions %>%
   rename_with(tolower)
@@ -108,13 +108,13 @@ stock_area_definitions<-stock_area_definitions %>%
 
 
 # landings
-species_area_landings<-dbGetQuery(nova_conn, landings_query)
+species_area_landings<-dbGetQuery(con_name, landings_query)
 species_area_landings<-species_area_landings %>%
   rename_with(tolower)
 
 
 # discards
-species_st_discards<-dbGetQuery(nova_conn, discard_query)
+species_st_discards<-dbGetQuery(con_name, discard_query)
 species_st_discards<-species_st_discards %>%
   rename_with(tolower)
 
