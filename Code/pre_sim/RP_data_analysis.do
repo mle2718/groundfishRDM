@@ -42,6 +42,9 @@
 /*          hadd_keep and hadd_rel, which are not present in the data at that  */
 /*          point, and re-generates cod_open after it already exists. Flagged  */
 /*          inline; code unchanged.                                            */
+/* Dev paths: 10 hardcoded absolute paths to developers' local machines        */
+/*          (C:\ or E:\), at lines 54, 110, 113, 117, 118, 335, 387, 542,      */
+/*          595 and 791 (see Note 1 above).                                    */
 /******************************************************************************/
 /******************************************************************************/
 

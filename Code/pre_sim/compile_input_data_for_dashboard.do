@@ -13,6 +13,9 @@
  Pipeline:     Standalone / unwrapped — no confirmed caller (per
                DATAFLOW_GROUNDFISH.md). Runs after the catch-per-trip
                calibration steps have produced the per-draw Excel files.
+ Dev paths:    2 hardcoded absolute paths to a developer's local machine
+               (E:\), at lines 20 and 50 (plus one more named in an
+               explanatory comment at line 55).
 *******************************************************************************/
 
 
