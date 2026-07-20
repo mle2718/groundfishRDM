@@ -118,7 +118,7 @@ species_st_discards<-dbGetQuery(con_name, discard_query)
 species_st_discards<-species_st_discards %>%
   rename_with(tolower)
 
-dbDisconnect(nova_conn)
+dbDisconnect(con_name)
 
 ###################################################
 # End of data query
