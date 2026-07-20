@@ -32,9 +32,8 @@ pounds_per_mt<-2204.62
 #Deal with folders
 
 here::i_am("Code/pre_sim/get_commercial_landings.R")
-BLAST_root<-file.path("//nefscfile","BLAST","READ-SSB-Lee-BLAST")
-output_folder<-file.path(BLAST_root,"cod_haddock_fy2026", "source_data")
-
+source(here("Code", "helpers", "developer_setup.R"))
+output_folder<-file.path(gf.data.dir, "miscellaneous")
 
 # I'm pulling 2022 to 2025 calendar data, but
 # this will have complete
