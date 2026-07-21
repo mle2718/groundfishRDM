@@ -2,7 +2,9 @@
 # it takes 2 arguments, first_year and last_year, in sequence.
 # because it takes 2 arguments, you'll have to run it from the command line with
 # Rscript get_mrip_oracle.R 2023 2025
-# or you can run it from stata
+# or you can run it from the stata wrapper.
+
+#
 
 
 # Define arguments
@@ -94,6 +96,9 @@ mrip_pull$mrip_pull_date<-datestamp
 
 # write this to an rds file.
 write_rds(mrip_pull, file=file.path(output_folder, glue("mrip_pull{todaysdate}.Rds")))
+
+message("First Year in Data: ",first_yr)
+message("Last Year in Data: ",last_yr)
 
 message("MRIP data successfully pulled on: ", format(todaysdate,"%B %d, %Y") )
 

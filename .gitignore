@@ -4,13 +4,13 @@
 .Ruserdata
 .secrets
 .csv
-
 /Data
 /data-raw
 /output
 /saved_regs
-
 **/.env
 **/*.env
 *.stswp
 /Code/pre_sim/logs
+directed_trips_after.csv
+directed_trips_before.csv
