@@ -17,6 +17,10 @@
                (`ssc install` each once). Code/helpers/developer_setup_stata.do.
                Google Drive mounted to D: (for get_assessment_from_gdrive.do).
                MRIP source data mounted (see "Data availability" below).
+			   Some R scripts that are called will copy files from Google Drive or write files to 
+			   Google Drive.  If you have not already connected to google drive, 
+			   run "Code/helpers/googledrivesetup.R".  If you do not the
+			   the R scripts that use googledrive will fail ungracefully.
  Pipeline:     Step 0 / very top of the whole pipeline. Each toggle below runs
                one pre_sim script (execution order documented in
                DATAFLOW_GROUNDFISH.md); the final toggle hands off to
@@ -405,7 +409,11 @@ if `run_calibration'{
 
 
 log close
+display "model_wrapper.do: Stata pre-simulation stage complete."
 
+if (`proto'==1) {
+	display "Prototyping option set on. ndraws global set to $ndraws"
+}
 
 timer off 1          // Stops timing
 timer list 1         // Displays elapsed time in seconds
