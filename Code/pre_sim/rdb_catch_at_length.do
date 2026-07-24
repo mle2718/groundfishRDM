@@ -1,7 +1,7 @@
-*********** WGOM COD & HADDOCK CATCH AT LENGTH ***********
+*********** WGOM COD & GOM HADDOCK CATCH AT LENGTH ***********
 
 /*
-This code pulls the median of 101 draws of simulated catch at length probabilities for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM). We take the observed probabilities of catch at length and the fitted (smoothed) probabilities of catch at length in inches. 
+This code pulls the median of 101 draws of simulated catch at length probabilities for Western Gulf of Maine (WGOM)  Atlantic Cod and Gulf of Maine (GOM) Haddock. We provide the observed probabilities of catch at length and the fitted (smoothed) probabilities of catch at length in inches. Catch at length for groundfish is provided at the season level where the 'summer' season is May - August and the 'winter' is September - April.  
 
 This code cleans the simulated catch at length data compiled in catch_at_length_calibration.do and saved in baseline_catch_at_length.csv and formats the data for use in the recDST data dashboard. 
 
@@ -9,10 +9,10 @@ This code cleans the simulated catch at length data compiled in catch_at_length_
  Name: rdb_catch_at_length.do
  Inputs: baseline_catch_at_length_observed.csv
  Outputs: rdb_cat_len.dta.dta
- Description: Grabs the median proportions caught at length for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM), based on 101 random draws of mean simulated total catch.
+ Description: Grabs the median of 101 draws of observed and fitted proportions caught at length for Atlantic Cod and Haddock by season. The 101 draws are created by multiplying discard at length and harvest at length probabilities for the calibration year by 101 random draws of simulated total harvest and total discards. The total numbers of fish harvested and discarded at length are added to get total numbers caught at length, which is then converted to probabilities. Those probabilities are then fitted to a gamma distribution. See catch_at_length_calibration.do for the code. 
  General strategy:
   1. Read in data
-  2. Collapse data to get median probabilities caught at length (observed and fitted) for Cod and Haddock
+  2. Collapse data to get median probabilities caught at length (observed and fitted) for Cod and Haddock by season
   3. Add descriptive columns for dashboard
   4. Run rdb_catch_at_len_to_drive.R to push the processed data to Google Drive as an Rds
   
@@ -78,15 +78,14 @@ gen data_version="2026-06-29"
 
 gen source="model intermediate"
 gen stock_abbrev="WGOM"
+replace stock_abbrev="GOM" if common=="haddock"
 gen fishery= "NE Groundfish"
 
 //get rid of var label on value 
 label variable value ""
 
-//should year go in?
+//should year go in? technically some of the data came from 2024 but 2025 is the regulatory baseline year
 gen year=2025
-
-// kim fine with extracting the lengths in inches that only have one decimal place from the metric column
 
 order fishery common species_itis stock_abbrev data_version year metric value units source
 
