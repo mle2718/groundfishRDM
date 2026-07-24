@@ -1,7 +1,7 @@
-*********** WGOM COD & HADDOCK CATCH PER TRIP ***********
+*********** WGOM COD & GOM HADDOCK CATCH PER TRIP ***********
 
 /*
-This code pulls the median, minimum, and maximum of the 100 draws of simulated mean catch per trip (ie, harvest + discards, or A + B1 + B2) at the the mode-month level for Atlantic Cod and Haddock in the Western Gulf of Maine (WGOM). 
+This code pulls the median, minimum, and maximum of  100 draws of simulated mean catch per trip (ie, harvest + discards, or A + B1 + B2) at the the mode-month level for Western Gulf of Maine (WGOM)  Atlantic Cod and Gulf of Maine (GOM) Haddock. 
 
 This code cleans the simulated catch per trip data compiled in compare_calibration_data_to_MRIP.do and saved in simulated_catch_totals3.dta and formats the data for use in the rec dashboard. 
 
@@ -121,6 +121,7 @@ gen year=2025 if month<=10
 replace year=2024 if month>=11
 
 gen stock_abbrev="WGOM"
+replace stock_abbrev="GOM" if common=="haddock"
 gen fishery= "NE Groundfish"
 
 //Update this 
