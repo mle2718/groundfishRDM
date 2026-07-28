@@ -124,8 +124,6 @@ gen stock_abbrev="WGOM"
 replace stock_abbrev="GOM" if common=="haddock"
 gen fishery= "NE Groundfish"
 
-//Update this 
-gen data_version="2026-05-12"
 //state will be NA
 gen state=.
 gen source="model intermediate"

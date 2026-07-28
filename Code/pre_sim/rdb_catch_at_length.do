@@ -73,9 +73,6 @@ gen species_itis = 164712 if species=="cod"
 replace species_itis = 164744 if species=="hadd"
 drop species length
 
-// Update this 
-gen data_version="2026-06-29"
-
 gen source="model intermediate"
 gen stock_abbrev="WGOM"
 replace stock_abbrev="GOM" if common=="haddock"
