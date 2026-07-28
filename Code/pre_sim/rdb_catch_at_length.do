@@ -84,7 +84,7 @@ label variable value ""
 //should year go in? technically some of the data came from 2024 but 2025 is the regulatory baseline year
 gen year=2025
 
-order fishery common species_itis stock_abbrev data_version year metric value units source
+order fishery common species_itis stock_abbrev year metric value units source
 
 save "$misc_data_cd\rdb_cat_len.dta", replace 
 

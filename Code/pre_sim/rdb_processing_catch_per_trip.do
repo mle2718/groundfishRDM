@@ -129,7 +129,7 @@ gen state=.
 gen source="model intermediate"
 
 *reorder columns. sort data on month, common, mode.
-order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units source
+order fishery common species_itis stock_abbrev state mode year wave month metric value units source
 sort month common mode
 
 //get rid of var label on value 
