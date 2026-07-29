@@ -73,9 +73,6 @@ gen species_itis = 164712 if species=="cod"
 replace species_itis = 164744 if species=="hadd"
 drop species length
 
-// Update this 
-gen data_version="2026-06-29"
-
 gen source="model intermediate"
 gen stock_abbrev="WGOM"
 replace stock_abbrev="GOM" if common=="haddock"
@@ -87,7 +84,7 @@ label variable value ""
 //should year go in? technically some of the data came from 2024 but 2025 is the regulatory baseline year
 gen year=2025
 
-order fishery common species_itis stock_abbrev data_version year metric value units source
+order fishery common species_itis stock_abbrev year metric value units source
 
 save "$misc_data_cd\rdb_cat_len.dta", replace 
 
