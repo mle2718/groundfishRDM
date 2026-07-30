@@ -18,7 +18,7 @@
 # Outputs:      final_process_misc_cd/calibration_comparison.fst.
 # Dependencies: The final_process_* path objects and n_simulations must exist in
 #               the calling environment (set by R code wrapper.R /
-#               calibration_routine.R). Packages: data.table, readr, haven, fst.
+#               calibration_routine.R).
 # Pipeline:     Part of the R calibration stage (Code/sim). Sibling of
 #               calibrate_rec_catch1.R, which reuses several helpers defined here.
 #

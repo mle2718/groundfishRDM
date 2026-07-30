@@ -7,7 +7,7 @@
 # Inputs:       None at source time (defines functions only).
 # Outputs:      Functions pivot_naa_long() and validate_naa_data() in the
 #               calling environment.
-# Dependencies: Packages tidyr, dplyr, glue (attached by the caller).
+# Dependencies:
 # Pipeline:     Sourced by the two get_*_assessment_data.R scripts; not called
 #               by any wrapper.
 ################################################################################

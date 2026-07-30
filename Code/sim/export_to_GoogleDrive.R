@@ -7,9 +7,9 @@
 # Inputs:       Local FST/CSV/XLSX/DTA files in the final_process_* folders (set by
 #               "R code wrapper.R"); the corresponding shared-drive folders.
 # Outputs:      Files uploaded to Google Drive; a printed report of missing files.
-# Dependencies: Packages googledrive, data.table. Requires a cached Drive token
-#               (.secrets) and the final_process_* path objects defined by the
-#               calling "R code wrapper.R".
+# Dependencies: Requires a cached Drive token (.secrets) and the
+#               final_process_* path objects defined by the calling
+#               "R code wrapper.R".
 # Pipeline:     Sourced by "R code wrapper.R" (Section D) after calibration.
 # Note:         The Drive folder for choice occasions is spelled
 #               "n_choice_occassions" (double s) while the file names use

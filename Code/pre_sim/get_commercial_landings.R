@@ -10,9 +10,8 @@
 #               cams_garfo.cams_subtrip.
 # Outputs:      commercial_CY_removals_<date>.Rds and
 #               commercial_FY_removals_<date>.Rds in the BLAST source_data folder.
-# Dependencies: Packages ROracle, glue, tidyverse, here, conflicted. Oracle
-#               credentials (id, novapw, tns_alias) and network access to the
-#               BLAST share (//nefscfile/...).
+# Dependencies: Oracle credentials (id, novapw, tns_alias) and network access
+#               to the BLAST share (//nefscfile/...).
 # Pipeline:     Standalone / unwrapped — no confirmed caller (per
 #               DATAFLOW_GROUNDFISH.md).
 # Note:         Contradiction corrected in a comment only (code unchanged): the

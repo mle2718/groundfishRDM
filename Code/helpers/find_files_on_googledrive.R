@@ -7,8 +7,8 @@
 # Inputs:       None (the paths and filenames are literals to copy/adapt).
 # Outputs:      None persisted; assigns folder/file ids to local objects for
 #               interactive use.
-# Dependencies: Packages tidyverse, glue, googledrive, here. Requires a cached
-#               Drive token in .secrets (see googledrivesetup.R).
+# Dependencies: Requires a cached Drive token in .secrets (see
+#               googledrivesetup.R).
 # Pipeline:     Standalone helper / how-to; not called by any wrapper. Run
 #               occasionally when you need a file's Drive id.
 ################################################################################

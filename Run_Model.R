@@ -8,7 +8,7 @@
 #               to locate saved_regs/regs_<Run_Name>.csv).
 # Outputs:      None written here directly; all output is produced by the
 #               sourced RecDST/model_run.R.
-# Dependencies: Packages magrittr, data.table. Sources RecDST/model_run.R.
+# Dependencies: Sources RecDST/model_run.R.
 # Pipeline:     Head of the separate, code-unlinked projection path
 #               (Path A in DATAFLOW_GROUNDFISH.md). Invoked as
 #               `Rscript Run_Model.R Run_Name`. Not called by either wrapper

@@ -16,9 +16,7 @@
 #               (written by calibration_catch_per_trip_part1.do).
 # Outputs:      gf.data.dir/calib_catch_draws/calib_catch_draws_raw_<d>.dta
 #               (one file per simulation draw d = 1..n_draws).
-# Dependencies: Code/helpers/developer_setup.R (sets gf.data.dir). Packages:
-#               survey, copula, MASS, fitdistrplus, readxl, weights, wCorr,
-#               Hmisc, tidyr, dplyr, ggplot2, writexl, plyr, haven, here.
+# Dependencies: Code/helpers/developer_setup.R (sets gf.data.dir).
 # Pipeline:     Step 5b. Invoked (via rscript) by model_wrapper.do between
 #               calibration_catch_per_trip_part1.do (which writes the xlsx input)
 #               and _part2.do (which resamples these raw draws into trip files).

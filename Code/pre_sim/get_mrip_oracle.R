@@ -8,9 +8,8 @@
 #               (mriptacklebox's nefscdb_con), waves 1-6.
 # Outputs:      <gf.data.dir>/miscellaneous/mrip_{trip,catch,size,size_b2}.dta and
 #               mrip_pull<today>.Rds.
-# Dependencies: Packages here, mriptacklebox, ROracle, tidyverse, DBI, glue,
-#               haven, conflicted. Sources developer_setup.R (for gf.data.dir).
-#               Requires Oracle access.
+# Dependencies: Sources developer_setup.R (for gf.data.dir). Requires Oracle
+#               access.
 # Pipeline:     Step 2 of model_wrapper.do (gated by pull_MRIP), invoked via
 #               `rscript using ... args(first last)`, and followed immediately by
 #               tidyup_mrip_data_fromR.do. Also runnable standalone:

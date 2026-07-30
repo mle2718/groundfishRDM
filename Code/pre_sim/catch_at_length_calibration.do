@@ -1,47 +1,44 @@
-
-
-
 /******************************************************************************/
 /******************************************************************************/
-/* Script:  catch_at_length_calibration.do                                    */
-/*                                                                            */
-/* Purpose: Builds the calibration-year catch-at-length distributions for      */
-/*          WGOM cod and haddock. Harvest (A+B1) and discard (B2) lengths are  */
-/*          estimated separately from MRIP size data, converted to             */
-/*          proportions at length by species and season, scaled up by the      */
-/*          simulated harvest/release totals for each draw, and then smoothed  */
-/*          by fitting a gamma distribution to each species-season-draw.       */
-/*          Both the raw ("observed") and gamma-smoothed ("fitted")            */
-/*          distributions are exported.                                        */
-/*                                                                            */
-/* Inputs:  $triplist  - stacked MRIP trip files                               */
-/*          $b2list    - stacked MRIP length files, used here for discards     */
-/*          $sizelist  - stacked MRIP length files, used here for harvest      */
-/*          $misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv                           */
-/*          $misc_data_cd/simulated_catch_totals_for_catch_length.dta          */
-/*                                                                             */
-/* Outputs: $misc_data_cd/baseline_catch_at_length_observed.csv                */
-/*          $misc_data_cd/baseline_catch_at_length.csv                         */
-/*                                                                             */
-/* Dependencies: Run from model_wrapper.do, which must already have set        */
-/*          $seed, $ndraws, $calibration_year, $misc_data_cd, $triplist,       */
-/*          $b2list and $sizelist. simulated_catch_totals_for_catch_length.dta */
-/*          is written by the catch-per-trip calibration step, so that must    */
-/*          run first.                                                         */
-/*                                                                             */
-/* Pipeline: Pre-simulation. Supplies the length composition the R simulation  */
-/*          uses to decide which fish are legal to keep;                       */
-/*          catch_at_length_projection.do is the projection-year counterpart.  */
-/*                                                                             */
-/* Note 1:  Sections A and B are near-identical ~90-line blocks that differ    */
-/*          only in which MRIP length file they read and in the cod discard    */
-/*          special case.                                                      */
-/* Note 2:  $b2list and $sizelist appear to point at swapped files where they  */
-/*          are defined in model_wrapper.do; usage here follows the macro      */
-/*          names, not the file names.                                         */
-/* Note 3:  The tempfiles in the gamma-fitting loop (Section E) are named      */
-/*          after the observation count, which is not unique across domains.   */
-/*          Flagged inline, code unchanged.                                    */
+/* Script:  catch_at_length_calibration.do                                    
+                                                                            
+ Purpose: Builds the calibration-year catch-at-length distributions for      
+          WGOM cod and haddock. Harvest (A+B1) and discard (B2) lengths are  
+          estimated separately from MRIP size data, converted to             
+          proportions at length by species and season, scaled up by the      
+          simulated harvest/release totals for each draw, and then smoothed  
+          by fitting a gamma distribution to each species-season-draw.       
+          Both the raw ("observed") and gamma-smoothed ("fitted")            
+          distributions are exported.                                        
+                                                                            
+ Inputs:  $triplist  - stacked MRIP trip files                               
+          $b2list    - stacked MRIP length files, used here for discards     
+          $sizelist  - stacked MRIP length files, used here for harvest      
+          $misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv                           
+          $misc_data_cd/simulated_catch_totals_for_catch_length.dta          
+                                                                             
+ Outputs: $misc_data_cd/baseline_catch_at_length_observed.csv                
+          $misc_data_cd/baseline_catch_at_length.csv                         
+                                                                             
+ Dependencies: Run from model_wrapper.do, which must already have set        
+          $seed, $ndraws, $calibration_year, $misc_data_cd, $triplist,       
+          $b2list and $sizelist. simulated_catch_totals_for_catch_length.dta 
+          is written by the catch-per-trip calibration step, so that must    
+          run first.                                                         
+                                                                            
+ Pipeline: Pre-simulation. Supplies the length composition the R simulation  
+          uses to decide which fish are legal to keep;                       
+          catch_at_length_projection.do is the projection-year counterpart.  
+                                                                             
+ Note 1:  Sections A and B are near-identical ~90-line blocks that differ    
+          only in which MRIP length file they read and in the cod discard    
+          special case.                                                      
+ Note 2:  $b2list and $sizelist appear to point at swapped files where they  
+          are defined in model_wrapper.do; usage here follows the macro      
+          names, not the file names.                                         
+ Note 3:  The tempfiles in the gamma-fitting loop (Section E) are named      
+          after the observation count, which is not unique across domains.   
+          Flagged inline, code unchanged.                                    */
 /******************************************************************************/
 /******************************************************************************/
 

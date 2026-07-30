@@ -6,9 +6,8 @@
 # Inputs:       <gf.data.dir>/miscellaneous/rdb_sim_catch_per_trip.dta
 # Outputs:      <gf.data.dir>/miscellaneous/rdb_catch_per_trip_<date>.Rds,
 #               and a copy of that file uploaded to Google Drive.
-# Dependencies: Packages tidyverse, haven, glue, googledrive, here. Sources
-#               developer_setup.R (for gf.data.dir). Requires a cached Drive
-#               token in .secrets (see googledrivesetup.R).
+# Dependencies: Sources developer_setup.R (for gf.data.dir). Requires a cached
+#               Drive token in .secrets (see googledrivesetup.R).
 # Pipeline:     Step in model_wrapper.do gated by `Rpush_cpt_to_gdrive'
 #               (default ON), run via `rscript using`. Near-identical twin of
 #               rdb_catch_at_len_to_drive.R (differs only in the input file and

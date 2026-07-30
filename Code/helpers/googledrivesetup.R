@@ -6,7 +6,7 @@
 #               re-auth call those scripts use.
 # Inputs:       Your Google account email (edit the drive_auth() call below).
 # Outputs:      Cached OAuth token files under .secrets/.
-# Dependencies: Packages here, googledrive. Run once from RStudio.
+# Dependencies: Run once from RStudio.
 # Pipeline:     Not called by any wrapper; manual per-developer setup. The
 #               scripts that push/pull Drive data (rdb_*_to_drive.R,
 #               get_assessment_*, find_files_on_googledrive.R) rely on the token

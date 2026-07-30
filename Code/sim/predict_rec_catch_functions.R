@@ -19,8 +19,6 @@
 # Dependencies: The length-weight parameters (cod_lw_a/b, had_lw_a/b), the
 #               final_process_* path objects, and n_draws must exist in the
 #               calling environment (set by R code wrapper.R / model_run.R).
-#               Packages: data.table, fst, readr, dplyr, lubridate; optional
-#               future / future.apply for the parallel path.
 # Pipeline:     R projection stage. Downstream of calibration_routine.R
 #               (consumes calibrated_model_stats.fst); sourced by the wrappers.
 ################################################################################

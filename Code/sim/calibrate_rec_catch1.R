@@ -25,7 +25,7 @@
 #               and calib_comparison1 (returned in the environment).
 # Dependencies: Reuses cod_hadd_season() and check_required_cols() defined in
 #               calibrate_rec_catch0.R, so the routine must source that file
-#               first. Packages: data.table, readr, fst.
+#               first.
 # Pipeline:     Core of the R calibration loop (Code/sim), driven by
 #               calibration_routine.R.
 #

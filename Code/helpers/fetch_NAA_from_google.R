@@ -7,10 +7,10 @@
 # Inputs:       {WGOM_Cod,GOM_Haddock}_{historical,projected}_NAA_*_<data_version>.Rds
 #               on the shared drive's input_data folder.
 # Outputs:      The same files written to input_data/ inside the repo.
-# Dependencies: Packages tidyverse, glue, googledrive, here. Requires a cached
-#               Drive token in .secrets (see googledrivesetup.R). data_version
-#               is a hardcoded vintage string set below — update it when a new
-#               assessment vintage is published.
+# Dependencies: Requires a cached Drive token in .secrets (see
+#               googledrivesetup.R). data_version is a hardcoded vintage string
+#               set below — update it when a new assessment vintage is
+#               published.
 # Pipeline:     Standalone helper, run occasionally; not called by any wrapper.
 ################################################################################
 

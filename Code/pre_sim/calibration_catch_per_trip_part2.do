@@ -1,6 +1,3 @@
-
-
-
 /*******************************************************************************
  Script:       calibration_catch_per_trip_part2.do
  Purpose:      Assembles the per-iteration calibration catch-draw files that the

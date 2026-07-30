@@ -9,8 +9,7 @@
 #               (cod: mod_base_2023_noBLLS.rds; haddock: mod_nola_dcpe_blls2.rds).
 # Outputs:      Two installed WHAM builds under
 #               R_LIBS_USER/{cod_wham_install, haddock_wham_install}.
-# Dependencies: Packages tidyverse, TMB, haven, glue, googledrive, here, remotes.
-#               Requires a cached Drive token (.secrets) and internet access to
+# Dependencies: Requires a cached Drive token (.secrets) and internet access to
 #               install WHAM from GitHub.
 # Pipeline:     Standalone helper; not called by any wrapper.
 ################################################################################

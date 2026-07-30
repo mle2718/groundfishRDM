@@ -1,59 +1,59 @@
 /******************************************************************************/
-/******************************************************************************/
-/* Script:  catch_at_length_projection.do                                     */
-/*                                                                            */
-/* Purpose: Produces the projection-year catch-at-length probability          */
-/*          distribution for WGOM cod and GOM haddock. The idea is to hold    */
-/*          recreational selectivity at length fixed at what was observed in  */
-/*          the calibration year, and let the length composition of the catch */
-/*          change only because the projected stock has a different age (and  */
-/*          therefore length) composition.                                    */
-/*                                                                            */
-/* Method (the numbered sections below follow these steps):                   */
-/*   1. Read baseline recreational catch-at-length.                           */
-/*   2. Build cod and haddock age-length keys (ALKs) from recent NEFSC trawl  */
-/*      data: pull the survey data, smooth counts across lengths within each  */
-/*      age with a LOWESS (bandwidth 0.3), then compute the proportion of     */
-/*      fish of age a that are length l.                                      */
-/*   3. Convert baseline stock assessment numbers-at-age (NAA) into baseline  */
-/*      numbers-at-length (NAL).                                              */
-/*   4. Merge baseline NAL to observed baseline catch-at-length and compute   */
-/*      an empirical recreational selectivity ("fraction caught") at length   */
-/*      by species, season, draw and length.                                  */
-/*   5. Convert projected NAA into projected NAL using the same ALKs.         */
-/*   6. Apply baseline selectivity-at-length to projected NAL to obtain       */
-/*      projected catch-at-length.                                            */
-/*   7. Smooth projected catch-at-length into a probability distribution by   */
-/*      fitting a gamma to each species-season-draw.                          */
-/*   8. Export projected fitted probabilities by draw/species/season/length.  */
-/*                                                                            */
-/* Inputs:  $misc_data_cd/baseline_catch_at_length_observed.csv               */
-/*          $misc_data_cd/baseline_catch_at_length.csv                        */
-/*          $misc_data_cd/NEFSC_cruises.csv                                   */
-/*          $misc_data_cd/NEFSC_trawl_cod.csv, NEFSC_trawl_hadd.csv           */
-/*          $misc_data_cd/WGOM_Cod_historical_NAA.dta,                        */
-/*                       WGOM_Cod_projected_NAA.dta                           */
-/*          $misc_data_cd/GOM_Haddock_historical_NAA.dta,                     */
-/*                       GOM_Haddock_projected_NAA.dta                        */
-/*                                                                            */
-/* Outputs: $misc_data_cd/projected_catch_at_length.csv                       */
-/*                                                                            */
-/* Dependencies: catch_at_length_calibration.do (writes both baseline CSVs)   */
-/*          and the assessment scripts get_cod_assessment_data.R /            */
-/*          get_haddock_assessment_data.R (write the NAA files). Expects      */
-/*          $seed, $ndraws, $misc_data_cd, $trawl_survey_start_year,          */
-/*          $cod_NAA_base_year, $hadd_NAA_base_year, $cod_NAA_proj_year and   */
-/*          $hadd_NAA_proj_year to be set by model_wrapper.do.                */
-/*                                                                            */
-/* Pipeline: Pre-simulation, immediately after catch_at_length_calibration.do */
-/*          The exported CSV is what the R simulation reads to decide the     */
-/*          size composition of projection-year catch.                        */
-/*                                                                            */
-/* Note 1:  Two renames in this file (see Sections 3 and 5) rely on Stata's   */
-/*          variable-name abbreviation rather than being no-ops; they are     */
-/*          annotated where they occur.                                       */
-/* Note 2:  The gamma-fitting loop in Section 7 shares the tempfile-naming    */
-/*          issue flagged in catch_at_length_calibration.do.                  */
+/*****************************************************************************
+ Script:  catch_at_length_projection.do                                     
+                                                                            
+ Purpose: Produces the projection-year catch-at-length probability          
+          distribution for WGOM cod and GOM haddock. The idea is to hold    
+          recreational selectivity at length fixed at what was observed in  
+          the calibration year, and let the length composition of the catch 
+          change only because the projected stock has a different age (and  
+          therefore length) composition.                                    
+                                                                            
+ Method (the numbered sections below follow these steps):                   
+   1. Read baseline recreational catch-at-length.                           
+   2. Build cod and haddock age-length keys (ALKs) from recent NEFSC trawl  
+      data: pull the survey data, smooth counts across lengths within each  
+      age with a LOWESS (bandwidth 0.3), then compute the proportion of     
+      fish of age a that are length l.                                      
+   3. Convert baseline stock assessment numbers-at-age (NAA) into baseline  
+      numbers-at-length (NAL).                                              
+   4. Merge baseline NAL to observed baseline catch-at-length and compute   
+      an empirical recreational selectivity ("fraction caught") at length   
+      by species, season, draw and length.                                  
+   5. Convert projected NAA into projected NAL using the same ALKs.         
+   6. Apply baseline selectivity-at-length to projected NAL to obtain       
+      projected catch-at-length.                                            
+   7. Smooth projected catch-at-length into a probability distribution by   
+      fitting a gamma to each species-season-draw.                          
+   8. Export projected fitted probabilities by draw/species/season/length.  
+                                                                            
+ Inputs:  $misc_data_cd/baseline_catch_at_length_observed.csv               
+          $misc_data_cd/baseline_catch_at_length.csv                        
+          $misc_data_cd/NEFSC_cruises.csv                                   
+          $misc_data_cd/NEFSC_trawl_cod.csv, NEFSC_trawl_hadd.csv           
+          $misc_data_cd/WGOM_Cod_historical_NAA.dta,                        
+                       WGOM_Cod_projected_NAA.dta                           
+          $misc_data_cd/GOM_Haddock_historical_NAA.dta,                     
+                       GOM_Haddock_projected_NAA.dta                        
+                                                                            
+ Outputs: $misc_data_cd/projected_catch_at_length.csv                       
+                                                                            
+ Dependencies: catch_at_length_calibration.do (writes both baseline CSVs)   
+          and the assessment scripts get_cod_assessment_data.R /            
+          get_haddock_assessment_data.R (write the NAA files). Expects      
+          $seed, $ndraws, $misc_data_cd, $trawl_survey_start_year,          
+          $cod_NAA_base_year, $hadd_NAA_base_year, $cod_NAA_proj_year and   
+          $hadd_NAA_proj_year to be set by model_wrapper.do.                
+                                                                            
+ Pipeline: Pre-simulation, immediately after catch_at_length_calibration.do 
+          The exported CSV is what the R simulation reads to decide the     
+          size composition of projection-year catch.                        
+                                                                            
+ Note 1:  Two renames in this file (see Sections 3 and 5) rely on Stata's   
+          variable-name abbreviation rather than being no-ops; they are     
+          annotated where they occur.                                       
+ Note 2:  The gamma-fitting loop in Section 7 shares the tempfile-naming    
+          issue flagged in catch_at_length_calibration.do.                  */
 /******************************************************************************/
 /******************************************************************************/
 

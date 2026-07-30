@@ -20,8 +20,7 @@
 #               calibrate scripts), and n_simulations must exist in the calling
 #               environment (set by R code wrapper.R). Sources
 #               calibrate_rec_catch1.R, which reuses cod_hadd_season() and
-#               check_required_cols() defined here. Packages: data.table, arrow,
-#               haven, readr, fst.
+#               check_required_cols() defined here.
 # Pipeline:     The calibration driver of the R sim stage. Consumes the pass-0
 #               comparison and produces the calibrated stats used downstream
 #               (e.g. model_run.R / the projection).

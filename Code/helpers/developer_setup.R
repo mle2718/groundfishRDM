@@ -8,9 +8,9 @@
 #               already be set in the calling R session/environment.
 # Outputs:      Object gf.data.dir in the calling environment. For TP/ML/KB,
 #               also creates Data/2027_mgt_cycle if it does not exist.
-# Dependencies: `here` package available; `developer` set upstream. Note that
-#               `developer` is never defined anywhere in this repo (external
-#               prerequisite, e.g. set in .Rprofile / the session).
+# Dependencies: `developer` set upstream. Note that `developer` is never
+#               defined anywhere in this repo (external prerequisite, e.g. set
+#               in .Rprofile / the session).
 # Pipeline:     Sourced near the top of the R side of the pipeline
 #               (R code wrapper.R), and independently by scripts run one-off via
 #               Stata's `rscript using` (e.g. rdb_*_to_drive.R). R twin of

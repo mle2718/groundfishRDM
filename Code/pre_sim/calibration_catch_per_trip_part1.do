@@ -1,6 +1,3 @@
-
-
-
 /*******************************************************************************
  Script:       calibration_catch_per_trip_part1.do
  Purpose:      Uses MRIP trip and catch records to build the calibration-year
