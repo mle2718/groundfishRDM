@@ -233,14 +233,11 @@ if `pull_assessment' {
 
 
 
-/* Paths to the tidied MRIP extracts (written by tidyup_mrip_data_fromR.do).
-   Note: the file each macro points to does not match its name — $b2list points
-   to mrip_size.dta and $sizelist points to mrip_size_b2.dta. This looks
-   swapped; left as-is and flagged for developer review. */
+/* Paths to the tidied MRIP extracts (written by tidyup_mrip_data_fromR.do). */
 global catchlist "$misc_data_cd/mrip_catch.dta"
 global triplist  "$misc_data_cd/mrip_trip.dta"
-global b2list  "$misc_data_cd/mrip_size.dta"
-global sizelist  "$misc_data_cd/mrip_size_b2.dta"
+global b2list  "$misc_data_cd/mrip_size_b2.dta"
+global sizelist  "$misc_data_cd/mrip_size.dta"
 
 
 
