@@ -124,14 +124,12 @@ gen stock_abbrev="WGOM"
 replace stock_abbrev="GOM" if common=="haddock"
 gen fishery= "NE Groundfish"
 
-//Update this 
-gen data_version="2026-05-12"
 //state will be NA
 gen state=.
 gen source="model intermediate"
 
 *reorder columns. sort data on month, common, mode.
-order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units source
+order fishery common species_itis stock_abbrev state mode year wave month metric value units source
 sort month common mode
 
 //get rid of var label on value 

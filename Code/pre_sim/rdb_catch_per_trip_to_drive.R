@@ -12,11 +12,16 @@ here::i_am("Code/pre_sim/rdb_catch_per_trip_to_drive.R")
 source(here("Code", "helpers", "developer_setup.R"))
 
 output_folder<-file.path(gf.data.dir, "miscellaneous")
+vintage_string<-list.files(output_folder, pattern=glob2rx("mrip_pull*Rds"))
+vintage_string<-gsub("mrip_pull","",vintage_string)
+vintage_string<-gsub(".Rds","",vintage_string)
+data_vintage<-max(vintage_string)
 
 input_file <- file.path(gf.data.dir,"miscellaneous","rdb_sim_catch_per_trip.dta")
 
 # Read in my .dta file
 rdb_catch_per_trip <- read_dta(input_file)
+rdb_catch_per_trip$data_version <- data_vintage
 
 # Save the data version
 file_date <- rdb_catch_per_trip$data_version[1]
