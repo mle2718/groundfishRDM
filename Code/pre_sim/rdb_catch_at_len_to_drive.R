@@ -12,7 +12,7 @@
 # Pipeline:     Step in model_wrapper.do gated by `Rpush_catch_at_length_to_gdrive'
 #               (default ON), run via `rscript using`. Near-identical twin of
 #               rdb_catch_per_trip_to_drive.R (differs only in the input file and
-#               object names).
+#               object names). Input file rdb_cat_len.dta is generated in rdb_catch_at_length.do.
 ################################################################################
 
 #Load libraries
