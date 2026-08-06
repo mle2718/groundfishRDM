@@ -4,7 +4,7 @@
 #               packages, sets shared paths and run parameters, converts the
 #               Stata-produced calibration inputs from CSV/DTA to FST for speed,
 #               then runs the two-step calibration and exports the results to
-#               Google Drive. The projection step is present but disabled.
+#               Google Drive.
 # Inputs:       Under gf.data.dir: miscellaneous/directed_trip_draws.csv,
 #               calib_catch_draws/calib_catch_draws_<i>.dta (i = 1..n_simulations),
 #               miscellaneous/Discard_Mortality.csv,
@@ -196,21 +196,6 @@ message("Exporting calibration outputs to Google Drive ...")
 source(file.path(code_cd, "export_to_GoogleDrive.R"))
 message("Export complete.")
 
-
-
-
-################################################################################
-################################################################################
-# Section E: Model projection (currently disabled)
-################################################################################
-################################################################################
-# Run the simulation using baseline trip outcomes (to compute welfare and demand response),
-# n_choice_occasions, calibration statistics,  population-adjusted catch-at-length distributions,
-# projection year calendar adjustments
-
-# NOTE: the projection step is currently disabled — the source() call below is
-# commented out, so running this wrapper performs calibration and export only.
-#source(file.path(code_cd, "predict_rec_catch.R"))
 
 
 
