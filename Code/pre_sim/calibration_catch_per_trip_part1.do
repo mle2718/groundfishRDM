@@ -36,11 +36,14 @@
                "classify trips" lines); prim2_common is not used downstream.
 *******************************************************************************/
 
+
+
 /******************************************************************************/
 /******************************************************************************/
 /* Part A: Mean catch-per-trip by stratum, with SE imputation */
 /******************************************************************************/
 /******************************************************************************/
+
 di "Part A: estimating mean catch-per-trip and standard errors by stratum"
 set seed $seed
 
@@ -116,7 +119,7 @@ replace common_dom="ATLCO" if inlist(common, "haddock")
 replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod") 
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -280,6 +283,10 @@ rename my_dom_id_string1 month
 rename my_dom_id_string2 mode
 rename my_dom_id_string3 area_s
 rename my_dom_id_string4 common_dom
+
+
+keep if area_s=="WGOM"
+keep if common=="ATLCO"
 
 gen shoulder_month="10" if month=="11"
 
@@ -564,7 +571,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "atlanticcod")
 replace common_dom="ATLCO"  if inlist(prim1_common, "haddock") 
 
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -792,7 +799,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear
 keep if inlist(state, "MA", "ME")
@@ -1015,7 +1022,7 @@ replace common_dom="ATLCO"  if inlist(prim1_common, "haddock")
 
 
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")

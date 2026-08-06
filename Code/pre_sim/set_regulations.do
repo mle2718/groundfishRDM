@@ -125,8 +125,6 @@ save `regulations', replace
 /* Section B: Build the projection-year (y2) calendar and merge in calibration regs */
 /******************************************************************************/
 /******************************************************************************/
-
-*now merge to this file the calender for y+1 (_y2)
 clear
 set obs 2
 gen day_y2=$projection_date_start if _n==1
@@ -206,6 +204,8 @@ replace hadd_min_y2 = 18*2.54 if inrange(day_y2, td(01may2026), td(28feb2027)) /
 /* Section D: Year-2 alternative regulations (voted but not implemented) */
 /******************************************************************************/
 /******************************************************************************/
+*This section can be excluded if the regulations voted for the projection year were actually implemented. But this is not always the case, e.g., in FY 2026. 
+
 * Year 2 alternative regs (projection: 01may2026–30apr2027)
 * Based on *voted but not implemented* 2025 regs:
 *   Cod:     1 fish, 23",  5/1/25–5/31/25 and 9/1/25–10/31/25

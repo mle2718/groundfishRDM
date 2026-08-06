@@ -49,18 +49,14 @@
 *******************************************************************************/
 
 set varabbrev on
+
 /******************************************************************************/
 /******************************************************************************/
 /* Section A: Year-specific global parameters (UPDATE EVERY YEAR) */
 /******************************************************************************/
 /******************************************************************************/
 
-/*Original data years*/
-*global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6))"  // last six waves of data
-*global calibration_date_start td(01sep2024)
-*global calibration_date_end td(31aug2025)
-
-/*Updated data years*/
+/*Set calibration year-waves*/
 global calibration_year "(year==2025 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2024 & inlist(wave, 6))"  // last six waves of data  updated
 global calibration_date_start td(01nov2024)
 global calibration_date_end td(31oct2025)
@@ -122,19 +118,18 @@ log using "${log_dir}\model_wrapper_log_$S_DATE.smcl", replace
 * set a global seed
 global seed 03211990
 
+
 /******************************************************************************/
 /******************************************************************************/
 /* Section C: MRIP year/wave globals and assessment-year globals */
 /******************************************************************************/
 /******************************************************************************/
 
-
 /* years/waves of MRIP data.*/
 /* used by:
 tidyup_mrip_data_fromR.do
 MRIP_column_cases.do (dead code)
-compare wave 5 data.do
-*/
+compare wave 5 data.do*/
 
 global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 			  20241 20242 20243 20244 20245 20246  ///
@@ -142,8 +137,7 @@ global yr_wvs 20231 20232 20233 20234 20235 20236  ///
 
 /* First and last year of MRIP data.*/
 /* used by:
-tidyup_mrip_data_fromR.do
-*/
+tidyup_mrip_data_fromR.do*/
 
 global first_mrip_year 2023
 global last_mrip_year 2025
@@ -151,15 +145,14 @@ numlist "$first_mrip_year/$last_mrip_year"
 
 /* Yearlist and wavelist.*/
 /* used by:
-MRIP_lists.do (dead code)
-*/
+MRIP_lists.do (dead code) */
 
 global yearlist  `r(numlist)'
 global wavelist 1 2 3 4 5 6
 
 /* set the baseline year and projection year numbers-at-age globals
-used by catch_at_length_projection.do
-*/
+used by catch_at_length_projection.do*/
+
 global cod_NAA_base_year 2025
 global hadd_NAA_base_year 2025
 global cod_NAA_proj_year 2026
@@ -169,8 +162,7 @@ global hadd_NAA_proj_year 2026
 	 we aggregate these data across multiple years and use them to create age-length keys
 	 I usually check how many observations are available across different choices of the starting year; we want sufficient data
 	 but do not want to use historical data too far in the past.
-used by catch_at_length_projection.do
-*/
+used by catch_at_length_projection.do*/
 
 global trawl_survey_start_year 2022
 
@@ -186,8 +178,8 @@ global trawl_survey_start_year 2022
 loc pull_assessment = 1		 		// Pull Assessment data
 loc pull_MRIP = 1		 			// Pull MRIP data.
 
-loc processMRIP = 0		 			// deal with casing MRIP data
-loc assemblemriplists =0		 	// deal with casing MRIP data
+loc processMRIP = 1		 			// deal with casing MRIP data
+loc assemblemriplists =1		 	// deal with casing MRIP data
 loc estimate_dtrips = 1				// Estimate Directed Trips
 loc costs_per_trip = 1  			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
@@ -207,7 +199,7 @@ loc run_calibration=1						// Run calibration routine in R
 
 
 // Prototyping: set proto=1 to override $ndraws down to 3 for a fast test run.
-local proto = 0
+local proto = 1
 
 if `proto' {
 	global ndraws 3

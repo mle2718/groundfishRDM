@@ -4,7 +4,7 @@
 #               an .Rds stamped with its data_version, and uploads that .Rds to
 #               the shared Google Drive miscellaneous folder for the rec
 #               dashboard.
-# Inputs:       <gf.data.dir>/miscellaneous/rdb_cat_len.dta
+# Inputs:       <gf.data.dir>/miscellaneous/rdb_cat_len.dta (written by rdb_catch_at_length.do)
 # Outputs:      <gf.data.dir>/miscellaneous/rdb_catch_at_length_<date>.Rds,
 #               and a copy of that file uploaded to Google Drive.
 # Dependencies: Sources developer_setup.R (for gf.data.dir). Requires a cached
@@ -12,7 +12,7 @@
 # Pipeline:     Step in model_wrapper.do gated by `Rpush_catch_at_length_to_gdrive'
 #               (default ON), run via `rscript using`. Near-identical twin of
 #               rdb_catch_per_trip_to_drive.R (differs only in the input file and
-#               object names).
+#               object names). Input file rdb_cat_len.dta is generated in rdb_catch_at_length.do.
 ################################################################################
 
 #Load libraries

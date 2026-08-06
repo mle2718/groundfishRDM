@@ -502,7 +502,7 @@ size_lookup <- size_lookup[!is.na(fitted_prob), .(species, draw, season, fitted_
 setkey(size_lookup, species, draw, season)
 
 
-# one state-draw-mode run; expects s, i, md in the parent environment
+# one season-draw-mode run; expects s, i, md in the parent environment
 dtrip_all <- as.data.table(read_fst(file.path(final_process_misc_cd, "directed_trip_draws.fst")))
 dtrip_all[, season := cod_hadd_season(date_parsed)]
 dtrip_all <- dtrip_all[, .(draw, mode, date_parsed, season, dtrip,
@@ -533,10 +533,7 @@ if (nrow(dtrip_all) == 0L || sum(dtrip_all$dtrip, na.rm = TRUE) == 0) {
     p_rel_to_keep_new = NA_real_,
     p_keep_to_rel_new = NA_real_,
     draw = i,
-    # NOTE (flagged, code unchanged): this empty-data branch names the column
-    # `state`, but the populated branch below sets `season = s`. The mismatch
-    # means the no-directed-trips case yields a differently named column.
-    state = s
+    season = s
   )
 
 } else {

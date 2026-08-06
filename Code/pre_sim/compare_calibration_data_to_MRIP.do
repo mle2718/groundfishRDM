@@ -1,59 +1,59 @@
 /******************************************************************************/
 /******************************************************************************/
-/* Script:  compare_calibration_data_to_MRIP.do                               */
-/*                                                                            */
-/* Purpose: Validation step for the simulated calibration-year catch. The     */
-/*          copula model produces daily catch-per-trip draws; this script     */
-/*            1) computes mean catch-per-trip from those daily draws,         */
-/*            2) scales them up to totals by multiplying by the number of     */
-/*               directed trips on each day, and                              */
-/*            3) compares the resulting means and totals with the MRIP        */
-/*               survey estimates at the mode-month, mode, and mode-season    */
-/*               levels, exporting a diagnostic figure for each comparison.   */
-/*          The FINAL STEP section then saves the aggregated simulated totals */
-/*          that the rest of the pipeline consumes.                           */
-/*                                                                            */
-/* Inputs:  $calib_catch_draws_cd/calib_catch_draws_<i>.dta for i=1..$ndraws  */
-/*          $misc_data_cd/directed_trip_draws.csv                             */
-/*          $misc_data_cd/baseline_mrip_catch_processed.xlsx                  */
-/*          $misc_data_cd/mrip_catch_by_mode_month.dta, mrip_catch_by_mode.dta*/
-/*          $misc_data_cd/mrip_catch_by_mode_season.dta                       */
-/*          $misc_data_cd/mrip_dtrip_by_mode_month.dta, mrip_dtrip_by_mode.dta*/
-/*          $misc_data_cd/mrip_dtrip_by_mode_season.dta                       */
-/*                                                                            */
-/* Outputs: $misc_data_cd/simulated_catch_totals3.dta   (intermediate)        */
-/*          $misc_data_cd/simulated_catch_totals.dta                          */
-/*          $misc_data_cd/simulated_catch_totals_for_catch_length.dta         */
-/*          $figure_cd/mean_catch_MRIP_simulated.png                          */
-/*          $figure_cd/monthly_catch_total_MRIP_simulated.png                 */
-/*          $figure_cd/monthly_dtrip_total_MRIP_simulated.png                 */
-/*          $figure_cd/catch_total_MRIP_simulated.png                         */
-/*          $figure_cd/dtrip_total_MRIP_simulated.png                         */
-/*          $figure_cd/season_catch_total_MRIP_simulated.png                  */
-/*          $figure_cd/season_dtrip_total_MRIP_simulated.png                  */
-/*          Also rewrites $calib_catch_draws_cd/calib_catch_draws_<i>.dta in  */
-/*          place with four columns dropped -- see Note 1.                    */
-/*                                                                            */
-/* Dependencies: Run from model_wrapper.do after the copula catch draws and   */
-/*          the directed-trip draws exist. Expects $ndraws, $misc_data_cd,    */
-/*          $calib_catch_draws_cd and $figure_cd to be set, and requires the  */
-/*          user-written grc1leg and renvarlab commands.                      */
-/*                                                                            */
-/* Pipeline: Pre-simulation. Despite the "compare" name this is not a purely  */
-/*          diagnostic script: simulated_catch_totals.dta feeds the R         */
-/*          simulation and simulated_catch_totals_for_catch_length.dta feeds  */
-/*          catch_at_length_calibration.do.                                   */
-/*                                                                            */
-/* Note 1:  The final loop drops cod_keep_sim, cod_rel_sim, hadd_keep_sim and */
-/*          hadd_rel_sim from the calib_catch_draws files and saves over the  */
-/*          originals. Those columns are what Section B1 collapses, so this   */
-/*          script cannot be re-run without regenerating the catch draws      */
-/*          first.                                                            */
-/* Note 2:  Sections B3a-B3d are four near-identical aggregate-and-plot       */
-/*          blocks differing only in the grouping level and the MRIP file     */
-/*          they compare against.                                             */
-/* Note 3:  Several `use ... , replace` statements appear below where         */
-/*          `, clear` is what is meant; flagged, code unchanged.              */
+/* Script:  compare_calibration_data_to_MRIP.do                               
+                                                                              
+   Purpose: Validation step for the simulated calibration-year catch. The     
+            copula model produces daily catch-per-trip draws; this script     
+              1) computes mean catch-per-trip from those daily draws,         
+              2) scales them up to totals by multiplying by the number of     
+                 directed trips on each day, and                              
+              3) compares the resulting means and totals with the MRIP        
+                 survey estimates at the mode-month, mode, and mode-season    
+                 levels, exporting a diagnostic figure for each comparison.   
+            The FINAL STEP section then saves the aggregated simulated totals 
+            that the rest of the pipeline consumes.                           
+                                                                              
+   Inputs:  $calib_catch_draws_cd/calib_catch_draws_<i>.dta for i=1..$ndraws  
+            $misc_data_cd/directed_trip_draws.csv                             
+            $misc_data_cd/baseline_mrip_catch_processed.xlsx                  
+            $misc_data_cd/mrip_catch_by_mode_month.dta, mrip_catch_by_mode.dta
+            $misc_data_cd/mrip_catch_by_mode_season.dta                       
+            $misc_data_cd/mrip_dtrip_by_mode_month.dta, mrip_dtrip_by_mode.dta
+            $misc_data_cd/mrip_dtrip_by_mode_season.dta                       
+                                                                              
+   Outputs: $misc_data_cd/simulated_catch_totals3.dta   (intermediate)        
+            $misc_data_cd/simulated_catch_totals.dta                          
+            $misc_data_cd/simulated_catch_totals_for_catch_length.dta         
+            $figure_cd/mean_catch_MRIP_simulated.png                          
+            $figure_cd/monthly_catch_total_MRIP_simulated.png                 
+            $figure_cd/monthly_dtrip_total_MRIP_simulated.png                 
+            $figure_cd/catch_total_MRIP_simulated.png                         
+            $figure_cd/dtrip_total_MRIP_simulated.png                         
+            $figure_cd/season_catch_total_MRIP_simulated.png                  
+            $figure_cd/season_dtrip_total_MRIP_simulated.png                  
+            Also rewrites $calib_catch_draws_cd/calib_catch_draws_<i>.dta in  
+            place with four columns dropped -- see Note 1.                    
+                                                                              
+   Dependencies: Run from model_wrapper.do after the copula catch draws and   
+            the directed-trip draws exist. Expects $ndraws, $misc_data_cd,    
+            $calib_catch_draws_cd and $figure_cd to be set, and requires the  
+            user-written grc1leg and renvarlab commands.                      
+                                                                              
+   Pipeline: Pre-simulation. Despite the "compare" name this is not a purely  
+            diagnostic script: simulated_catch_totals.dta feeds the R         
+            simulation and simulated_catch_totals_for_catch_length.dta feeds  
+            catch_at_length_calibration.do.                                   
+                                                                              
+   Note 1:  The final loop drops cod_keep_sim, cod_rel_sim, hadd_keep_sim and 
+            hadd_rel_sim from the calib_catch_draws files and saves over the  
+            originals. Those columns are what Section B1 collapses, so this   
+            script cannot be re-run without regenerating the catch draws      
+            first.                                                            
+   Note 2:  Sections B3a-B3d are four near-identical aggregate-and-plot       
+            blocks differing only in the grouping level and the MRIP file     
+            they compare against.                                             
+   Note 3:  Several `use ... , replace` statements appear below where         
+            `, clear` is what is meant; flagged, code unchanged.            */
 /******************************************************************************/
 /******************************************************************************/
 
@@ -70,7 +70,6 @@ tempfile master
 save `master', emptyok
 
 forv i=1/$ndraws{
-di "`i'"
 
 use "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", clear 
 
