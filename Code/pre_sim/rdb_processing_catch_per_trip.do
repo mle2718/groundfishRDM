@@ -161,7 +161,5 @@ save "$misc_data_cd\rdb_sim_catch_per_trip.dta", replace
 *graph bar value if metric=="median catch per trip" & common=="haddock", over(month) by(mode) ytitle("Median hadd catch per trip by mode-month")  scheme(stmono1) //xtitle("Month") 
 
 
-// better to show month level rather than wave because of variability across months (May catch per trip is much higher than June - see bar chart above)
-
 
 
