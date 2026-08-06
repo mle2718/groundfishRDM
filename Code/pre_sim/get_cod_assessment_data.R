@@ -268,16 +268,20 @@ cod_maturity= tail(asap3[[1]]$dat$maturity,1)
 actual_2023_commercial_catch_mt<-438
 actual_2024_commercial_catch_mt<-550
 actual_2025_commercial_catch_mt<-NA # Update this for 2027 management:
+actual_2026_commercial_catch_mt<-NA # Update this for 2028 management:
 
 actual_2023_rec_catch_mt<-192 # From GARFO quota monitoring report
 actual_2024_rec_catch_mt<-72
 actual_2025_rec_catch_mt<-NA # Update this for 2027 management:
+actual_2026_rec_catch_mt<-NA # Update this for 2028 management:
 
 
 actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
 actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 # 2025 not used (yet)
-# actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
+ actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
+# 2026 not used (yet)
+# actual_2026_catch_mt<-actual_2026_commercial_catch_mt+actual_2026_rec_catch_mt
 
 
 
