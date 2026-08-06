@@ -14,9 +14,6 @@
 #               to the BLAST share (//nefscfile/...).
 # Pipeline:     Standalone / unwrapped — no confirmed caller (per
 #               DATAFLOW_GROUNDFISH.md).
-# Note:         Contradiction corrected in a comment only (code unchanged): the
-#               stock-area recode in the "Get data" section (~line 105) assigns
-#               "SNE" but its original trailing comment read "#Western GOM".
 ################################################################################
 
 ###################################################
@@ -48,15 +45,15 @@ here::i_am("Code/pre_sim/get_commercial_landings.R")
 source(here("Code", "helpers", "developer_setup.R"))
 output_folder<-file.path(gf.data.dir, "miscellaneous")
 
-# I'm pulling 2022 to 2025 calendar data, but
+# I'm pulling 2022 to 2026 calendar data, but
 # this will have complete
-# CY and FY : 2022-2024
-# FY and CY 2025 are incomplete (through today's date, non finalized)
+# CY and FY : 2022-2025
+# FY and CY 2026 are incomplete (through today's date, non finalized)
 # The back end of FY 2021 shows up, but is not saved in the FY table
 
 
 year_start<-2022
-year_end<-2025
+year_end<-2026
 
 ###################################################
 # End setup
@@ -182,6 +179,14 @@ commercial_FY_removals <- species_area_catch %>%
   mutate(total_removals=landings+discards)%>%
   filter(fishing_year>=2022)
 
+# I should just print the commercial_CY_removals instead of
+#cat("Western Gulf of Maine Commercial cod removals (mt)in 2023-2026:" \n")
+#commercial_CY_removals< %>%
+#  filter(itis_tsn==164712 & area_name=="WGOM" & year %in% (2023,2024,2025)
+
+#cat(" Gulf of Maine Commercial haddock removals (mt)in 2023-2026:" \n")
+#commercial_CY_removals< %>%
+#  filter(itis_tsn==164744 & area_name=="GOM" & year %in% (2023,2024,2025)
 
 WGOM_cod_2023<-commercial_CY_removals %>%
   filter(itis_tsn==164712 & area_name=="WGOM" & year==2023) %>%
@@ -191,6 +196,9 @@ WGOM_cod_2024<-commercial_CY_removals %>%
   filter(itis_tsn==164712 & area_name=="WGOM" & year==2024) %>%
   pull(total_removals)
 
+WGOM_cod_2025<-commercial_CY_removals %>%
+  filter(itis_tsn==164712 & area_name=="WGOM" & year==2025) %>%
+  pull(total_removals)
 
 GOM_haddock_2023<-commercial_CY_removals %>%
   filter(itis_tsn==164744 & area_name=="GOM" & year==2023) %>%
@@ -200,10 +208,18 @@ GOM_haddock_2024<-commercial_CY_removals %>%
   filter(itis_tsn==164744 & area_name=="GOM" & year==2024) %>%
   pull(total_removals)
 
+GOM_haddock_2025<-commercial_CY_removals %>%
+  filter(itis_tsn==164744 & area_name=="GOM" & year==2025) %>%
+  pull(total_removals)
+
+
 cat("Western Gulf of Maine Commercial cod removals in 2023:", WGOM_cod_2023,"mt \n")
 cat("Western Gulf of Maine Commercial cod removals in 2024:", WGOM_cod_2024,"mt \n")
+cat("Western Gulf of Maine Commercial cod removals in 2025:", WGOM_cod_2025,"mt \n")
+
 cat("Gulf of Maine Commercial haddock removals in 2023:", GOM_haddock_2023,"mt \n")
 cat("Gulf of Maine Commercial haddock removals in 2024:", GOM_haddock_2024,"mt \n")
+cat("Gulf of Maine Commercial haddock removals in 2025:", GOM_haddock_2025,"mt \n")
 
 
 
