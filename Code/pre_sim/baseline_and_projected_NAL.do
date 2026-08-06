@@ -16,11 +16,6 @@
                commented-out figure exports).
  Pipeline:     Standalone / unwrapped — no confirmed caller (per
                DATAFLOW_GROUNDFISH.md); looks like a verification/exploration script.
- Note:         Suspected bug (flagged, code unchanged): in both cod NAA sections
-               (Sections C and D), the code sums age6-age9 into age6_plus, drops
-               age6-age9, then runs `rename age6 age6' — a no-op referencing a
-               just-dropped variable. `rename age6_plus age6' appears intended so
-               the following reshape picks up the 6+ age group.
 *******************************************************************************/
 
 /******************************************************************************/
@@ -203,9 +198,7 @@ use "$input_data_cd/WGOM_Cod_historical_NAA_from_2024Assessment.dta", clear
 
 egen age6_plus=rowtotal(age6-age9)
 drop age6 age7 age8 age9
-* NOTE (flagged, not changed): renames age6 to itself, but age6 was just dropped;
-* `rename age6_plus age6' looks intended so the reshape below finds the 6+ group.
-rename age6 age6
+rename age6_plus age6
 keep if year==2025
 reshape long age, i(year) j(new)
 rename age nfish
@@ -275,9 +268,7 @@ use "$input_data_cd/WGOM_Cod_projected_NAA_from_2024Assessment.dta", clear
 
 egen age6_plus=rowtotal(age6-age9)
 drop age6 age7 age8 age9
-* NOTE (flagged, not changed): same no-op rename as in Section C; `rename
-* age6_plus age6' appears intended. See header note.
-rename age6 age6
+rename age6_plus age6
 * Draw $ndraws random replicates from the projected-NAA replicate distribution.
 sample $ndraws, count
 gen draw=_n
