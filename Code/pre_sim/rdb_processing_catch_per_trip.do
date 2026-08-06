@@ -34,7 +34,8 @@ keep mode month dtrip cod_cat_sim hadd_cat_sim
 /******************************************************************************/
 /******************************************************************************/
 
-** Take median, max, and min of cod catch per trip (cod_cat_sim) and haddock catch per trip (hadd_cat_sim) by mode and month, then append them:
+/* Take median, max, and min of cod catch per trip (cod_cat_sim) and haddock catch 
+per trip (hadd_cat_sim) by mode and month */
 
 *cod median
 preserve
@@ -113,12 +114,12 @@ restore
 
 /******************************************************************************/
 /******************************************************************************/
-/* Section B: Stack the six summaries, add dashboard columns, and save */
+/* Section B: Stack the six data summaries, add dashboard columns, and save */
 /******************************************************************************/
 /******************************************************************************/
 
-clear
 // clear then append all 6 of them
+clear
 append using `c_med' `c_min' `c_max' `h_med' `h_min' `h_max'
 
 
