@@ -386,11 +386,8 @@ server <- function(input, output, session){
       dplyr::group_by(model, species,draw) %>%
       dplyr::summarise(Value = sum(as.numeric(value))) %>%
       dplyr::mutate(Value = Value * lb_to_mt()) %>%
-      # NOTE (flagged, code unchanged): results code haddock as "hadd", so this
-      # "had" test never matches and under_acl_hadd is always 0 here. The
-      # equivalent block feeding output$DTout uses "hadd" and is correct.
       dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
-                    under_acl = dplyr::case_when(species == "had" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
+                    under_acl = dplyr::case_when(species == "hadd" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(model, species) %>%
       dplyr::summarise(under_acl = sum(under_acl),
                        Value = round(median(Value),0)) %>%
@@ -406,12 +403,12 @@ server <- function(input, output, session){
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 70 & under_acl_cod < 80 ~ "70-79%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 80 & under_acl_cod < 90 ~ "80-89%", TRUE ~ under_acl_cod2),
                     under_acl_cod2 = dplyr::case_when(under_acl_cod >= 90 & under_acl_cod <=100 ~ "90-100%", TRUE ~ under_acl_cod2)) %>%
-      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_hadd > 50 ~ "Less than 50%", TRUE ~ ""),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd <= 50 & under_acl_hadd < 60 ~ "50-59%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd <= 60 & under_acl_hadd < 70~ "60-69%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd <= 70 & under_acl_hadd < 80 ~ "70-79%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd <= 80 & under_acl_hadd < 90 ~ "80-89%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd <= 90 & under_acl_hadd <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
+      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_hadd < 50 ~ "Less than 50%", TRUE ~ ""),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 50 & under_acl_hadd < 60 ~ "50-59%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 60 & under_acl_hadd < 70~ "60-69%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 70 & under_acl_hadd < 80 ~ "70-79%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 80 & under_acl_hadd < 90 ~ "80-89%", TRUE ~ under_acl_had2),
+                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 90 & under_acl_hadd <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_hadd) %>%
       dplyr::ungroup()
