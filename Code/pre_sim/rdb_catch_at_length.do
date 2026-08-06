@@ -8,10 +8,8 @@
                medians across 101 draws of the fitted (smoothed) catch-at-length probabilities for
                the projection year. Catch at length for groundfish is provided at the season level 
                where the 'summer' season is May - August and the 'winter' is September - April. 
- Inputs:       $misc_data_cd/baseline_catch_at_length.csv (written by
-               catch_at_length_calibration.do).
-               $misc_data_cd/projected_catch_at_length.csv (written by
-               catch_at_length_projection.do). 
+ Inputs:       $misc_data_cd/baseline_catch_at_length.csv (written by catch_at_length_calibration.do).
+               $misc_data_cd/projected_catch_at_length.csv (written by catch_at_length_projection.do). 
  Outputs:      $misc_data_cd/rdb_cat_len.dta
  Dependencies: Global $misc_data_cd (set in model_wrapper.do).
  Pipeline:     Wrapped by model_wrapper.do, gated by `prep_catch_at_length_for_dash'
@@ -30,13 +28,15 @@
  which is then converted to probabilities. Those probabilities are then fitted to a gamma distribution. 
  See catch_at_length_calibration.do for the code. 
  
-We also take the medians of 101 draws of fitted proportions caught at length by season and species for the 
-projection year. The projected catch at length distribution is based on the baseline observed catch at length 
-distribution and the projected numbers at age from the stock assessment. See catch_at_length_projection.do for the code. 
+ We also take the medians of 101 draws of fitted proportions caught at length by season and species for the 
+ projection year. The projected catch at length distribution is based on the baseline observed catch at length 
+ probability distribution and the projected numbers at age from the stock assessment. See 
+ catch_at_length_projection.do for the code. 
 
  General strategy:
   1. Read in data
-  2. Collapse data to get median probabilities caught at length for Cod and Haddock by season (both observed and fitted for baseline year and fitted probabilities for projection year)
+  2. Collapse data to get median probabilities caught at length for Cod and Haddock by season (both observed 
+  and fitted for baseline year and fitted probabilities for projection year)
   3. Add descriptive columns for dashboard
   4. Run rdb_catch_at_len_to_drive.R to push the processed data to Google Drive as an Rds
   
