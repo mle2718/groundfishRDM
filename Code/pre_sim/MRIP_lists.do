@@ -1,19 +1,16 @@
 /*******************************************************************************
  Script:       MRIP_lists.do
- Purpose:      Rebuilds the MRIP file-list globals $catchlist/$triplist/$b2list/
+ Purpose:      Builds the MRIP file-list globals $catchlist/$triplist/$b2list/
                $sizelist as space-separated lists of one .dta per year x wave that
-               both exists and has observations. This is the multi-file
-               alternative to the single consolidated-file defaults set in
-               model_wrapper.do.
+               both exists and has observations. This was important when data were 
+			   provisioned in flat .sas7bdat files that were later converted to dta.
+			   With the switch to oracle, this is not so necessary.
  Inputs:       $misc_data_cd/{catch,trip,size_b2,size}_<year><wave>.dta for each
                year in $yearlist and wave in $wavelist.
  Outputs:      Globals only: $catchlist, $triplist, $b2list, $sizelist.
  Dependencies: Globals $misc_data_cd, $yearlist, $wavelist (set in model_wrapper.do).
  Pipeline:     Wrapped by model_wrapper.do but gated by `assemblemriplists', which
-               is DEFAULT OFF. The developers label this "dead code"; unless it is
-               enabled, the wrapper's single-file defaults are used instead.
-               DATAFLOW_GROUNDFISH.md flags these four globals as the codebase's
-               main global-reassignment risk.
+               is DEFAULT OFF. 
 *******************************************************************************/
 
 /******************************************************************************/
