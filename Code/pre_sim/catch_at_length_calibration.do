@@ -35,10 +35,7 @@
           special case.                                                      
  Note 2:  $b2list and $sizelist appear to point at swapped files where they  
           are defined in model_wrapper.do; usage here follows the macro      
-          names, not the file names.                                         
- Note 3:  The tempfiles in the gamma-fitting loop (Section E) are named      
-          after the observation count, which is not unique across domains.   
-          Flagged inline, code unchanged.                                    */
+          names, not the file names.        */
 /******************************************************************************/
 /******************************************************************************/
 
@@ -98,7 +95,7 @@ gen st2 = string(st,"%02.0f")
    a stock area, so the site list is used to map each site to an NMFS statistical
    area; areas 513-515, 521, 526 and 541 make up the Western Gulf of Maine cod
    stock area. Everything else is labelled "XX" and dropped below. */
-* New MRIP site allocations
+* MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -291,7 +288,7 @@ gen st2 = string(st,"%02.0f")
    area; areas 513-515, 521, 526 and 541 make up the Western Gulf of Maine cod
    stock area. Everything else is labelled "XX" and dropped below. */
 
-* New MRIP site allocations
+* MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -506,95 +503,103 @@ restore
 /* Each species-season-draw ("domain") is fitted separately. Method of moments
    is used rather than maximum likelihood because the ML fit failed to converge
    for the sparser domains. */
-tempfile new
-save `new', replace
-global fitted_sizes
+
+* Preserve the complete input dataset so it can be reloaded for each domain
+tempfile source_data fitted_sizes_all
+save `source_data', replace
 
 levelsof domain, local(regs)
 
-qui foreach r of local regs {
-    use `new', clear
-    keep if domain=="`r'"
-    di "`r'"
+* Identifies the first successfully fitted domain
+local first_result = 1
+
+quietly foreach r of local regs {
+    use `source_data', clear
+    keep if domain == "`r'"
+    noisily display as text "Fitting domain: `r'"
 
     keep length n_fish
     drop if missing(length) | missing(n_fish)
-    drop if n_fish<=0
-	replace n_fish=round(n_fish)
-	su n_fish
-	local tot_n_fish=`r(sum)'
-	
-    * Gamma needs strictly positive support
-    drop if length<=0
+    drop if n_fish <= 0
+    replace n_fish = round(n_fish)
 
-    * --------
-    * (A) Estimate gamma parameters robustly (MOM with freq weights)
-    * --------
+    quietly summarize n_fish, meanonly
+    local tot_n_fish = r(sum)
+
+    * Gamma distribution requires strictly positive support
+    drop if length <= 0
+
+    * Skip domains without usable observations
+    if _N == 0 | missing(`tot_n_fish') | `tot_n_fish' <= 0 {
+        noisily display as error "Skipping domain `r': no usable observations"
+        continue
+    }
+
+    * -------------------------------------------------------------------------
+    * (A) Estimate gamma parameters using weighted method of moments
+    * -------------------------------------------------------------------------
     quietly summarize length [fw=n_fish], meanonly
     local mu = r(mean)
-    local Nw = r(sum_w)
 
-    * Weighted variance: Var = E[x^2] - (E[x])^2 using the same freq weights
-    gen double length2 = length^2
+    * Weighted variance: Var(x) = E(x^2) - [E(x)]^2
+    generate double length2 = length^2
     quietly summarize length2 [fw=n_fish], meanonly
     local ex2 = r(mean)
-    local v   = `ex2' - (`mu'^2)
+    local v = `ex2' - (`mu'^2)
 
-    * Guard: if variance is 0 or numerically tiny, make it a near-degenerate gamma
-    if (`v'<=1e-10 | missing(`v') | missing(`mu') | `mu'<=0) {
-        * Put essentially all mass at mu by using huge alpha
+    * If the variance is zero or numerically negligible, approximate a
+    * degenerate distribution concentrated near the weighted mean
+    if missing(`v') | missing(`mu') | `mu' <= 0 | `v' <= 1e-10 {
         local alpha = 1e6
-        local beta  = `mu'/`alpha'
+        local beta = `mu'/`alpha'
     }
     else {
-        * Gamma shape/scale from the first two moments: alpha=mu^2/v, beta=v/mu
+        * Gamma shape and scale from the first two moments
         local alpha = (`mu'^2)/`v'
-        local beta  = `v'/`mu'
+        local beta = `v'/`mu'
     }
 
-    * --------
-    * (B) Simulate from the fitted gamma
-    * --------
-    /* Simulating tot_n_fish values and re-tabulating them is a convenient way
-       to get a discrete probability at each 1 cm length bin. Note that no
-       rejection sampling actually happens here despite the retry guard below;
-       truncation to the observed length range is applied later instead. */
-    local ndraw = `tot_n_fish'   // sample size for the simulated distribution
+    * -------------------------------------------------------------------------
+    * (B) Simulate a discretized length distribution from the fitted gamma
+    * -------------------------------------------------------------------------
+    local ndraw = round(`tot_n_fish')
+
     clear
     set obs `ndraw'
 
-    * draw
-    gen double gammafit = rgamma(`alpha', `beta')
+    generate double gammafit = rgamma(`alpha', `beta')
     replace gammafit = round(gammafit)
 
-    /* Defensive retry inherited from an earlier rejection-sampling version;
-       set obs guarantees _N>0, so this branch is not currently reachable. */
-    if _N==0 {
-        clear
-        set obs `=5*`ndraw''
-        gen double gammafit = rgamma(`alpha', `beta')
-        replace gammafit = round(gammafit)
-        if _N==0 continue
-    }
-
-    gen nfish = 1
+    generate long nfish = 1
     collapse (sum) nfish, by(gammafit)
-    egen sumnfish = total(nfish)
-    gen double fitted_prob = nfish/sumnfish
-    gen domain = "`r'"
 
-    /* NOTE (flagged, code unchanged): the tempfile is keyed on the number of
-       distinct fitted lengths, which is not unique across domains. Two domains
-       spanning the same number of length bins therefore reuse one tempfile
-       name, so the later one overwrites the earlier and the global lists that
-       name twice. */
-    tempfile fitted_sizes_`=_N'
-    save `fitted_sizes_`=_N'', replace
-    global fitted_sizes "$fitted_sizes `fitted_sizes_`=_N''"
+    egen double sumnfish = total(nfish)
+    generate double fitted_prob = nfish/sumnfish
+    generate  domain = "`r'"
+
+    * -------------------------------------------------------------------------
+    * Safely accumulate results in one tempfile
+    * -------------------------------------------------------------------------
+    if `first_result' {
+        save `fitted_sizes_all', replace
+        local first_result = 0
+    }
+    else {
+        append using `fitted_sizes_all'
+        save `fitted_sizes_all', replace
+    }
 }
 
-clear
-dsconcat $fitted_sizes
+* Load the combined fitted distributions
+if `first_result' {
+    clear
+    display as error "No domains produced usable fitted-size distributions."
+}
+else {
+    use `fitted_sizes_all', clear
+    sort domain gammafit
+}
+
 rename gammafit fitted_length
 
 merge 1:1 fitted_length domain using `observed_prob'

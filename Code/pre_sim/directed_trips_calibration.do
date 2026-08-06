@@ -1,59 +1,60 @@
 /******************************************************************************/
 /******************************************************************************/
-/* Script:  directed_trips_calibration.do                                     */
-/*                                                                            */
-/* Purpose: Turns MRIP survey estimates of directed groundfish trips into the */
-/*          per-day, per-draw trip counts that the simulation runs on. It:    */
-/*            1) estimates directed trips and their standard error at the     */
-/*               year x month x kind-of-day (weekend incl. federal holidays / */
-/*               weekday) x mode (pr/fh) level over the calibration period,   */
-/*            2) uses those estimates to create $ndraws random draws of       */
-/*               directed trips for each stratum,                             */
-/*            3) divides each draw by the number of days in that stratum to   */
-/*               get trips per day,                                           */
-/*            4) computes a calendar-year adjustment for each stratum,        */
-/*               = (calendar days in that stratum in the projection period) / */
-/*                 (calendar days in that stratum in the calibration period), */
-/*               correcting for the fact that a given month has a different   */
-/*               mix of weekdays and weekend days from one year to the next,  */
-/*            5) sets baseline and projection year regulations by calling     */
-/*               set_regulations.do, and                                      */
-/*            6) (Part C) re-estimates MRIP directed-trip totals by mode,     */
-/*               mode-month and mode-season for later comparison with the     */
-/*               simulated totals.                                            */
-/*                                                                            */
-/* Inputs:  $triplist, $catchlist -- stacked MRIP trip and catch files        */
-/*          $misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv                          */
-/*                                                                            */
-/* Outputs: $misc_data_cd/cod_open_season_dates.dta                           */
-/*          $misc_data_cd/directed_trip_draws.csv                             */
-/*          $misc_data_cd/next_year_calendar_adjustments.csv                  */
-/*          $misc_data_cd/mrip_dtrip_by_mode.dta                              */
-/*          $misc_data_cd/mrip_dtrip_by_mode_month.dta                        */
-/*          $misc_data_cd/mrip_dtrip_by_mode_season.dta                       */
-/*                                                                            */
-/* Dependencies: Called from model_wrapper.do, which must already have set    */
-/*          $seed, $ndraws, $triplist, $catchlist, $calibration_year,         */
-/*          $calibration_date_start, $calibration_date_end, $leap_yr_days,    */
-/*          $fed_holidays, $misc_data_cd and $input_code_cd. Calls            */
-/*          set_regulations.do. Requires the user-written dsconcat, xsvmat    */
-/*          and renvarlab commands.                                           */
-/*                                                                            */
-/* Pipeline: Pre-simulation, and one of the earliest steps: directed_trip_    */
-/*          draws.csv is read by the catch-per-trip calibration, by           */
-/*          compare_calibration_data_to_MRIP.do, and by the R simulation.     */
-/*          The mrip_dtrip_by_* files are the MRIP side of the comparison in  */
-/*          compare_calibration_data_to_MRIP.do.                              */
-/*                                                                            */
-/* Note 1:  Part C consists of three near-identical ~160-line blocks that     */
-/*          differ only in the domain string used for the svy: total.         */
-/* Note 2:  Two renames in this file rely on Stata's variable-name            */
-/*          abbreviation rather than being no-ops; they are annotated where   */
-/*          they occur.                                                       */
-/* Note 3:  `global fluke_effort` is set (and never used) four times -- a     */
-/*          holdover from the summer flounder version of this code.           */
+/* Script:  directed_trips_calibration.do                                     
+                                                                              
+   Purpose: Turns MRIP survey estimates of directed groundfish trips into the 
+            per-day, per-draw trip counts that the simulation runs on. It:    
+              1) estimates directed trips and their standard error at the     
+                 year x month x kind-of-day (weekend incl. federal holidays / 
+                 weekday) x mode (pr/fh) level over the calibration period,   
+              2) uses those estimates to create $ndraws random draws of       
+                 directed trips for each stratum,                             
+              3) divides each draw by the number of days in that stratum to   
+                 get trips per day,                                           
+              4) computes a calendar-year adjustment for each stratum,        
+                 = (calendar days in that stratum in the projection period) / 
+                   (calendar days in that stratum in the calibration period), 
+                 correcting for the fact that a given month has a different   
+                 mix of weekdays and weekend days from one year to the next,  
+              5) sets baseline and projection year regulations by calling     
+                 set_regulations.do, and                                      
+              6) (Part C) re-estimates MRIP directed-trip totals by mode,     
+                 mode-month and mode-season for later comparison with the     
+                 simulated totals.                                            
+                                                                              
+   Inputs:  $triplist, $catchlist -- stacked MRIP trip and catch files        
+            $misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv                          
+                                                                              
+   Outputs: $misc_data_cd/cod_open_season_dates.dta                           
+            $misc_data_cd/directed_trip_draws.csv                             
+            $misc_data_cd/next_year_calendar_adjustments.csv                  
+            $misc_data_cd/mrip_dtrip_by_mode.dta                              
+            $misc_data_cd/mrip_dtrip_by_mode_month.dta                        
+            $misc_data_cd/mrip_dtrip_by_mode_season.dta                       
+                                                                              
+   Dependencies: Called from model_wrapper.do, which must already have set    
+            $seed, $ndraws, $triplist, $catchlist, $calibration_year,         
+            $calibration_date_start, $calibration_date_end, $leap_yr_days,    
+            $fed_holidays, $misc_data_cd and $input_code_cd. Calls            
+            set_regulations.do. Requires the user-written dsconcat, xsvmat    
+            and renvarlab commands.                                           
+                                                                              
+   Pipeline: Pre-simulation, and one of the earliest steps: directed_trip_    
+            draws.csv is read by the catch-per-trip calibration, by           
+            compare_calibration_data_to_MRIP.do, and by the R simulation.     
+            The mrip_dtrip_by_* files are the MRIP side of the comparison in  
+            compare_calibration_data_to_MRIP.do.                              
+                                                                              
+   Note 1:  Part C consists of three near-identical ~160-line blocks that     
+            differ only in the domain string used for the svy: total.         
+   Note 2:  Two renames in this file rely on Stata's variable-name            
+            abbreviation rather than being no-ops; they are annotated where   
+            they occur.     */
+					
 /******************************************************************************/
 /******************************************************************************/
+
+
 
 /******************************************************************************/
 /******************************************************************************/
@@ -66,7 +67,7 @@ set seed $seed
 di "directed_trips_calibration: estimating directed trips from MRIP; this may take a while ..."
 
 clear
-global fluke_effort
+global 
 
 tempfile tl1 cl1
 dsconcat $triplist
@@ -158,9 +159,9 @@ bysort strat_id psu_id leader (domain_claim): gen claim_flag=domain_claim[_N]
 replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strmatch(gc_flag,"1")
 
 
-* generate estimation strata
+* Generate estimation strata
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -242,6 +243,7 @@ rename my_dom_id_string6 dom_id
 drop my_dom_id_string
 rename b dtrip
 
+*keep if the trip was a cod/haddock trip in the WGoM
 keep if dom_id=="1"
 keep if area_s=="WGOM"
 
@@ -275,7 +277,7 @@ save `new', replace
 
 di "directed_trips_calibration: drawing $ndraws directed-trip draws per stratum ..."
 
-/* One stratum at a time: draw $ndraws values from a normal centred on the MRIP
+/* One stratum at a time: draw $ndraws values from a normal centered on the MRIP
    point estimate with that stratum's SE, then truncate at zero. The bias this
    truncation introduces is corrected further below. */
 global drawz
@@ -305,18 +307,15 @@ clear
 dsconcat $drawz
 
 
-/* Diagnostic: how much did truncating at zero shift the total?
-   NOTE (flagged, code unchanged): both locals are taken from the same
-   summarize of dtrip_new, so this always displays 0. The intent was to compare
-   dtrip_new against dtrip_not_trunc. */
+/* Diagnostic: how much did truncating at zero shift the total? */
 su dtrip_not
 return list
+local not_truc = `r(sum)'
 
 su dtrip_new
 return list
 local new = `r(sum)'
 
-local not_truc = `r(sum)'
 di ((`new'-`not_truc')/`not_truc')*100
 
 
@@ -608,7 +607,7 @@ export delimited using "$misc_data_cd\next_year_calendar_adjustments.csv",  repl
 di "directed_trips_calibration: estimating MRIP directed-trip totals by mode ..."
 
 clear
-global fluke_effort
+global 
 
 tempfile tl1 cl1
 dsconcat $triplist
@@ -705,7 +704,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 * generate estimation strata
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -797,7 +796,7 @@ save "$misc_data_cd\mrip_dtrip_by_mode.dta", replace
 di "directed_trips_calibration: estimating MRIP directed-trip totals by mode and month ..."
 
 clear
-global fluke_effort
+global 
 
 tempfile tl1 cl1
 dsconcat $triplist
@@ -894,7 +893,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 * generate estimation strata
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")
@@ -986,7 +985,7 @@ save "$misc_data_cd\mrip_dtrip_by_mode_month.dta", replace
 di "directed_trips_calibration: estimating MRIP directed-trip totals by mode and season ..."
 
 clear
-global fluke_effort
+global 
 
 tempfile tl1 cl1
 dsconcat $triplist
@@ -1083,7 +1082,7 @@ replace dom_id="1" if strmatch(dom_id,"2") & claim_flag>0 & claim_flag!=. & strm
 
 * generate estimation strata
 
-*New MRIP site allocations
+*MRIP-Western GoM site allocations
 preserve 
 import delimited using "$misc_data_cd/MRIP_COD_ALL_SITE_LIST.csv", clear 
 keep if inlist(state, "MA", "ME")

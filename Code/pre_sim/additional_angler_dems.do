@@ -13,19 +13,15 @@
  Dependencies: Globals $seed, $ndraws, $calib_catch_draws_cd, $misc_data_cd
                (set in model_wrapper.do).
  Pipeline:     Wrapped by model_wrapper.do, gated by `angler_demogs' (default ON).
- Note:         Contradiction found and corrected in a comment only (code left
-               unchanged): the alpha0 weighting in Section A (~line 58) originally
-               claimed nonpositive candidates are excluded, but all five candidates
-               actually enter the inverse-variance-weighted average.
 *******************************************************************************/
 
 set seed $seed
 
 * Variables needed: 
 	* # days fished past 12 months - I get this from the MRIP FES 
-	* Do you like saltwater fishing more or less than other recreational activities? - I get this below from the new choice experiment 
+	* Do you like saltwater fishing more or less than other recreational activities? - I get this below from the choice experiment survey sample
 	* Education - I get this below from Sabrina's 2019 durable survey data
-	* Do you own a boat? - I get this from the choice experiment sample
+	* Do you own a boat? - I get this below from the choice experiment survey sample
 	
 
 /******************************************************************************/
@@ -60,8 +56,7 @@ foreach i in 1 2 3 4 5 {
 }
 
 /* Inverse-variance–weighted average of the five per-category alpha0 candidates
-   (weight = 1/variance). NOTE: all five candidates enter the average; despite the
-   original wording, nonpositive candidates are not actually excluded here. */
+   (weight = 1/variance).  */
 scalar w1 = 1/v1
 scalar w2 = 1/v2
 scalar w3 = 1/v3

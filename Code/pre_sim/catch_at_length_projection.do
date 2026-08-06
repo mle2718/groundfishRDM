@@ -51,9 +51,7 @@
                                                                             
  Note 1:  Two renames in this file (see Sections 3 and 5) rely on Stata's   
           variable-name abbreviation rather than being no-ops; they are     
-          annotated where they occur.                                       
- Note 2:  The gamma-fitting loop in Section 7 shares the tempfile-naming    
-          issue flagged in catch_at_length_calibration.do.                  */
+          annotated where they occur.    */
 /******************************************************************************/
 /******************************************************************************/
 
@@ -549,97 +547,126 @@ di "catch_at_length_projection: fitting gamma distributions by domain; this may 
 /* Same method-of-moments gamma fit as catch_at_length_calibration.do, applied
    here to projected rather than baseline catch. MOM is used because the
    maximum-likelihood fit failed to converge for the sparser domains. */
+   
 tempfile new
 save `new', replace
+/* Compile projected fitted-length distributions safely in one tempfile rather
+   than creating dynamically named temporary files for each domain. */
 
-global fitted_sizes
+* Save the storage type of domain so the generated merge key is not strL
+use `new', clear
+
+capture confirm strL variable domain
+if !_rc {
+    gen str244 domain_fixed = strtrim(domain)
+    drop domain
+    rename domain_fixed domain
+    save `new', replace
+}
+else {
+    replace domain = strtrim(domain)
+}
+
+local domain_type : type domain
 
 levelsof domain, local(regs)
 
-qui foreach r of local regs {
+tempfile fitted_sizes_all
+local first_result = 1
+
+quietly foreach r of local regs {
     use `new', clear
-    keep if domain=="`r'"
-    di "`r'"
+    keep if domain == "`r'"
+    noisily display as text "Fitting domain: `r'"
 
     keep length catch_proj
     drop if missing(length) | missing(catch_proj)
-    drop if catch_proj<=0
-	replace catch_proj=round(catch_proj)
-	su catch_proj
-	local tot_n_fish=`r(sum)'
-	
+    drop if catch_proj <= 0
+    replace catch_proj = round(catch_proj)
 
-    * Gamma needs strictly positive support
-    drop if length<=0
+    quietly summarize catch_proj, meanonly
+    local tot_n_fish = r(sum)
 
-	* --------
-    * (A) Estimate gamma parameters robustly (MOM with freq weights)
-    * --------
+    * Gamma distribution requires strictly positive support
+    drop if length <= 0
+
+    * Skip domains without usable observations
+    if _N == 0 | missing(`tot_n_fish') | `tot_n_fish' <= 0 {
+        noisily display as error "Skipping domain `r': no usable observations"
+        continue
+    }
+
+    * -------------------------------------------------------------------------
+    * (A) Estimate gamma parameters using weighted method of moments
+    * -------------------------------------------------------------------------
     quietly summarize length [fw=catch_proj], meanonly
     local mu = r(mean)
-    local Nw = r(sum_w)
-	
-	
-    * Weighted variance: Var = E[x^2] - (E[x])^2 using the same freq weights
-    gen double length2 = length^2
+
+    * Weighted variance: Var(x) = E(x^2) - [E(x)]^2
+    generate double length2 = length^2
     quietly summarize length2 [fw=catch_proj], meanonly
     local ex2 = r(mean)
-    local v   = `ex2' - (`mu'^2)
+    local v = `ex2' - (`mu'^2)
 
-    * Guard: if variance is 0 or numerically tiny, make it a near-degenerate gamma
-    if (`v'<=1e-10 | missing(`v') | missing(`mu') | `mu'<=0) {
-        * Put essentially all mass at mu by using huge alpha
+    * Approximate a degenerate gamma when the variance is zero or very small
+    if missing(`v') | missing(`mu') | `mu' <= 0 | `v' <= 1e-10 {
         local alpha = 1e6
-        local beta  = `mu'/`alpha'
+        local beta = `mu'/`alpha'
     }
     else {
         local alpha = (`mu'^2)/`v'
-        local beta  = `v'/`mu'
+        local beta = `v'/`mu'
     }
 
-    /* Simulate from the fitted gamma and re-tabulate to get a discrete
-       probability per 1 cm length bin. No rejection sampling actually happens
-       here despite the retry guard below; truncation to the observed range is
-       applied later instead. */
-    local ndraw = `tot_n_fish'   // sample size for the simulated distribution
+    * -------------------------------------------------------------------------
+    * (B) Simulate and discretize the fitted length distribution
+    * -------------------------------------------------------------------------
+    local ndraw = round(`tot_n_fish')
+
     clear
     set obs `ndraw'
 
-    * draw
-    gen double gammafit = rgamma(`alpha', `beta')
+    generate double gammafit = rgamma(`alpha', `beta')
     replace gammafit = round(gammafit)
 
-
-    /* Defensive retry inherited from an earlier rejection-sampling version;
-       set obs guarantees _N>0, so this branch is not currently reachable. */
-    if _N==0 {
-        clear
-        set obs `=5*`ndraw''
-        gen double gammafit = rgamma(`alpha', `beta')
-        replace gammafit = round(gammafit)
-        if _N==0 continue
-    }
-
-    gen nfish = 1
+    generate long nfish = 1
     collapse (sum) nfish, by(gammafit)
-    egen sumnfish = total(nfish)
-    gen double fitted_prob = nfish/sumnfish
-    gen domain = "`r'"
 
-    /* NOTE (flagged, code unchanged): the tempfile is keyed on the number of
-       distinct fitted lengths, which is not unique across domains, so two
-       domains with the same number of length bins collide. Same issue as in
-       catch_at_length_calibration.do. */
-    tempfile fitted_sizes_`=_N'
-    save `fitted_sizes_`=_N'', replace
-    global fitted_sizes "$fitted_sizes `fitted_sizes_`=_N''"
+    egen double sumnfish = total(nfish)
+    generate double fitted_prob = nfish/sumnfish
+    generate `domain_type' domain = "`r'"
+
+    * -------------------------------------------------------------------------
+    * Safely append each domain to one cumulative tempfile
+    * -------------------------------------------------------------------------
+    if `first_result' {
+        save `fitted_sizes_all', replace
+        local first_result = 0
+    }
+    else {
+        append using `fitted_sizes_all'
+        save `fitted_sizes_all', replace
+    }
 }
 
-clear
-dsconcat $fitted_sizes
+* Load the complete set of fitted distributions
+if `first_result' {
+    clear
+    display as error "No domains produced usable fitted-size distributions."
+    exit 2000
+}
+else {
+    use `fitted_sizes_all', clear
+}
+
 rename gammafit fitted_length
+sort domain fitted_length
+
+* Confirm that the merge keys uniquely identify fitted observations
+isid fitted_length domain
 
 merge 1:1 fitted_length domain using `observed_prob'
+
 sort domain fitted_length 
 mvencode fitted_prob observed_prob*, mv(0) override 
 
