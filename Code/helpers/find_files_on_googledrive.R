@@ -11,6 +11,7 @@
 #               googledrivesetup.R).
 # Pipeline:     Standalone helper / how-to; not called by any wrapper. Run
 #               occasionally when you need a file's Drive id.
+# Note:         data_version is a hardcoded vintage string
 ################################################################################
 
 library(tidyverse)
