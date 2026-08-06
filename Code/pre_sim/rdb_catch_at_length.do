@@ -46,15 +46,14 @@
 * Import 101 draws of baseline catch at length probabilities
 import delimited "$misc_data_cd\baseline_catch_at_length.csv", clear
 
-*Take medians of 101 draws of the observed and fitted probabilities for catch at length
 
 /******************************************************************************/
 /******************************************************************************/
-/* Section A: Median observed catch-at-length probability */
+/* Section A: Median observed catch-at-length probability (baseline year) */
 /******************************************************************************/
 /******************************************************************************/
 
-//observed probability
+*Take medians of 101 draws of the observed catch at length probabilities  
 preserve
 collapse (median) observed_prob, by(season species length)
 //convert to inches
@@ -72,11 +71,11 @@ restore
 
 /******************************************************************************/
 /******************************************************************************/
-/* Section B: Median fitted (smoothed) catch-at-length probability */
+/* Section B: Median fitted (smoothed) catch-at-length probability (baseline year) */
 /******************************************************************************/
 /******************************************************************************/
 
-//fitted (smoothed) probability
+*Take medians of 101 draws of the fitted (smoothed) catch at length probabilities  
 collapse (median) fitted_prob, by(season species length)
 //convert to inches
 replace length=length/2.54
@@ -88,7 +87,7 @@ drop season len_r
 gen units="baseline fitted proportion of catch" 
 rename fitted_prob value
 
-//stack the fitted and observed probabilities
+* Stack the fitted and observed probabilities
 append using `obs'
 
 tempfile base
@@ -105,10 +104,16 @@ drop season1-season4
 */
 
 
+/******************************************************************************/
+/******************************************************************************/
+/* Section C: Median fitted (smoothed) catch-at-length probability (projection year) */
+/******************************************************************************/
+/******************************************************************************/
+
 * Import 101 draws of projected catch at length probabilities
 import delimited "$misc_data_cd\projected_catch_at_length.csv", clear
 
-*Take medians of 101 draws of the projected fitted probabilities for catch at length
+*Take medians of 101 draws of the projected fitted catch at length probabilities  
 collapse (median) fitted_prob, by(season species length)
 //convert to inches
 replace length=length/2.54
@@ -137,7 +142,7 @@ drop season1-season4
 
 /******************************************************************************/
 /******************************************************************************/
-/* Section C: Add descriptive columns for the dashboard and save */
+/* Section D: Add descriptive columns for the dashboard and save */
 /******************************************************************************/
 /******************************************************************************/
 
