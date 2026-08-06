@@ -4,7 +4,7 @@
 #               an .Rds stamped with its data_version, and uploads that .Rds to
 #               the shared Google Drive miscellaneous folder for the rec
 #               dashboard.
-# Inputs:       <gf.data.dir>/miscellaneous/rdb_cat_len.dta
+# Inputs:       <gf.data.dir>/miscellaneous/rdb_cat_len.dta (written by rdb_catch_at_length.do)
 # Outputs:      <gf.data.dir>/miscellaneous/rdb_catch_at_length_<date>.Rds,
 #               and a copy of that file uploaded to Google Drive.
 # Dependencies: Sources developer_setup.R (for gf.data.dir). Requires a cached
