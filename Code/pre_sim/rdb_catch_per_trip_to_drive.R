@@ -3,7 +3,7 @@
 # Purpose:      Reads the dashboard-formatted catch-per-trip .dta, saves it as an
 #               .Rds stamped with its data_version, and uploads that .Rds to the
 #               shared Google Drive miscellaneous folder for the rec dashboard.
-# Inputs:       <gf.data.dir>/miscellaneous/rdb_sim_catch_per_trip.dta
+# Inputs:       <gf.data.dir>/miscellaneous/rdb_sim_catch_per_trip.dta (written by rdb_processing_catch_per_trip.do)
 # Outputs:      <gf.data.dir>/miscellaneous/rdb_catch_per_trip_<date>.Rds,
 #               and a copy of that file uploaded to Google Drive.
 # Dependencies: Sources developer_setup.R (for gf.data.dir). Requires a cached
