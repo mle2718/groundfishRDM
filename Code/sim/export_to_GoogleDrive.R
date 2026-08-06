@@ -11,10 +11,6 @@
 #               final_process_* path objects defined by the calling
 #               "R code wrapper.R".
 # Pipeline:     Sourced by "R code wrapper.R" (Section D) after calibration.
-# Note:         The Drive folder for choice occasions is spelled
-#               "n_choice_occassions" (double s) while the file names use
-#               "n_choice_occasions"; the double-s spelling intentionally matches
-#               the existing Drive folder.
 ################################################################################
 
 library(googledrive)
@@ -31,9 +27,7 @@ drive_auth(cache = here(".secrets"), email = TRUE)
 
 # Output folders on google drive
 base_outcomes_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","base_outcomes")
-# The Drive folder is literally spelled "n_choice_occassions" (double s); keep it
-# as-is to match the real folder, even though the file names use one s.
-n_choice_occasions_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","n_choice_occassions")
+n_choice_occasions_path<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","n_choice_occasions")
 calib_catch_draws_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","calib_catch_draws")
 miscellaneous_path <-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","miscellaneous")
 
@@ -223,7 +217,7 @@ expected_choice <- CJ(
 )[
   ,
   .(
-    folder = "n_choice_occassions",
+    folder = "n_choice_occasions",
     file_name = paste0("n_choice_occasions_", season, "_", mode, "_", draw, ".fst")
   )
 ]
@@ -256,7 +250,7 @@ get_drive_file_names <- function(drive_folder_id, folder_label) {
 actual_files <- rbindlist(list(
   get_drive_file_names(calib_catch_draws_path, "calib_catch_draws"),
   get_drive_file_names(base_outcomes_path, "base_outcomes"),
-  get_drive_file_names(n_choice_occasions_path, "n_choice_occassions")
+  get_drive_file_names(n_choice_occasions_path, "n_choice_occasions")
 ))
 
 # Identify missing files
