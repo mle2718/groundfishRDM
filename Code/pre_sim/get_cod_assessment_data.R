@@ -8,7 +8,8 @@
 #               historical and projected numbers-at-age (NAA). Projected NAA are
 #               drawn (num_NAA_draws) from a bias-corrected lognormal built from
 #               the projection's log-NAA mean and sd.
-# Inputs:       (Google Drive shared drive "NMFS NEC READ SSB", cod_assessment/)
+# Inputs:       Two files from the Google Drive shared drive:
+#               "NMFS NEC READ SSB", cod_assessment/
 #                 mod_base_2023_noBLLS.rds       (accepted WHAM model),
 #                 WGOM_COD_ASAP_2023_SEL3_2023.DAT (ASAP input file).
 # Outputs:      input_data/WGOMCod_Projections_<date>.Rds,
@@ -25,14 +26,16 @@
 #
 # Background (units and conventions):
 #   - Aggregate weights (SSB, catch) are in metric tons; weight-at-age vectors
-#     are in kg. tail(x, 1) picks the last (most recent) year of a vector/matrix.
+#     are in kg.
+#   - tail(x, 1) is used to pick the last (most recent) year of a vector/matrix.
 #   - The assessment has commercial and recreational fleets (plus a 'blended'
 #     fleet). Some parameters go INTO the assessment (natural mortality M,
 #     fraction-of-year before spawning); others come OUT (weights-at-age,
 #     maturity, historical NAA). BLAST 1.0 consumes the 1xA weight-at-age row
 #     vectors built below (cod_jan1_weights, cod_midyear_weights,
 #     cod_catch_weights, cod_ssb_weights, cod_discard_weights, cod_maturity;
-#     cod_discard_fraction is not modeled for the commercial fleet).
+#     cod_discard_fraction is not modeled for the commercial fleet).  However
+#     the current versions of the groundfishRDM does not use these.
 #   - There is no stochastic projection for WGOM cod, so future NAA are treated
 #     as lognormal and simulated with rlnorm().
 #   - Bridging: 2023 and 2024 catch are passed in as actuals (see the "Pull
