@@ -30,8 +30,8 @@
  
  We also take the medians of 101 draws of fitted proportions caught at length by season and species for the 
  projection year. The projected catch at length distribution is based on the baseline observed catch at length 
- probability distribution and the projected numbers at age from the stock assessment. See 
- catch_at_length_projection.do for the code. 
+ probability distribution and the projected numbers at age from the stock assessment. The probabilities are
+ fitted to a gamma distribution. See catch_at_length_projection.do for the code. 
 
  General strategy:
   1. Read in data
