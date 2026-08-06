@@ -5,7 +5,7 @@
 #               lower-cases names, stamps a pull date, forces id columns to
 #               character, and writes per-element .dta files plus a combined .Rds.
 # Inputs:       Command-line args: first_year last_year. Live Oracle connection
-#               (mriptacklebox's nefscdb_con), waves 1-6.
+#               (mriptacklebox's nefscdb_con).
 # Outputs:      <gf.data.dir>/miscellaneous/mrip_{trip,catch,size,size_b2}.dta and
 #               mrip_pull<today>.Rds.
 # Dependencies: Sources developer_setup.R (for gf.data.dir). Requires Oracle
