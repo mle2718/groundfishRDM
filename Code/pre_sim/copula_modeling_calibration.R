@@ -22,6 +22,7 @@
 #               and _part2.do (which resamples these raw draws into trip files).
 # Note:         statez <- c("all") is a holdover from the state-level SFRDM code;
 #               groundfish runs a single "all" domain.
+#               There are a few functions that need Roxygen headers.
 ################################################################################
 ################################################################################
 

@@ -8,8 +8,8 @@
 #               projected numbers-at-age (NAA). NAA are taken from the SECOND
 #               projection (0.75*Fmsy) and, for the projection year, drawn
 #               (num_NAA_draws) from a bias-corrected lognormal.
-# Inputs:       (Google Drive shared drive "NMFS NEC READ SSB",
-#                haddock_assessment/)
+# Inputs:       Two files from the Google Drive shared drive:
+#               "NMFS NEC READ SSB", haddock_assessment/
 #                 mod_nola_dcpe_blls2.rds     (accepted WHAM model),
 #                 waa_pred_2024-08-25.xlsx    (projected SSB/Catch weight-at-age).
 # Outputs:      input_data/GOM_Haddock_Projections_<date>.Rds,
@@ -213,17 +213,19 @@ old_bridge_year_catch <- 2105 #GOM haddock 2024 MT PDT-supplied catch
 actual_2023_commercial_catch_mt<-2277
 actual_2024_commercial_catch_mt<-1405
 actual_2025_commercial_catch_mt<-NA # Update for 2027
+actual_2026_commercial_catch_mt<-NA # Update for 2028
 
 actual_2023_rec_catch_mt<-793 # From GARFO quota monitoring report
 actual_2024_rec_catch_mt<-899
 actual_2025_rec_catch_mt<-NA #Update for 2027
+actual_2025_rec_catch_mt<-NA #Update for 2028
 
 
 actual_2023_catch_mt<-actual_2023_commercial_catch_mt+actual_2023_rec_catch_mt
 actual_2024_catch_mt<-actual_2024_commercial_catch_mt+actual_2024_rec_catch_mt
 
 # 2025 not used yet.
-# actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
+ actual_2025_catch_mt<-actual_2025_commercial_catch_mt+actual_2025_rec_catch_mt
 
 
 #Handle WAA ###############################################################################
