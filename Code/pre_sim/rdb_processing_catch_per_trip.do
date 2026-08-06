@@ -1,10 +1,10 @@
 /*******************************************************************************
  Script:       rdb_processing_catch_per_trip.do
  Purpose:      Cleans the simulated catch-per-trip data and formats it for the rec
-               dashboard: for WGOM cod and haddock, takes the median, min, and max
+               dashboard: for WGOM Atlantic cod and GOM haddock, takes the median, min, and max
                across the 100 draws of simulated mean catch per trip (harvest +
-               discards, i.e. A + B1 + B2) at the mode-month level, stacks the six
-               summaries, and adds descriptive columns.
+               discards, i.e. A + B1 + B2) at the mode-month level and adds 
+               descriptive columns.
  Inputs:       $misc_data_cd/simulated_catch_totals3.dta (written by
                compare_calibration_data_to_MRIP.do).
  Outputs:      $misc_data_cd/rdb_sim_catch_per_trip.dta
@@ -12,6 +12,7 @@
  Pipeline:     Wrapped by model_wrapper.do, gated by `prep_cpt_for_dashboard'
                (default ON). Followed by rdb_catch_per_trip_to_drive.R, which
                pushes the output to Google Drive as an Rds.
+               
 
  General strategy:
   1. Read in data
@@ -134,16 +135,15 @@ gen year=2025 if month<=10
 replace year=2024 if month>=11
 
 gen stock_abbrev="WGOM"
+replace stock_abbrev="GOM" if common=="haddock"
 gen fishery= "NE Groundfish"
 
-//Update this 
-gen data_version="2026-05-12"
 //state will be NA
 gen state=.
 gen source="model intermediate"
 
 *reorder columns. sort data on month, common, mode.
-order fishery common species_itis stock_abbrev state mode data_version year wave month metric value units source
+order fishery common species_itis stock_abbrev state mode year wave month metric value units source
 sort month common mode
 
 //get rid of var label on value 
