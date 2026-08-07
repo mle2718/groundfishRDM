@@ -1,1 +1,423 @@
-# groundfishRecDST_Shiny
+# groundfishRDM
+
+Recreational Decision Support Tool (RecDST) for Gulf of Maine cod and haddock.
+
+## Overview
+
+groundfishRDM implements a Stata → R → Shiny pipeline that simulates how recreational
+fishing regulations — season dates, bag limits and minimum sizes — affect fishing
+outcomes for Atlantic cod and haddock in the Western Gulf of Maine. Raw MRIP survey
+data and stock assessment output are processed in Stata, calibrated in R against
+published MRIP totals, and served through a Shiny application that fisheries managers
+use to compose candidate regulation packages and compare their predicted mortality,
+harvest and angler-welfare consequences.
+
+The scientific core is a discrete-choice model of angler trip-taking behavior, combined
+with copula-based simulation of correlated cod/haddock catch per trip and Monte Carlo
+propagation of uncertainty across ~100 draws. Results are compared against annual catch
+limits (2026 Rec subACLs are 118 mt for WGOM cod and 1,146 mt for GOM haddock) so 
+managers can weigh conservation targets against recreational access.
+
+This repository is the groundfish sibling of **flukeRDM** (summer flounder, black sea
+bass and scup, Mid-Atlantic). The two share a common origin and a near-identical house
+style — same wrapper filenames, same toggle convention, same `$developer` startup sequence,
+— but they have diverged structurally. groundfishRDM is the more thoroughly hardened of the two.
+
+## Repository Structure
+
+| Path | Contents |
+|------|----------|
+| `Code/pre_sim/` | Stage 1. Stata data processing (19 `.do` files) plus the 7 R scripts Stata invokes via `rscript using` — MRIP Oracle pull, copula modeling, Google Drive pushes. Orchestrated by `model_wrapper.do`. |
+| `Code/sim/` | Stage 2. R calibration and simulation. Orchestrated by `R code wrapper.R`. Also holds `predict_rec_catch_functions.R` (used by the projection path) and `required_packages.R`. |
+| `Code/helpers/` | Leaf utilities sourced by other scripts: `developer_setup.R` / `developer_setup_stata.do` (path bootstrap), Google Drive auth, NAA helpers, WHAM version installer. Not orchestrators. |
+| `Code/test_code/` | Development and QA scratch scripts. Not called by any wrapper; several hard-code developer-specific absolute paths. Archive candidate. |
+| `RecDST/` | `model_run.R` — the single unified cod/haddock projection runner invoked by `Run_Model.R`. |
+| `docs/` | `Run_Summary.Rmd` / `.html` — rendered analysis summary. |
+| `input_data/` | Local raw and reference inputs (assessment NAA files, trawl data). Empty in a fresh checkout. |
+| `Data/` | Pipeline output consumed downstream. Gitignored; empty in a fresh checkout. |
+| `keda/` | KEDA (Kubernetes Event-Driven Autoscaling) configuration — queue-creation scripts, `consume_and_run.sh` worker entrypoint, `scaledjobgroundfish.yaml`. |
+| `shiny-deployment/` | Kubernetes / ShinyProxy / Helm deployment manifests (53 YAML files), plus its own `README.md` and `prometheus.md`. |
+| `.devcontainer/` | VS Code dev container definition. |
+| `.secrets/` | Cached `googledrive` OAuth token location. Gitignored; a placeholder is committed. |
+| `app.R` | The Shiny application (root level, monolithic single file). |
+| `Run_Model.R` | CLI entry point for a projection run: `Rscript Run_Model.R <Run_Name>`. |
+| `Model_Summary.Rmd` / `.html` | Long-form model documentation. |
+| `Dockerfile` | Shiny app image (`rocker/shiny:4.3`). |
+| `Dockerfile.RmodelGroundFish` | Model-runner worker image (`rocker/r-ver:4.3.2`). |
+| `shiny-server.conf`, `load_env.sh`, `.env.example` | Deployment configuration and environment variable template. |
+
+Two directories are created at runtime and are **not** in a fresh checkout: `output/`
+(model result CSVs) and `saved_regs/` (submitted regulation scenarios). Both are
+gitignored and both are required by `app.R` — see [Running the Shiny Application](#running-the-shiny-application).
+
+## Requirements
+
+### R Package Dependencies
+
+Extracted by scanning every `.R` and `.Rmd` file in the repository for `library()`,
+`require()`, `pkg::` usage, and the `packages` vector that `Code/sim/R code wrapper.R`
+attaches via `lapply(packages, library, character.only = TRUE)`.
+
+**No version pinning exists** for these packages: there is no `renv.lock`, no
+`DESCRIPTION`, and no explicit version comments anywhere in the code. The one exception
+is WHAM (see below). Versions below are therefore listed only where the code actually
+states one.
+
+**Data manipulation and I/O**
+`arrow`, `conflicted`, `data.table`, `doBy`, `dplyr`, `feather`, `fs`, `fst`, `glue`,
+`haven`, `here`, `magrittr`, `plyr`, `purrr`, `readr`, `readxl`, `reshape2`, `rlist`,
+`splitstackshape`, `stringr`, `tibble`, `tidyr`, `tidyverse`, `WriteXLS`, `writexl`
+
+**Statistical modeling**
+`copula`, `fitdistrplus`, `Hmisc`, `logspline`, `MASS`, `psych`, `Rcpp`, `scales`,
+`survey`, `univariateML`, `VineCopula`, `wCorr`, `weights`
+
+**Parallel execution**
+`furrr`, `future`, `future.apply`, `profvis`
+
+**Plotting and reporting**
+`ggplot2`, `gridExtra`, `knitr`, `lubridate`, `patchwork`, `plotly`, `rgl`
+
+**Shiny**
+`DT`, `shiny`, `shinyjs`, `shinyWidgets`
+
+**External data access**
+`DBI`, `googledrive`, `httr`, `jsonlite`, `openssl`, `ROracle`, `RStata`, `uuid`
+
+**Stock assessment**
+`remotes`, `TMB`, `wham`, `mriptacklebox`
+
+Base and recommended packages that ship with R (`grid`, `parallel`, `stats`, `tools`,
+`graphics`) are used but not listed as dependencies.
+
+**Not on CRAN — install from GitHub:**
+
+| Package | Source | Notes |
+|---------|--------|-------|
+| `mriptacklebox` | `NEFSC/READ-PDB-mriptacklebox` | Provides the Oracle connection (`nefscdb_con`) used by `Code/pre_sim/get_mrip_oracle.R`. Install line is present but commented out at that file's line 37. |
+| `wham` | `timjmiller/wham` | **Version-pinned by commit hash.** `Code/helpers/wham_version_installer.R` reads the `wham_commit` provenance string out of each accepted assessment `.rds` model and installs that exact commit into a per-species library path (`R_LIBS_USER/cod_wham_install`, `R_LIBS_USER/haddock_wham_install`). This is the only genuine version pin in the repository. |
+
+**Declared in the Dockerfiles but with no `library()` call found in the code:**
+`markdown`, `openxlsx`, `parallelly`, `rlang`. These are installed into the container
+images but appear unused by current code — treat as candidates for removal rather than
+as confirmed dependencies.
+
+### Software Requirements
+
+- **R 4.3** — pinned by the Docker base images: `rocker/shiny:4.3` for the app,
+  `rocker/r-ver:4.3.2` for the model-runner worker. No `.Rprofile` or `renv` constraint
+  exists in the repository itself.
+- **Stata 17** — per the technology-stack section of the comprehensive analysis report.
+  Stata dependency scanning was out of scope for this documentation pass, so no
+  user-written command inventory (`dsconcat`, `renvarlab`, `xsvmat` and others are used)
+  has been compiled. Expect to install several SSC packages.
+- **Oracle client** — required by `ROracle`/`DBI` for the MRIP data pull.
+- **Google Drive access** — several pipeline steps read from and write to the
+  "NMFS NEC READ SSB" shared drive. `get_assessment_from_gdrive.do` additionally assumes
+  the Drive client is mounted at `D:`.
+- **Docker / Kubernetes / KEDA / ShinyProxy / Redis Sentinel / Azure** — production
+  deployment stack. See `shiny-deployment/README.md`.
+
+## Running the Pipeline
+
+### Prerequisite: set `developer`
+
+Both the Stata and R halves require an externally-set developer identifier that
+**is not defined anywhere in this repository**:
+
+- Stata: `$developer`, asserted in `Code/helpers/developer_setup_stata.do`
+- R: `developer`, asserted in `Code/helpers/developer_setup.R` via
+  `stopifnot(developer %in% c("TP","LCH","ML","KB"))`
+
+This value branches the data-root path global (`$gfdatadir` / `gf.data.dir`). It must be
+set in your session or profile before anything runs. How the original developers set it
+is not recorded in the repo — this is a genuine undocumented external prerequisite.
+
+### Stage 1 + 2: `Code/pre_sim/model_wrapper.do`
+
+One command runs the whole pipeline. groundfishRDM chains its two wrappers: the Stata
+wrapper's final toggle-gated step invokes the R wrapper directly, so Stata → R is a real
+code-level hand-off, not a manual sequencing convention.
+
+```
+do Code/pre_sim/model_wrapper.do
+```
+
+Execution order, with the controlling toggle and its committed default:
+
+```
+ 0.                                      developer_setup_stata.do          (unconditional)
+ 1.  pull_assessment            = 1      get_assessment_from_gdrive.do
+ 2.  pull_MRIP                  = 1      get_mrip_oracle.R → tidyup_mrip_data_fromR.do
+ 3.  processMRIP                = 0 OFF  MRIP_column_cases.do              ["dead code" per source]
+ 4.  assemblemriplists          = 0 OFF  MRIP_lists.do                     ["dead code" per source]
+ 5.  estimate_dtrips            = 1      directed_trips_calibration.do
+       5a.                               └─ set_regulations.do             (nested, unconditional)
+ 6.  costs_per_trip             = 1      survey_trip_costs.do
+ 7.  draw_angler_preferences    = 1      estimate_angler_preferences.do
+ 8.  catch_per_trip1            = 1      calibration_catch_per_trip_part1.do
+ 9.  copula_in_R                = 1      copula_modeling_calibration.R
+10.  catch_per_trip2            = 1      calibration_catch_per_trip_part2.do
+11.  compare_calibration_MRIP   = 1      compare_calibration_data_to_MRIP.do
+12.  prep_cpt_for_dashboard     = 1      rdb_processing_catch_per_trip.do
+13.  Rpush_cpt_to_gdrive        = 1      rdb_catch_per_trip_to_drive.R
+14.  angler_demogs              = 1      additional_angler_dems.do
+15.  generate_baseline          = 1      catch_at_length_calibration.do
+16.  prep_catch_at_length_for_dash = 1   rdb_catch_at_length.do
+17.  Rpush_catch_at_length_to_gdrive = 1 rdb_catch_at_len_to_drive.R
+18.  catch_at_length_project    = 1      catch_at_length_projection.do
+19.  run_calibration            = 1      Code/sim/R code wrapper.R
+       19a.                              ├─ developer_setup.R
+       19b.                              ├─ calibrate_rec_catch0.R              ["STEP 1"]
+       19c.                              ├─ calibration_routine.R               ["STEP 2"]
+                                         │    └─ calibrate_rec_catch1.R  (re-sourced in loops)
+       19d.                              └─ export_to_GoogleDrive.R
+```
+
+**About the toggles.** All 19 are Stata *locals* (not globals), defined in one contiguous
+block under the `EXECUTION CONTROL` banner at `model_wrapper.do` lines 168–187, uniformly
+`0`/`1`, uniformly checked via `` if `toggle' ``. Setting one to `0` deletes nothing — it
+just skips that step, which is normal when its output already exists on disk. Seventeen
+default ON; the two that default OFF (`processMRIP`, `assemblemriplists`) are labeled
+"(dead code)" in the wrapper's own comments.
+
+A 20th flag, `proto` (line 192, **default 0/OFF**), gates no script — it overwrites
+`$ndraws` from 101 to 3 for fast prototyping runs. The committed default is therefore a
+full production run. Note that R's `n_simulations` (101, set in `R code wrapper.R`) is
+*not* programmatically linked to `$ndraws`; flipping `proto` on does not change it.
+
+Two steps are slow enough to look hung but are not: `pull_MRIP` (the Oracle pull) and
+`copula_in_R` — the latter carries an explicit "this takes a while and will look like
+it's hung. it's not" comment. Two steps are commented "run 1x" (`costs_per_trip`,
+`draw_angler_preferences`), implying they are not meant to be re-run every pass.
+
+`set_regulations.do` requires **manual editing every year** to enter status-quo
+regulations for the calibration and projection years. It is reached only through
+`estimate_dtrips`; the wrapper never calls it directly.
+
+### Stage 3: the projection run
+
+```
+Rscript Run_Model.R <Run_Name>
+```
+
+`Run_Model.R` → `RecDST/model_run.R` → `Code/sim/predict_rec_catch_functions.R`. It reads
+`saved_regs/regs_<Run_Name>.csv` and writes results into `output/`.
+
+This path has **no code-level link** to either wrapper or to `app.R`. It consumes files
+the wrappers produce, but the connection is a shared-filesystem convention rather than a
+call. In production, `app.R` enqueues an Azure Storage queue message and a separate
+worker (`keda/consume_and_run.sh`, running the `Dockerfile.RmodelGroundFish` image)
+picks it up and executes this command.
+
+Scripts with no confirmed caller anywhere in the repo — `RP_data_analysis.do`,
+`baseline_and_projected_NAL.do`, `get_cod_assessment_data.R`,
+`get_haddock_assessment_data.R`, `get_commercial_landings.R` — are legacy, exploratory, or
+run manually. The two `get_*_assessment_data.R` scripts
+appear to be how the pre-computed assessment files that step 1 downloads are generated in
+the first place, but that link is inferred from role, not from any code reference.
+
+## Data Flow Summary
+
+```
+External sources
+  MRIP survey (Oracle)   Stock assessment (WHAM, via Google Drive)   NEFSC trawl survey
+        │                              │                                    │
+        └──────────────────────────────┴────────────────────────────────────┘
+                                       ▼
+  STAGE 1 — Stata, Code/pre_sim/            [model_wrapper.do]
+    survey-weighted domain estimation of directed trips and catch per trip;
+    trip-cost and angler-preference draws; catch-at-length for calibration and
+    projection years via an age-length key
+        → directed trip draws, baseline MRIP catch, baseline catch-at-length
+                                       ▼
+    copula_modeling_calibration.R  — correlated cod/haddock catch draws per trip
+                                       ▼
+  STAGE 2 — R, Code/sim/                    [R code wrapper.R]
+    iterative reallocation of harvest and discards until simulated totals match
+    MRIP; non-converging draws filtered out; results written as .fst for fast
+    Shiny loading
+        → calibrated_model_stats, base_outcomes_*, n_choice_occasions_*
+                                       ▼
+  STAGE 3 — R projection                    [Run_Model.R → RecDST/model_run.R]
+    applies a user's regulation scenario, runs the discrete-choice simulation in
+    parallel across draws, aggregates with uncertainty
+        → output/<run>.csv   (long format: model, species, mode, draw, metric, value)
+                                       ▼
+  SHINY — app.R
+    reads output/*.csv and saved_regs/*.csv; writes saved_regs/regs_<name>.csv and
+    enqueues a job message. Never runs the model itself.
+```
+
+Both hand-offs out of Stage 2 are filesystem-only. The Stata → R hand-off (Stage 1 → 2)
+is the pipeline's one true code-level chain.
+
+Cross-script state is carried almost entirely by Stata **global macros** set in the
+wrapper and read by every script that runs afterwards in the same session — paths
+(`$misc_data_cd`, `$figure_cd`, `$gfdatadir`, `$calib_catch_draws_cd`), settings
+(`$ndraws`, `$seed 03211990`), and in some cases whole filter expressions
+(`$calibration_year` expands to a complete `if` condition). A script that expects a
+global the wrapper did not set will silently do the wrong thing rather than error. The R
+side follows the same pattern with global-environment objects set at the top of
+`R code wrapper.R` (`code_cd`, the `final_process_*_cd` paths, `n_simulations`,
+`n_draws`) and consumed implicitly by everything it sources.
+
+## Running the Shiny Application
+
+```r
+# from the repository root
+shiny::runApp("app.R")
+```
+
+`app.R` is a single monolithic file — there is no `global.R`, `ui.R` or `server.R` split,
+and it makes no `source()` or `system()` calls. It does two separable jobs: browse
+completed model runs, and compose a new regulation scenario and submit it.
+
+**Must exist before launching:**
+
+| Requirement | Produced by |
+|---|---|
+| `output/*.csv` | Stage 3 projection runs (`Rscript Run_Model.R <Run_Name>`), which in turn need Stages 1 and 2 to have completed |
+| `saved_regs/*.csv` | Previous submissions through the app; the directory must exist for new scenarios to be written |
+| `GROUNDFISH_AZURE_STORAGE_QUEUE_URL` | Environment variable holding a SAS-authenticated Azure Storage queue URL. Without it, submitting a run fails. See `.env.example` and `load_env.sh`. |
+
+Neither `output/` nor `saved_regs/` is in the repository — both are gitignored and must
+be created locally. With empty directories the app launches but the results tab has
+nothing to display.
+
+**The app never runs the simulation.** Submitting a scenario writes
+`saved_regs/regs_<Run_Name>.csv` and posts one queue message; a separate worker consumes
+that message and runs the model. The results page does not change until the worker
+finishes and the user clicks "Update", which reloads the page.
+
+## Known Issues & Technical Debt
+
+Full detail lives in the analysis documents listed under
+[Documentation Index](#documentation-index). Highlights:
+
+**Pipeline structure**
+- The Stage 3 projection path (`Run_Model.R` → `model_run.R`) has no code-level tie to
+  the wrappers or to `app.R`. It works, but nothing in the repository enforces or records
+  that it must run after Stage 2 and before the app is refreshed.
+- `$developer` (Stata) and `developer` (R) are required but defined nowhere in the repo.
+- `MRIP_column_cases.do` and `MRIP_lists.do` are self-labeled "(dead code)" and default
+  OFF. If `assemblemriplists` is ever flipped on, `$catchlist`/`$triplist`/`$b2list`/
+  `$sizelist` silently switch from one consolidated file each to many per-wave files.
+- `R code wrapper.R` line 137 references `predict_rec_catch.R`, which does not exist under
+  that name — a stale, commented-out reference.
+- R's `n_simulations` (101) is not linked to Stata's `$ndraws`/`proto`. A prototyping run
+  would need both kept in sync by hand.
+
+**Known bugs, flagged but deliberately not fixed** (13 catalogued; code was left as-is
+during documentation passes)
+- `app.R`: `output$totCatch` tests `species == "had"` where results code haddock as
+  `"hadd"`, so the scatter's `under_acl_hadd` is always 0. The equivalent code in
+  `output$DTout` uses `"hadd"` and is correct.
+- `app.R`: the "Add Season" control uses `ID=` rather than `id=` inside
+  `shinyjs::hidden(div(...))`, so `shinyjs::toggle()` finds no element and the button
+  does nothing.
+- `app.R`: the regulation submission block reads season-3 cod inputs the UI never
+  creates, so the value vector no longer matches the 24-element input vector.
+- `set_regulations.do`: the projection-year block references `dow` where only `dow_y2`
+  exists.
+- `catch_at_length_*.do`: gamma-fit tempfiles are keyed on observation count, which is
+  not unique across domains — two domains with the same number of length bins collide.
+- `compare_calibration_data_to_MRIP.do` saves over its own inputs and is therefore **not
+  re-runnable** without regenerating the catch draws.
+
+**Portability and quality** (repo-wide, across both repositories)
+- Hard-coded developer-specific absolute paths (45 instances across both repos), mostly
+  confined here to `Code/test_code/` and a few standalone scripts. New developers cannot
+  run the code without editing paths.
+- ~4,000 lines of obsolete test code across both repos; `Code/test_code/` is an archive
+  candidate.
+- Missing error handling in the production Shiny app produces cryptic crashes rather than
+  useful messages.
+- No dependency management — no `renv.lock`, no package versions specified.
+- `plyr` is attached before `dplyr` deliberately (it masks `summarize`, `count`, `mutate`,
+  `rename`); the `conflicts_prefer()` calls make the resolution explicit. Do not reorder.
+- Magic numbers embedded without explanation: `2.54` (inches → cm), `254` (the "no minimum
+  size" sentinel), `0.05` and `500` (convergence criteria).
+- An entire trailing block of `app.R` binds outputs to reactives that are never defined —
+  vestigial from an earlier version.
+
+The comprehensive analysis assessed technical debt across both repositories as **HIGH**
+(~27% of ~30,000 lines), and proposed a phased 10-week remediation plan whose quick wins
+are: replace hard-coded paths with `here::here()`, add file-existence checks and error
+handling in the Shiny apps, archive `test_code/`, and extract three shared utility
+functions.
+
+## Documentation Index
+
+### In this repository
+
+| File | Contents |
+|------|----------|
+| `Model_Summary.Rmd` / `.html` | Long-form description of the model and its outputs. |
+| `docs/Run_Summary.Rmd` / `.html` | Rendered summary of a model run. |
+| `shiny-deployment/README.md` | Kubernetes / ShinyProxy deployment instructions. |
+| `shiny-deployment/prometheus.md` | Monitoring setup. |
+| `shiny-deployment/deployment/README.md`, `.../overlays/1-namespaced/README.md` | Kustomize overlay notes. |
+| `.env.example` | Template for the environment variables the app and worker require. |
+| In-code headers | Every pipeline script carries a structured header block — Purpose, Inputs, Outputs, Dependencies, Pipeline position — plus section banners. This is the most reliable per-file documentation in the repository and is kept current with the code. |
+
+### Analysis documents maintained outside this repository
+
+A series of static-analysis sessions produced the documents below. **They are not checked
+into this repository** — they live in the shared analysis workspace one level above it.
+This README synthesizes their findings; consult them for the full detail.
+
+| Document | Contents |
+|----------|----------|
+| `DATAFLOW_GROUNDFISH.md` | The authoritative execution-order reference: full wrapper inventory, all 19 toggles with defaults and consequences, master execution sequence, and the complete global macro reference (every cross-script Stata global and R shared object, with reassignment risk analysis). |
+| `DATAFLOW_JOINT_COMPARISON.md` | Structural, macro-passing and risk comparison against flukeRDM. Read this before porting a change between the two repositories. |
+| `GLOSSARY_GROUNDFISH.md` | Full glossary of recurring Stata, R and modeling terms. Summarized below. |
+| `FLAGGED_ISSUES_GROUNDFISH.md` | All 13 suspected code bugs with reproduction detail, comment/code contradictions corrected during documentation, and 8 further "not a bug but worth knowing" flags. |
+| `FINAL_COMPREHENSIVE_REPORT.md` | Cross-repository technical debt assessment: repository overview, duplication analysis, consolidated recommendations, 10-week implementation roadmap, testing strategy, risk assessment. |
+
+## Glossary
+
+The terms below are the ones you will hit immediately. The full glossary —
+covering Stata idioms (`preserve`/`restore`, `dsconcat`, `renvarlab`, `xsvmat`, domain
+estimation, variable-name abbreviation), R idioms (`data.table` NSE, keyed joins,
+`list2env`, Shiny reactives) and the rest of the modeling vocabulary — is in
+`GLOSSARY_GROUNDFISH.md`.
+
+| Term | Meaning |
+|------|---------|
+| **Wrapper script** | A script whose job is running other scripts in order, with sections switched on or off by flags, rather than processing data itself. |
+| **Execution toggle** | A `0`/`1` local macro near the top of a wrapper gating whether a block runs on this pass. Setting one to `0` deletes nothing — it skips a step whose output is already on disk. |
+| **Pre-sim / sim** | The two halves of the pipeline. `Code/pre_sim` prepares inputs; `Code/sim` runs the simulation and projections. |
+| **Calibration vs. projection year** | The calibration year is the historical year the model is tuned to reproduce; the projection year is the future year whose regulations are being evaluated. Many scripts come in matched pairs, one per period. |
+| **Global macro** | A Stata value defined with `global`, readable as `$name` in *any* script running later in the same session. Used here for paths, settings, and even whole filter expressions. Because they persist, a script expecting a global the wrapper never set will silently misbehave. |
+| **`svyset` / `svy:`** | Declares the survey sampling design, then runs an estimator that respects it. MRIP is a complex survey — a plain `mean` gives the wrong standard error. |
+| **Domain estimation** | Estimating for a subgroup while keeping the rest of the sample in the variance calculation. This is why scripts classify records into `dom_id=1`/`dom_id=2` instead of filtering them out. |
+| **MRIP** | Marine Recreational Information Program — the survey producing the catch and effort estimates this model calibrates to. |
+| **A+B1 / B2** | MRIP catch categories. A+B1 is harvest; B2 is fish released alive. Tracked separately because only harvest is bag-limited. |
+| **Directed trip** | A trip that targeted or caught the species of interest. The unit effort is measured in throughout. |
+| **Mode** (`pr` / `fh` / `sh`) | Private boat, for-hire (charter and headboat), shore. Shore trips are dropped; the model covers the two boat modes. |
+| **Kind-of-day** (`kod`) | Weekend (including federal holidays) versus weekday. Effort differs sharply, so it is a stratum everywhere. |
+| **WGOM** | Western Gulf of Maine, the cod stock area covered. MRIP records an interview *site*, so a site list maps sites to NMFS statistical areas; areas 513–515, 521, 526 and 541 are treated as WGOM. |
+| **Draw** | One replicate of the whole model, carrying one sampled value of every uncertain input. Results are summarized as medians and intervals across draws. |
+| **Copula** | A way of modeling two counts (cod and haddock caught on the same trip) with their own marginal distributions plus a chosen dependence structure. Used because the two species' catch is correlated within a trip. |
+| **NAA / NAL** | Numbers-at-age and numbers-at-length. The assessment produces NAA; an age-length key converts it to NAL. |
+| **Age-length key (ALK)** | The probability a fish of a given age is a given length, estimated from NEFSC trawl survey data and LOWESS-smoothed. |
+| **Selectivity at length** | The fraction of fish present at each length that the fishery catches. Estimated in the calibration year and held fixed in projection, so catch-composition change comes only from stock change. |
+| **Logsum** | The log of summed exponentiated utilities across available choices — in a logit model, the expected utility of the whole choice set. |
+| **Compensating variation (CV)** | The dollar amount making an angler as well off under the new policy as under the baseline. Positive means the policy makes anglers better off. Computed from the logsum, per choice occasion. |
+| **Bag limit / minimum size** | The two regulations the model varies. Minimum sizes are entered in inches and converted to centimetres (× 2.54) internally; `254` is the sentinel for "no minimum size". |
+| **ACL** | Annual catch limit — the reference point results are compared against. In `app.R`, the 2026 recreational subACLs: 118 mt WGOM cod, 1,146 mt GOM haddock. |
+
+## Disclaimer
+
+This repository is a scientific product and is not official communication of the National
+Oceanic and Atmospheric Administration, or the United States Department of Commerce. All
+NOAA GitHub project code is provided on an 'as is' basis and the user assumes
+responsibility for its use. Any claims against the Department of Commerce or Department of
+Commerce bureaus stemming from the use of this GitHub project will be governed by all
+applicable Federal law. Any reference to specific commercial products, processes, or
+services by service mark, trademark, manufacturer, or otherwise, does not constitute or
+imply their endorsement, recommendation or favoring by the Department of Commerce. The
+Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be
+used in any manner to imply endorsement of any commercial product or activity by DOC or
+the United States Government.
