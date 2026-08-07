@@ -27,7 +27,7 @@ style — same wrapper filenames, same toggle convention, same `$developer` star
 
 | Path | Contents |
 |------|----------|
-| `Code/pre_sim/` | Stage 1. Stata data processing (19 `.do` files) plus the 7 R scripts Stata invokes via `rscript using` — MRIP Oracle pull, copula modeling, Google Drive pushes. Orchestrated by `model_wrapper.do`. |
+| `Code/pre_sim/` | Stage 1. Stata data processing (~20 `.do` files) plus the R scripts Stata invokes via `rscript using` — MRIP Oracle pull, copula modeling, Google Drive pushes. Orchestrated by `model_wrapper.do`. |
 | `Code/sim/` | Stage 2. R calibration and simulation. Orchestrated by `R code wrapper.R`. Also holds `predict_rec_catch_functions.R` (used by the projection path) and `required_packages.R`. |
 | `Code/helpers/` | Leaf utilities sourced by other scripts: `developer_setup.R` / `developer_setup_stata.do` (path bootstrap), Google Drive auth, NAA helpers, WHAM version installer. Not orchestrators. |
 | `Code/test_code/` | Development and QA scratch scripts. Not called by any wrapper; several hard-code developer-specific absolute paths. Archive candidate. |
@@ -36,7 +36,7 @@ style — same wrapper filenames, same toggle convention, same `$developer` star
 | `input_data/` | Local raw and reference inputs (assessment NAA files, trawl data). Empty in a fresh checkout. |
 | `Data/` | Pipeline output consumed downstream. Gitignored; empty in a fresh checkout. |
 | `keda/` | KEDA (Kubernetes Event-Driven Autoscaling) configuration — queue-creation scripts, `consume_and_run.sh` worker entrypoint, `scaledjobgroundfish.yaml`. |
-| `shiny-deployment/` | Kubernetes / ShinyProxy / Helm deployment manifests (53 YAML files), plus its own `README.md` and `prometheus.md`. |
+| `shiny-deployment/` | Kubernetes / ShinyProxy / Helm deployment manifests (~51 YAML files), plus its own `README.md` and `prometheus.md`. |
 | `.devcontainer/` | VS Code dev container definition. |
 | `.secrets/` | Cached `googledrive` OAuth token location. Gitignored; a placeholder is committed. |
 | `app.R` | The Shiny application (root level, monolithic single file). |
@@ -53,10 +53,6 @@ gitignored and both are required by `app.R` — see [Running the Shiny Applicati
 ## Requirements
 
 ### R Package Dependencies
-
-Extracted by scanning every `.R` and `.Rmd` file in the repository for `library()`,
-`require()`, `pkg::` usage, and the `packages` vector that `Code/sim/R code wrapper.R`
-attaches via `lapply(packages, library, character.only = TRUE)`.
 
 **No version pinning exists** for these packages: there is no `renv.lock`, no
 `DESCRIPTION`, and no explicit version comments anywhere in the code. The one exception
@@ -107,10 +103,7 @@ as confirmed dependencies.
 - **R 4.3** — pinned by the Docker base images: `rocker/shiny:4.3` for the app,
   `rocker/r-ver:4.3.2` for the model-runner worker. No `.Rprofile` or `renv` constraint
   exists in the repository itself.
-- **Stata 17** — per the technology-stack section of the comprehensive analysis report.
-  Stata dependency scanning was out of scope for this documentation pass, so no
-  user-written command inventory (`dsconcat`, `renvarlab`, `xsvmat` and others are used)
-  has been compiled. Expect to install several SSC packages.
+- **Stata 17** — Expect to install several SSC packages.
 - **Oracle client** — required by `ROracle`/`DBI` for the MRIP data pull.
 - **Google Drive access** — several pipeline steps read from and write to the
   "NMFS NEC READ SSB" shared drive. `get_assessment_from_gdrive.do` additionally assumes
@@ -130,8 +123,7 @@ Both the Stata and R halves require an externally-set developer identifier that
   `stopifnot(developer %in% c("TP","LCH","ML","KB"))`
 
 This value branches the data-root path global (`$gfdatadir` / `gf.data.dir`). It must be
-set in your session or profile before anything runs. How the original developers set it
-is not recorded in the repo — this is a genuine undocumented external prerequisite.
+set with .Rprofile or profile.do before anything runs.
 
 ### Stage 1 + 2: `Code/pre_sim/model_wrapper.do`
 
@@ -184,7 +176,7 @@ default ON; the two that default OFF (`processMRIP`, `assemblemriplists`) are la
 A 20th flag, `proto` (line 192, **default 0/OFF**), gates no script — it overwrites
 `$ndraws` from 101 to 3 for fast prototyping runs. The committed default is therefore a
 full production run. Note that R's `n_simulations` (101, set in `R code wrapper.R`) is
-*not* programmatically linked to `$ndraws`; flipping `proto` on does not change it.
+*not* programmatically linked to `$ndraws`; flipping `proto` on does not change it. Yes.
 
 Two steps are slow enough to look hung but are not: `pull_MRIP` (the Oracle pull) and
 `copula_in_R` — the latter carries an explicit "this takes a while and will look like
@@ -211,9 +203,9 @@ worker (`keda/consume_and_run.sh`, running the `Dockerfile.RmodelGroundFish` ima
 picks it up and executes this command.
 
 Scripts with no confirmed caller anywhere in the repo — `RP_data_analysis.do`,
-`baseline_and_projected_NAL.do`, `get_cod_assessment_data.R`,
-`get_haddock_assessment_data.R`, `get_commercial_landings.R` — are legacy, exploratory, or
-run manually. The two `get_*_assessment_data.R` scripts
+`baseline_and_projected_NAL.do`, `compile_input_data_for_dashboard.do`,
+`get_cod_assessment_data.R`, `get_haddock_assessment_data.R`, `get_commercial_landings.R`
+— are legacy, exploratory, or run manually. The two `get_*_assessment_data.R` scripts
 appear to be how the pre-computed assessment files that step 1 downloads are generated in
 the first place, but that link is inferred from role, not from any code reference.
 
@@ -308,45 +300,6 @@ Full detail lives in the analysis documents listed under
 - R's `n_simulations` (101) is not linked to Stata's `$ndraws`/`proto`. A prototyping run
   would need both kept in sync by hand.
 
-**Known bugs, flagged but deliberately not fixed** (13 catalogued; code was left as-is
-during documentation passes)
-- `app.R`: `output$totCatch` tests `species == "had"` where results code haddock as
-  `"hadd"`, so the scatter's `under_acl_hadd` is always 0. The equivalent code in
-  `output$DTout` uses `"hadd"` and is correct.
-- `app.R`: the "Add Season" control uses `ID=` rather than `id=` inside
-  `shinyjs::hidden(div(...))`, so `shinyjs::toggle()` finds no element and the button
-  does nothing.
-- `app.R`: the regulation submission block reads season-3 cod inputs the UI never
-  creates, so the value vector no longer matches the 24-element input vector.
-- `set_regulations.do`: the projection-year block references `dow` where only `dow_y2`
-  exists.
-- `catch_at_length_*.do`: gamma-fit tempfiles are keyed on observation count, which is
-  not unique across domains — two domains with the same number of length bins collide.
-- `compare_calibration_data_to_MRIP.do` saves over its own inputs and is therefore **not
-  re-runnable** without regenerating the catch draws.
-
-**Portability and quality** (repo-wide, across both repositories)
-- Hard-coded developer-specific absolute paths (45 instances across both repos), mostly
-  confined here to `Code/test_code/` and a few standalone scripts. New developers cannot
-  run the code without editing paths.
-- ~4,000 lines of obsolete test code across both repos; `Code/test_code/` is an archive
-  candidate.
-- Missing error handling in the production Shiny app produces cryptic crashes rather than
-  useful messages.
-- No dependency management — no `renv.lock`, no package versions specified.
-- `plyr` is attached before `dplyr` deliberately (it masks `summarize`, `count`, `mutate`,
-  `rename`); the `conflicts_prefer()` calls make the resolution explicit. Do not reorder.
-- Magic numbers embedded without explanation: `2.54` (inches → cm), `254` (the "no minimum
-  size" sentinel), `0.05` and `500` (convergence criteria).
-- An entire trailing block of `app.R` binds outputs to reactives that are never defined —
-  vestigial from an earlier version.
-
-The comprehensive analysis assessed technical debt across both repositories as **HIGH**
-(~27% of ~30,000 lines), and proposed a phased 10-week remediation plan whose quick wins
-are: replace hard-coded paths with `here::here()`, add file-existence checks and error
-handling in the Shiny apps, archive `test_code/`, and extract three shared utility
-functions.
-
 ## Documentation Index
 
 ### In this repository
@@ -360,20 +313,6 @@ functions.
 | `shiny-deployment/deployment/README.md`, `.../overlays/1-namespaced/README.md` | Kustomize overlay notes. |
 | `.env.example` | Template for the environment variables the app and worker require. |
 | In-code headers | Every pipeline script carries a structured header block — Purpose, Inputs, Outputs, Dependencies, Pipeline position — plus section banners. This is the most reliable per-file documentation in the repository and is kept current with the code. |
-
-### Analysis documents maintained outside this repository
-
-A series of static-analysis sessions produced the documents below. **They are not checked
-into this repository** — they live in the shared analysis workspace one level above it.
-This README synthesizes their findings; consult them for the full detail.
-
-| Document | Contents |
-|----------|----------|
-| `DATAFLOW_GROUNDFISH.md` | The authoritative execution-order reference: full wrapper inventory, all 19 toggles with defaults and consequences, master execution sequence, and the complete global macro reference (every cross-script Stata global and R shared object, with reassignment risk analysis). |
-| `DATAFLOW_JOINT_COMPARISON.md` | Structural, macro-passing and risk comparison against flukeRDM. Read this before porting a change between the two repositories. |
-| `GLOSSARY_GROUNDFISH.md` | Full glossary of recurring Stata, R and modeling terms. Summarized below. |
-| `FLAGGED_ISSUES_GROUNDFISH.md` | All 13 suspected code bugs with reproduction detail, comment/code contradictions corrected during documentation, and 8 further "not a bug but worth knowing" flags. |
-| `FINAL_COMPREHENSIVE_REPORT.md` | Cross-repository technical debt assessment: repository overview, duplication analysis, consolidated recommendations, 10-week implementation roadmap, testing strategy, risk assessment. |
 
 ## Glossary
 
@@ -406,7 +345,7 @@ estimation, variable-name abbreviation), R idioms (`data.table` NSE, keyed joins
 | **Logsum** | The log of summed exponentiated utilities across available choices — in a logit model, the expected utility of the whole choice set. |
 | **Compensating variation (CV)** | The dollar amount making an angler as well off under the new policy as under the baseline. Positive means the policy makes anglers better off. Computed from the logsum, per choice occasion. |
 | **Bag limit / minimum size** | The two regulations the model varies. Minimum sizes are entered in inches and converted to centimetres (× 2.54) internally; `254` is the sentinel for "no minimum size". |
-| **ACL** | Annual catch limit — the reference point results are compared against. In `app.R`, the 2026 recreational subACLs: 118 mt WGOM cod, 1,146 mt GOM haddock. |
+| **ACL** | Annual catch limit — the reference point results are compared against. In `app.R`: 118 mt cod, 1,146 mt haddock. |
 
 ## Disclaimer
 
