@@ -221,8 +221,8 @@ If a date falls outside every season you have set for a species and mode, no fis
 of that species may be kept that day. Anything caught is released.
 
 **If seasons overlap, the higher-numbered season wins.** Say Season 1 runs May
-through October with a 15-fish bag and Season 2 runs September through October 
-with a 5-fish bag. September and October will use the 5-fish bag, because Season 
+through October with a 15-fish bag limit and Season 2 runs September through October 
+with a 5-fish bag limit. September and October will use the 5-fish bag limit, because Season 
 2 is the higher-numbered season. This is useful when you want a general season 
 with a more restrictive window carved out of it — set the broad rules as Season 1
 and the exception as Season 2.
