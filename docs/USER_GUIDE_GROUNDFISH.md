@@ -22,13 +22,13 @@ understand the results.
 ### The question this tool helps you answer
 
 Unlike Commercial regulations, recreational regulations work indirectly. Managers 
-cannot set recreational fishing mortality the way they set a quota. Instead managers set seasons, 
+cannot set recreational fishing mortality the way they set a commercial quota. Instead managers set seasons, 
 bag limits, and minimum sizes, and anglers respond — they decide whether to go
 fishing at all, and once they are on the water, the rules determine which fish 
 they can keep and which they must release. Recreational Fishing mortality is the result of all those
 individual decisions together.
 
-That indirect link is what makes recreational measures hard to predict. A higher
+That indirect link is what makes recreational mortality hard to predict. A higher
 minimum size does not simply reduce landings, because it also increases the 
 number of fish released, and some of those released fish die.  
 A more restrictive set of rules may make trips less appealing overall, so 
@@ -53,7 +53,7 @@ of the tool.  You can view a sample of the [survey](GulfofMaineCodandHaddockSurv
 **What anglers actually catch.** Historical catch and effort estimates from the Marine Recreational
 Information Program (MRIP) tell us how many trips are taken, when, and by which mode.  It 
 also tells us how many cod and haddock a trip typically catches. This is where  observed 
-variability in trip outcomes comes from; for example many trips catch few fish, 
+variability in trip outcomes comes from; for example, many trips catch few fish, 
 and a small number catch many.  We have launched the [RecDST data dashboard](https://connect.fisheries.noaa.gov/content/c257deee-a657-4c10-be8a-92827cb5bdfe/)
 to help you understand the data that goes into this tool.
 
@@ -63,9 +63,9 @@ great deal for recreational management, because how much a minimum size limit
 affects anglers depends entirely on how many fish in the water are near that size.
 Combined with historical information about which sizes anglers actually catch, 
 this tells the tool what a typical catch looks like.  We know that recreational anglers 
-are good at catching fish -- we adjust historical catch to take account changes in biomass. For example, if the 
-stock assessment contains a very large 3-year old class of fish in 2025, then in 2026, those 4-year old
-fish will be a bit longer and the DST accounts for this.
+are good at catching fish -- we adjust historical catch to take into account changes in biomass and fish 
+size. For example, if the stock assessment contains a very large 3-year old class of fish 
+in 2025, then in 2026, those 4-year old fish will be a bit longer and the DST accounts for this.
 
 **What trips cost.** Survey data on angler trip expenditures gives the tool a 
 realistic spread of trip costs, which is what lets us convert changes in trip 
@@ -82,12 +82,12 @@ Here is a simplified version of what happens for a single opportunity —
 think of it as one person, on one day, deciding whether to go fishing.
 
 1. **Set the scene.** The tool assigns this person a trip cost and some personal
-characteristics, drawn at random from realistic distributions.
+characteristics, like age, drawn at random from realistic distributions.
 
 2. **Figure out what they would catch.** It draws a number of cod and a number of
 haddock from the observed catch-per-trip patterns for that time of year and that
 mode. Then it gives each individual fish a length, drawn from the size distribution
-of fish anglers are expected to encounter next year.
+of fish that anglers are expected to encounter next year.
 
 3. **Apply the rules.** Each fish is checked against the minimum size and the 
 bag limit in force on that date for that mode. Legal fish are kept until the bag
@@ -95,7 +95,7 @@ limit is reached; everything else goes back. Some released fish die, and the too
 accounts for that using discard mortality rates that vary by month and fish size.
 
 4. **Decide whether the trip happens.** Now the tool knows what this trip would 
-be like — so many cod kept, so many released, and so on. Using the angler 
+be like — the number of cod kept, the number released, and so on. Using the angler 
 preferences from the survey, it works out how appealing that trip is compared 
 with not fishing, and converts this into a probability that the trip takes place.
 
@@ -121,7 +121,7 @@ A few modeling choices shape how you should read the results.
 **Anglers cannot move trips around.** If you close part of the season, the tool
 assumes those trips simply do not happen. In reality, some anglers would shift 
 to a different week or target a different species. Because of this, the tool 
-probably understates both effort and mortality for measures that rely on closures.
+probably understates both effort and mortality when closures are implemented.
 
 **Catch rates do not respond to abundance directly.** More fish in the water 
 changes the sizes anglers encounter, and therefore what they can keep, but it does
