@@ -351,8 +351,8 @@ line marks the catch limit.
 **What the dollar figure means.** This is a measure of how much better or worse
 off anglers are under your regulations compared with the baseline year, expressed 
 in dollars. It is *not* revenue and it is *not* what anglers spend. It is the dollar
-value of the change in the quality of the fishing they get — the amount of money
-that would leave anglers exactly as well off as they were before the change.
+value of the change in the quality of the fishing they get under your regulations — the amount of money
+that would leave anglers exactly as well off as they were before in the baseline year under status quo regulations.
 
 A **negative** value means anglers are worse off: the regulations reduced the appeal 
 of fishing, and the number is what it would take to compensate them. A **positive** 
