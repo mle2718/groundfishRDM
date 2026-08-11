@@ -21,7 +21,8 @@ managers can weigh conservation targets against recreational access.
 This repository is the groundfish sibling of **flukeRDM** (summer flounder, black sea
 bass and scup, Mid-Atlantic). The two share a common origin and a near-identical house
 style — same wrapper filenames, same toggle convention, same `$developer` startup sequence,
-— but they have diverged structurally. groundfishRDM is the more thoroughly hardened of the two.
+. groundfishRDM is the more thoroughly hardened of the two and many recent changes in groundfishRDM will 
+be ported over to flukeRDM.
 
 ## Repository Structure
 
@@ -175,8 +176,7 @@ default ON; the two that default OFF (`processMRIP`, `assemblemriplists`) are la
 
 A 20th flag, `proto` (line 192, **default 0/OFF**), gates no script — it overwrites
 `$ndraws` from 101 to 3 for fast prototyping runs. The committed default is therefore a
-full production run. Note that R's `n_simulations` (101, set in `R code wrapper.R`) is
-*not* programmatically linked to `$ndraws`; flipping `proto` on does not change it. Yes.
+full production run. 
 
 Two steps are slow enough to look hung but are not: `pull_MRIP` (the Oracle pull) and
 `copula_in_R` — the latter carries an explicit "this takes a while and will look like
@@ -283,9 +283,6 @@ that message and runs the model. The results page does not change until the work
 finishes and the user clicks "Update", which reloads the page.
 
 ## Known Issues & Technical Debt
-
-Full detail lives in the analysis documents listed under
-[Documentation Index](#documentation-index). Highlights:
 
 **Pipeline structure**
 - The Stage 3 projection path (`Run_Model.R` → `model_run.R`) has no code-level tie to
