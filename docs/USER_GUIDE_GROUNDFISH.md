@@ -21,7 +21,7 @@ understand the results.
 
 ### The question this tool helps you answer
 
-Unlike Commerical regulations, recreational regulations work indirectly. Managers 
+Unlike Commercial regulations, recreational regulations work indirectly. Managers 
 cannot set recreational fishing mortality the way they set a quota. Instead managers set seasons, 
 bag limits, and minimum sizes, and anglers respond — they decide whether to go
 fishing at all, and once they are on the water, the rules determine which fish 
