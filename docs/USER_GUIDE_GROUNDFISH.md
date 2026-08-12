@@ -220,10 +220,10 @@ Two rules govern how your dates get turned into a fishing calendar.
 If a date falls outside every season you have set for a species and mode, no fish
 of that species may be kept that day. Anything caught is released.
 
-**If seasons overlap, the lower-numbered season wins.** Say Season 1 runs May
+**If seasons overlap, the higher-numbered season overrules the lower one..** Say Season 1 runs May
 through October with a 15-fish bag limit and Season 2 runs September through October 
 with a 5-fish bag limit. September and October will use the 5-fish bag limit, because Season 
-2 is the lower-numbered season. This is useful when you want a general season 
+2 is the higher-numbered season. This is useful when you want a general season 
 with a more restrictive window carved out of it — set the broad rules as Season 1
 and the exception as Season 2.
 
@@ -352,7 +352,7 @@ line marks the catch limit.
 off anglers are under your regulations compared with the baseline year, expressed 
 in dollars. It is *not* revenue and it is *not* what anglers spend. It is the dollar
 value of the change in the quality of the fishing they get under your regulations — the amount of money
-that would leave anglers exactly as well off as they were before in the baseline year under status quo regulations.
+that would leave anglers exactly as well off as they were before in the baseline year .
 
 A **negative** value means anglers are worse off: the regulations reduced the appeal 
 of fishing, and the number is what it would take to compensate them. A **positive** 
