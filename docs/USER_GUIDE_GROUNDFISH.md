@@ -269,7 +269,7 @@ Untick a box and its figures disappear. These are described in the next section.
 ## Interpreting Your Results
 
 Start with the mortality chart and the summary table. Together they answer the main 
-question: does this set of rules stay under the catch limits, and what does it cost [what does it cost seems wrong - come back to this]? 
+question: does this set of rules stay under the catch limits?
 The supplemental figures fill in the story once you have narrowed the field.
 
 ### The Cod and Haddock Mortality Chart
