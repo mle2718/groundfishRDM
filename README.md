@@ -20,8 +20,8 @@ managers can weigh conservation targets against recreational access.
 
 This repository is the groundfish sibling of **flukeRDM** (summer flounder, black sea
 bass and scup, Mid-Atlantic). The two share a common origin and a near-identical house
-style — same wrapper filenames, same toggle convention, same `$developer` startup sequence,
-. groundfishRDM is the more thoroughly hardened of the two and many recent changes in groundfishRDM will 
+style — same wrapper filenames, same toggle convention, same `$developer` startup sequence. 
+groundfishRDM is the more thoroughly hardened of the two and many recent changes in groundfishRDM will 
 be ported over to flukeRDM.
 
 ## Repository Structure
@@ -294,8 +294,7 @@ finishes and the user clicks "Update", which reloads the page.
   `$sizelist` silently switch from one consolidated file each to many per-wave files.
 - `R code wrapper.R` line 137 references `predict_rec_catch.R`, which does not exist under
   that name — a stale, commented-out reference.
-- R's `n_simulations` (101) is not linked to Stata's `$ndraws`/`proto`. A prototyping run
-  would need both kept in sync by hand.
+
 
 ## Documentation Index
 
