@@ -1,6 +1,4 @@
-# Recreational Decision Support Tool User Guide
-
-## Western Gulf of Maine Cod and Gulf of Maine Haddock
+# Recreational Decision Support Tool User Guide for<br> Western Gulf of Maine Cod and Gulf of Maine Haddock
 
 This Decision Support Tool (DST) helps fishery management stakeholders answer a practical question: if we set a particular combination of seasons, bag limits, and minimum sizes for recreational cod and haddock next fishing year, what is likely to happen? The DST projects recreational fishing mortality, the number of fishing trips anglers are expected to take, and changes in angler well-being under different combinations of fishing regulations.
 
