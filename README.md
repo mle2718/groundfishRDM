@@ -339,7 +339,7 @@ estimation, variable-name abbreviation), R idioms (`data.table` NSE, keyed joins
 | **Age-length key (ALK)** | The probability a fish of a given age is a given length, estimated from NEFSC trawl survey data and LOWESS-smoothed. |
 | **Selectivity at length** | The fraction of fish present at each length that the fishery catches. Estimated in the calibration year and held fixed in projection, so catch-composition change comes only from stock change. |
 | **Logsum** | The log of summed exponentiated utilities across available choices — in a logit model, the expected utility of the whole choice set. |
-| **Compensating variation (CV)** | The dollar amount making an angler as well off under the new policy as under the baseline. Positive means the policy makes anglers better off. Computed from the logsum, per choice occasion. |
+| **Compensating variation (CV)** | The dollar amount making an angler as well off under the new policy as under the baseline.  Computed from the logsum, per choice occasion. |
 | **Bag limit / minimum size** | The two regulations the model varies. Minimum sizes are entered in inches and converted to centimetres (× 2.54) internally; `254` is the sentinel for "no minimum size". |
 | **ACL** | Annual catch limit — the reference point results are compared against. In `app.R`: 118 mt cod, 1,146 mt haddock. |
 
