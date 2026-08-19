@@ -18,9 +18,9 @@ These regulations affect recreational fishing mortality through two related path
 
 Four kinds of information feed the tool.
 
-**What anglers value.** In 2025, anglers in Maine, New Hampshire, and Massachusetts were surveyed about their fishing trip preferences. Each person was shown pairs of hypothetical trips that differed in how many cod and haddock they caught that could be harvested, how many would have to be released, and what the trip would cost. They were asked which trip they would choose, or whether they would rather not fish at all. Their answers reveal the relative value anglers place on harvestable and released cod and haddock and allow us to estimate how expected catch affects the likelihood that an angler takes a fishing trip. These preferences are the behavioral engine of the tool. You can view a sample of the survey here.
+**What anglers value.** In 2025, anglers in Maine, New Hampshire, and Massachusetts were surveyed about their fishing trip preferences. Each person was shown pairs of hypothetical trips that differed in how many cod and haddock they caught that could be harvested, how many would have to be released, and what the trip would cost. They were asked which trip they would choose, or whether they would rather not fish at all. Their answers reveal the relative value anglers place on harvestable and released cod and haddock and allow us to estimate how expected catch affects the likelihood that an angler takes a fishing trip. These preferences are the behavioral engine of the tool. You can view a sample of the survey [here](GulfofMaineCodandHaddockSurvey2025.pdf).
 
-**What anglers actually catch.** Historical catch and effort data from the Marine Recreational Information Program (MRIP) tell us how many trips are taken, when they occur, and by which fishing mode. They also tell us how many cod and haddock are caught on a typical trip. MRIP estimates have sampling uncertainty because MRIP surveys a sample of fishing trips rather than observing every trip. Fishing outcomes also vary naturally: most trips catch few fish, while a small number catch many. The RecDST data dashboard provides additional information about the MRIP data used in the tool.
+**What anglers actually catch.** Historical catch and effort data from the Marine Recreational Information Program (MRIP) tell us how many trips are taken, when they occur, and by which fishing mode. They also tell us how many cod and haddock are caught on a typical trip. MRIP estimates have sampling uncertainty because MRIP surveys a sample of fishing trips rather than observing every trip. Fishing outcomes also vary naturally: most trips catch few fish, while a small number catch many. The the [RecDST data dashboard](https://connect.fisheries.noaa.gov/content/c257deee-a657-4c10-be8a-92827cb5bdfe/) provides additional information about the MRIP data used in the tool.
 
 **How big the fish are.** Stock assessments project the number of cod and haddock in the population next year for each age class. This matters for recreational management because the effect of a minimum size limit depends on how many fish are near that size. Combined with information about the sizes anglers have caught in the recent past, these projections allow us to estimate next year's expected catch-at-length distributions, or the lengths of fish anglers are likely to encounter.
 
@@ -92,23 +92,23 @@ At the top is a box asking you to name the regulatory scenario you are consideri
 
 #### Step 2: Set the cod regulations
 
-The cod column starts with For Hire Season 1 - a pair of date boxes for the season's opening and closing dates. Underneath are two controls that apply to that season:
+The cod column starts with **For Hire Season 1** - a pair of date boxes for the season's opening and closing dates. Underneath are two controls that apply to that season:
 
 **Bag Limit** - the number of cod an angler may keep per day. Type a number. **Min Length** - the minimum size in inches, set with a slider in one-inch steps.
 
-Below that, the same three controls appear again for Private Season 1.
+Below that, the same three controls appear again for **Private Season 1**.
 
-Adding a second cod season. If you wish to evaluate a scenario with two cod open seasons, click Add Season. A second block appears with dates, bag limit, and minimum size for both modes. Cod supports two seasons in total.
+**Adding a second cod season.** If you wish to evaluate a scenario with two cod open seasons, click Add Season. A second block appears with dates, bag limit, and minimum size for both modes. Cod supports two seasons in total.
 
 [SCREENSHOT: cod column showing For Hire Season 1 dates, bag limit, and minimum length slider]
 
 #### Step 3: Set the haddock regulations
 
-The haddock column works the same way, with one difference: two seasons are visible from the start for each mode, and clicking Add Season reveals a third. Haddock supports three seasons in total.
+The haddock column works the same way, with one difference: two seasons are visible from the start for each mode, and clicking **Add Season** reveals a third. Haddock supports three seasons in total.
 
 [SCREENSHOT: haddock column showing both visible seasons for For Hire and Private]
 
-**How seasons and closures are handled** Two rules govern how your dates are turned into a fishing calendar.
+**How seasons and closures are handled** Two rules govern how your dates are turned into a fishing calendar:
 
 **Any day not covered by a season is closed.** You do not need to enter dates for a proposed closure. If a date falls outside every open season you have set for a species and mode, no fish of that species may be kept that day.
 
@@ -122,19 +122,19 @@ When your regulations are set, click Run Me.
 
 **Click it only once.** The button does not provide much feedback, and clicking it repeatedly will submit the same scenario more than once. After one click, a message confirms that your regulations were saved and the scenario was queued.
 
-If you want to submit another scenario, change the scenario name first, adjust the regulations, and click Run Me again.
+If you want to submit another scenario, change the scenario name first, adjust the regulations, and click **Run Me** again.
 
 [SCREENSHOT: confirmation message after clicking Run Me]
 
 ### Viewing Results: the Summary Tab
 
-Return to the Cod and Haddock Model Summary tab. Results do not appear automatically - click the Update button near the top to refresh the page and display scenarios that have finished processing since you opened the app.
+Return to the **Cod and Haddock Model Summary** tab. Results do not appear automatically - click the **Update** button near the top to refresh the page and display scenarios that have finished processing since you opened the app.
 
 The page has three parts, from top to bottom: a chart comparing cod and haddock mortality across regulatory scenarios, a table with the details behind each scenario, and a set of optional figures you can turn on.
 
 [SCREENSHOT: the Update button at the top of the summary page]
 
-**The supplemental figures selector** Below the main table is a row of checkboxes labeled Supplemental Figures, with three choices: Angler Satisfaction, Discards, and Trips. Each box you select adds two figures to the bottom of the page - one for cod and one for haddock. Clear a box and its figures disappear. These figures are described below.
+The **Supplemental Figures** selector: Below the main table is a row of checkboxes labeled Supplemental Figures, with three choices: **Angler Satisfaction**, **Discards**, and **Trips**. Each box you select adds two figures to the bottom of the page - one for cod and one for haddock. Clear a box and its figures disappear. These figures are described below.
 
 [SCREENSHOT: the Supplemental Figures checkbox row]
 
@@ -197,7 +197,7 @@ Select the Angler Satisfaction box to add two figures, one for cod and one for h
 
 ### Discards Figures
 
-Select the Discards box to add two figures. Each plots dead discard mortality on the horizontal axis against that species' total recreational mortality on the vertical axis, both in metric tons, with the sub-ACL marked.
+Select the **Discards** box to add two figures. Each plots dead discard mortality on the horizontal axis against that species' total recreational mortality on the vertical axis, both in metric tons, with the sub-ACL marked.
 
 **Why this matters.** Total recreational mortality is landings plus dead discards, so these figures show how much of a scenario's projected mortality comes from fish that were released and did not survive rather than from fish that were taken home. This is particularly important when evaluating high minimum size limits. Raising the minimum size can lower landings but may also increase releases, a share of which die. A scenario that shifts mortality from landings to dead discards may provide little additional conservation benefit while reducing the number of fish anglers can harvest.
 
@@ -205,7 +205,7 @@ Select the Discards box to add two figures. Each plots dead discard mortality on
 
 ### Trips Figures
 
-Select the Trips box to add two figures, plotting the predicted number of recreational trips against each species' total mortality.
+Select the **Trips** box to add two figures, plotting the predicted number of recreational trips against each species' total mortality.
 
 **What this tells you.** The trip count is the tool's estimate of how many trips anglers are expected to take. Because the tool accounts for whether expected fishing conditions make a trip more or less attractive, more restrictive regulations can reduce the projected number of trips. Changes in trips can also indicate economic effects beyond angler welfare, such as changes in spending at businesses that serve recreational anglers.
 
