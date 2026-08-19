@@ -2,6 +2,8 @@
 
 Recreational Decision Support Tool (RecDST) for Gulf of Maine cod and haddock.
 
+Last updated August 19, 2026
+
 ## Overview
 
 groundfishRDM implements a Stata → R → Shiny pipeline that simulates how recreational
