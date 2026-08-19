@@ -4,7 +4,6 @@ This Decision Support Tool (DST) helps fishery management stakeholders answer a 
 
 The tool is built for fishery managers, agency staff, and other stakeholders who need to compare candidate management measures before a decision. This guide explains how the DST works, walks through the app, and describes how to interpret the results.
 
-------------------------------------------------------------------------
 
 ## Overview
 
@@ -60,7 +59,6 @@ A few modeling choices shape how you should read the results.
 
 **Numbers and lengths are drawn independently.**How many fish a trip catches and how big those fish are are treated as unrelated, and cod catch and haddock catch-per-trip are computed separately.
 
-------------------------------------------------------------------------
 
 ## Using the App
 
@@ -179,6 +177,8 @@ The mortality columns and the "% under" columns should be interpreted using the 
 
 ### Understanding Compensating Variation
 
+This section is DRAFT.
+
 The DST computes compensating variation (CV) to measure how a proposed regulatory scenario changes angler well-being relative to the baseline. CV expresses that change in dollars, but it is not angler spending, revenue, income, or a payment that anglers actually receive. Instead, it represents the amount of money that would need to be given to or taken from anglers under the proposed regulations to leave them as well off as they were under the baseline.
 
 **Positive CV means anglers are worse off under the proposed regulations.** A positive value is the amount anglers would need to receive to compensate them for the reduction in fishing quality. For example, a CV of \$1 million means anglers would collectively need \$1 million in compensation to be as well off as under the baseline.
@@ -209,6 +209,6 @@ Select the **Trips** box to add two figures, plotting the predicted number of re
 
 [SCREENSHOT: predicted trips versus cod mortality figure]
 
-### Questions or Feedback
+## Questions or Feedback
 
 If you have questions about this tool, need help interpreting a regulatory scenario, or want to suggest an improvement, contact the RecDST team at [nefsc.recdst\@noaa.gov](mailto:nefsc.recdst@noaa.gov){.email}.
