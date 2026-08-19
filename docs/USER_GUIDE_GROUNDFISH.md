@@ -64,15 +64,19 @@ A few modeling choices shape how you should read the results.
 
 ### Getting Started
 
+Before you start: the app does not process the model while you wait on the page. When you submit a scenario, the app saves your regulations and places the scenario in a queue. The model processes it in the background, which can take some time. Results appear on the summary page once processing is complete.
+
 The app opens with two tabs across the top.
 
 **Cod and Haddock Model Summary** is where you view results. It shows regulatory scenarios that have finished processing so you can compare candidate regulations with one another and with the status quo.
 
 **Regulation Selection** is where you build and submit a new regulatory scenario.
 
-Before you start: the app does not process the model while you wait on the page. When you submit a scenario, the app saves your regulations and places the scenario in a queue. The model processes it in the background, which can take some time. Results appear on the summary page once processing is complete.
+---
 
-[SCREENSHOT: the two main tabs at the top of the app, with the summary page open]
+![Figure 1: Screenshot of the two main two main tabs at the top of the app, with the summary page open](figures/SummaryPage.png)
+
+---
 
 ### Building a Scenario: the Regulation Selection Tab
 
@@ -84,7 +88,11 @@ Everything is pre-loaded with the status quo regulations (regulations in place i
 
 At the top is a box asking you to name the regulatory scenario you are considering. We recommend using your initials and a number - AB1, AB2, and so on. This label will be attached to the results, so choose something you will recognize later. Each proposed scenario needs a different name so that scenarios can be distinguished in the results.
 
-[SCREENSHOT: scenario name box and the Run Me button at the top of the Regulation Selection tab]
+---
+
+![Figure 2: Screenshot of scenario name box and the Run Me button at the top of the Regulation Selection tab](figures/ScenarioNameBox.png)
+
+---
 
 #### Step 2: Set the cod regulations
 
@@ -96,13 +104,18 @@ Below that, the same three controls appear again for **Private Season 1**.
 
 **Adding a second cod season.** If you wish to evaluate a scenario with two cod open seasons, click Add Season. A second block appears with dates, bag limit, and minimum size for both modes. Cod supports two seasons in total.
 
-[SCREENSHOT: cod column showing For Hire Season 1 dates, bag limit, and minimum length slider]
+---
+
+![Figure 3: Screenshot of cod column showing For Hire Season 1 dates, bag limit, and minimum length slider](figures/CodColumn1.png)
+
+---
 
 #### Step 3: Set the haddock regulations
 
 The haddock column works the same way, with one difference: two seasons are visible from the start for each mode, and clicking **Add Season** reveals a third. Haddock supports three seasons in total.
 
-[SCREENSHOT: haddock column showing both visible seasons for For Hire and Private]
+
+![Figure 4: Screenshot of the haddock column showing both visible seasons for For Hire and Private](figures/HaddockColumn.png)
 
 **How seasons and closures are handled** Two rules govern how your dates are turned into a fishing calendar:
 
@@ -120,19 +133,23 @@ When your regulations are set, click Run Me.
 
 If you want to submit another scenario, change the scenario name first, adjust the regulations, and click **Run Me** again.
 
-[SCREENSHOT: confirmation message after clicking Run Me]
-
 ### Viewing Results: the Summary Tab
 
 Return to the **Cod and Haddock Model Summary** tab. Results do not appear automatically - click the **Update** button near the top to refresh the page and display scenarios that have finished processing since you opened the app.
 
 The page has three parts, from top to bottom: a chart comparing cod and haddock mortality across regulatory scenarios, a table with the details behind each scenario, and a set of optional figures you can turn on.
 
-[SCREENSHOT: the Update button at the top of the summary page]
+---
+
+![Figure 5: Screenshot of the Update button at the top of the summary page](figures/UpdateButton.png)
+
+---
 
 The **Supplemental Figures** selector: Below the main table is a row of checkboxes labeled Supplemental Figures, with three choices: **Angler Satisfaction**, **Discards**, and **Trips**. Each box you select adds two figures to the bottom of the page - one for cod and one for haddock. Clear a box and its figures disappear. These figures are described below.
 
-[SCREENSHOT: the Supplemental Figures checkbox row]
+![Figure 6: Screenshot of the Supplemental Figures checkbox row](figures/SupplementalFigures.png)
+
+---
 
 ### Interpreting Your Results
 
@@ -150,7 +167,12 @@ Point color provides additional information about uncertainty. It shows the perc
 
 A note on the legend: it lists a second category for the haddock limit tied to point size, but every point is currently drawn the same size, so that part of the legend has no visual effect. Use the summary table for the percentage of draws below the haddock sub-ACL. Hover over any point to see the detailed numbers behind it.
 
-[SCREENSHOT: cod versus haddock mortality chart with reference lines and scenario labels]
+---
+
+![Figure 7: Screenshot of cod versus haddock mortality chart with reference lines and scenario labels](figures/CodVsHaddockMortality.png)
+
+---
+
 
 ### The Summary Table
 
@@ -173,7 +195,12 @@ Below the chart is a sortable table with one row per regulatory scenario and mod
 
 The mortality columns and the "% under" columns should be interpreted using the uncertainty framework described near the beginning of this guide. The mortality columns show the central projected outcomes, while the "% under" columns show how consistently each scenario remains below the applicable sub-ACL across the model's plausible draws.
 
-[SCREENSHOT: summary table showing regulation columns and mortality columns for several scenarios]
+---
+
+![Figure 8: Screenshot of the summary table showing regulation columns and mortality columns for several scenarios](figures/SummaryTable.png)
+
+---
+
 
 ### Understanding Compensating Variation
 
@@ -191,7 +218,13 @@ CV should therefore be interpreted as the economic value of a change in expected
 
 Select the Angler Satisfaction box to add two figures, one for cod and one for haddock. Each figure plots compensating variation on the horizontal axis, in millions of dollars, against that species' total recreational mortality on the vertical axis. A reference line marks the sub-ACL. These figures show the trade-off between conservation outcomes and changes in angler well-being. Two regulatory scenarios that produce similar mortality can have substantially different CV values. Scenarios farther to the left have lower CV and therefore represent better outcomes for anglers, all else equal. When comparing scenarios with similar mortality, look for the one with the lower CV.
 
-[SCREENSHOT: angler satisfaction versus cod mortality figure]
+
+---
+
+![Figure 9: Screenshot of the angler satisfaction versus cod mortality figure](figures/ChangeInAnglerSatisfaction.png)
+
+---
+
 
 ### Discards Figures
 
@@ -199,7 +232,13 @@ Select the **Discards** box to add two figures. Each plots dead discard mortalit
 
 **Why this matters.** Total recreational mortality is landings plus dead discards, so these figures show how much of a scenario's projected mortality comes from fish that were released and did not survive rather than from fish that were taken home. This is particularly important when evaluating high minimum size limits. Raising the minimum size can lower landings but may also increase releases, a share of which die. A scenario that shifts mortality from landings to dead discards may provide little additional conservation benefit while reducing the number of fish anglers can harvest.
 
-[SCREENSHOT: discard mortality versus total mortality figure for cod]
+
+---
+
+![Figure 10: Screenshot of discard mortality versus total mortality figure for cod](figures/DiscardFigures.png)
+
+---
+
 
 ### Trips Figures
 
@@ -207,7 +246,13 @@ Select the **Trips** box to add two figures, plotting the predicted number of re
 
 **What this tells you.** The trip count is the tool's estimate of how many trips anglers are expected to take. Because the tool accounts for whether expected fishing conditions make a trip more or less attractive, more restrictive regulations can reduce the projected number of trips. Changes in trips can also indicate economic effects beyond angler welfare, such as changes in spending at businesses that serve recreational anglers.
 
-[SCREENSHOT: predicted trips versus cod mortality figure]
+
+---
+
+![Figure 11: Screenshot of predicted trips versus mortality figure](figures/TripFigures.png)
+
+---
+
 
 ## Questions or Feedback
 
