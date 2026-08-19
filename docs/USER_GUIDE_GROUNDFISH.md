@@ -57,7 +57,7 @@ A few modeling choices shape how you should read the results.
 
 **Catch rates do not respond to abundance directly.** More fish in the water changes the sizes anglers are expected to encounter, and therefore what they can keep, but it does not directly change how many fish they hook on a trip.
 
-**Numbers and lengths are drawn independently.**How many fish a trip catches and how big those fish are are treated as unrelated, and cod catch and haddock catch-per-trip are computed separately.
+**Numbers and lengths are drawn independently.** How many fish a trip catches and how big those fish are are treated as unrelated, and cod catch and haddock catch-per-trip are computed separately.
 
 
 ## Using the App
