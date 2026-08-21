@@ -372,8 +372,8 @@ server <- function(input, output, session){
                     `Haddock Season(s)` = hadseason,
                     `% under Cod ACL` = under_acl_cod,
                     `% under Haddock ACL` = under_acl_hadd,
-                    `Cod Total Catch` = Value_cod,
-                    `Haddock Total Catch` = Value_hadd)
+                    `Cod Total Mortality` = Value_cod,
+                    `Haddock Total Mortality` = Value_hadd)
 
     DT::datatable(final_table)
   })
@@ -389,8 +389,8 @@ server <- function(input, output, session){
       dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
                     under_acl = dplyr::case_when(species == "hadd" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
       dplyr::group_by(model, species) %>%
-      dplyr::summarise(under_acl = sum(under_acl),
-                       Value = round(median(Value),0)) %>%
+      dplyr::summarise(under_acl = (100/length(unique(draw)))*sum(under_acl),
+                       Value = round(median(Value),0))  %>%
       tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl))
 
     # Bin the draw counts into the discrete legend categories used by the
