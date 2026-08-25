@@ -47,8 +47,8 @@ final_process_calib_catch_cd=here::here("Data/calib_catch_draws")
 ################################################################################
 ################################################################################
 
-draws         <- 1:5
-n_simulations <- 5
+draws         <- 1:101
+n_simulations <- 101
 mode_draw     <- c("pr", "fh")
 season_draw   <- c("summer", "winter")
 draws         <- if (exists("draws")) draws else seq_len(n_simulations)
