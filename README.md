@@ -1,18 +1,18 @@
 # groundfishRDM
 
-Recreational Decision Support Tool (RecDST) for Gulf of Maine cod and haddock.
+Recreational Decision Support Tool (RecDST) for Gulf of Maine Cod and Haddock.
 
-Last updated August 19, 2026
+Last updated August 26, 2026
 
 ## Overview
 
 groundfishRDM implements a Stata → R → Shiny pipeline that simulates how recreational
 fishing regulations — season dates, bag limits and minimum sizes — affect fishing
 outcomes for Atlantic cod and haddock in the Western Gulf of Maine. Raw MRIP survey
-data and stock assessment output are processed in Stata, calibrated in R against
-published MRIP totals, and served through a Shiny application that fisheries managers
-use to compose candidate regulation packages and compare their predicted mortality,
-harvest and angler-welfare consequences.
+data and stock assessment output are processed in Stata and R against. It is combined with
+the results of a valuation survey.  Stakeholders can use a RShiny application to design and evaluate 
+candidate regulation packages and compare their predicted mortality,
+harvest, and angler-welfare consequences.
 
 The scientific core is a discrete-choice model of angler trip-taking behavior, combined
 with copula-based simulation of correlated cod/haddock catch per trip and Monte Carlo
@@ -20,8 +20,8 @@ propagation of uncertainty across ~100 draws. Results are compared against annua
 limits (2026 Rec subACLs are 118 mt for WGOM cod and 1,146 mt for GOM haddock) so 
 managers can weigh conservation targets against recreational access.
 
-This repository is the groundfish sibling of **flukeRDM** (summer flounder, black sea
-bass and scup, Mid-Atlantic). The two share a common origin and a near-identical house
+This repository is the closely related to **flukeRDM** (summer flounder, black sea
+bass and scup in the Mid-Atlantic). The two share a common origin and a near-identical house
 style — same wrapper filenames, same toggle convention, same `$developer` startup sequence. 
 groundfishRDM is the more thoroughly hardened of the two and many recent changes in groundfishRDM will 
 be ported over to flukeRDM.
@@ -95,6 +95,10 @@ Base and recommended packages that ship with R (`grid`, `parallel`, `stats`, `to
 |---------|--------|-------|
 | `mriptacklebox` | `NEFSC/READ-PDB-mriptacklebox` | Provides the Oracle connection (`nefscdb_con`) used by `Code/pre_sim/get_mrip_oracle.R`. Install line is present but commented out at that file's line 37. |
 | `wham` | `timjmiller/wham` | **Version-pinned by commit hash.** `Code/helpers/wham_version_installer.R` reads the `wham_commit` provenance string out of each accepted assessment `.rds` model and installs that exact commit into a per-species library path (`R_LIBS_USER/cod_wham_install`, `R_LIBS_USER/haddock_wham_install`). This is the only genuine version pin in the repository. |
+
+**Planned**
+
+We are working on the [dstoolkit](https://github.com/kimberly-bastille/dstoolkit)  package. This is intended to be a collection of functions that are used in both repositories.  A package of shared libraries will reduce ongoing maintenance time/costs. It will also make it easier to develop new models of this type.
 
 **Declared in the Dockerfiles but with no `library()` call found in the code:**
 `markdown`, `openxlsx`, `parallelly`, `rlang`. These are installed into the container
