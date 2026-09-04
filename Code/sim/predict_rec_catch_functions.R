@@ -13,7 +13,8 @@
 #                 calibrated_model_stats.fst, baseline_catch_at_length.csv,
 #                 directed_trip_draws.fst (passed in), Discard_Mortality.fst,
 #                 calendar_adj.fst. Per (season, mode, draw) it also reads
-#                 calib_catch_draws_<dr>.fst, base_outcomes_*, n_choice_occasions_*.
+#                 calib_catch_draws_<dr>.fst, base_outcomes_*, n_choice_occasions_*,
+#                 projected_catch_at_length.csv.
 # Outputs:      None written here; run_cod_hadd_projection() returns a long
 #               data.table of projected metrics by season/mode/metric/iteration.
 # Dependencies: The length-weight parameters (cod_lw_a/b, had_lw_a/b), the
