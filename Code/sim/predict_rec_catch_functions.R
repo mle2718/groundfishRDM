@@ -557,8 +557,8 @@ project_one_cod_hadd_both_modes <- function(s,
     # Compensating variation ($/choice occasion): the standard logsum welfare
     # measure for a binary logit. The change in expected utility between the
     # alternative and baseline policies is converted to dollars by the (negative)
-    # cost coefficient. Positive CV = the policy makes anglers better off.
-    mean_trip_data[, CV := -1 * ((log_sum_alt - log_sum_base) / beta_cost)]
+    # cost coefficient. Positive CV = the policy makes anglers worse off.
+    mean_trip_data[, CV := 1 * ((log_sum_alt - log_sum_base) / beta_cost)]
 
     outcome_cols <- intersect(c(
       "tot_keep_cod_new", "tot_rel_cod_new", "tot_cat_cod_new",
