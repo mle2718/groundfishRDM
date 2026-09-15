@@ -142,7 +142,7 @@ The page has three parts, from top to bottom: a chart comparing cod and haddock 
 
 ------------------------------------------------------------------------
 
-The **Supplemental Figures** selector: Below the main table is a row of checkboxes labeled Supplemental Figures, with three choices: **Angler Satisfaction**, **Discards**, and **Trips**. Each box you select adds two figures to the bottom of the page - one for cod and one for haddock. Clear a box and its figures disappear. These figures are described below.
+The **Supplemental Figures** selector: Below the main table is a row of checkboxes labeled Supplemental Figures, with three choices: **Compensating Variation**, **Discards**, and **Trips**. Each box you select adds two figures to the bottom of the page - one for cod and one for haddock. Clear a box and its figures disappear. These figures are described below.
 
 ![Figure 6: Screenshot of the Supplemental Figures checkbox row](figures/SupplementalFigures.png)
 
@@ -199,19 +199,17 @@ The mortality columns and the "% under" columns should be interpreted using the 
 
 ### Understanding Compensating Variation
 
-This section is DRAFT.
-
-The DST computes compensating variation (CV) to measure how a proposed regulatory scenario changes angler well-being relative to the baseline. CV expresses that change in dollars, but it is not angler spending, revenue, income, or a payment that anglers actually receive. Instead, it represents the amount of money that would need to be given to or taken from anglers under the proposed regulations to leave them as well off as they were under the baseline.
+The DST computes compensating variation (CV) to measure how a proposed regulatory scenario changes angler well-being relative to the baseline (i.e., the previous year). CV expresses that change in dollars, but it is not angler spending, revenue, income, or a payment that anglers actually receive. Instead, it represents the amount of money that would need to be given to or taken from anglers under the proposed regulations to leave them as well off as they were under the baseline.
 
 **Positive CV means anglers are worse off under the proposed regulations.** A positive value is the amount anglers would need to receive to compensate them for the reduction in fishing quality. For example, a CV of \$1 million means anglers would collectively need \$1 million in compensation to be as well off as under the baseline.
 
 **Negative CV means anglers are better off under the proposed regulations.** In this case, money could theoretically be taken away from anglers while still leaving them as well off as under the baseline. For example, a CV of -\$1 million represents a \$1 million improvement in angler well-being relative to the baseline.
 
-CV should therefore be interpreted as the economic value of a change in expected fishing opportunities, not as money that is actually paid to or received by anglers. When comparing scenarios with similar conservation outcomes, a lower CV indicates a smaller cost to anglers, or a larger improvement in angler well-being.
+CV should therefore be interpreted as the economic value of a change in expected fishing opportunities, not as money that is actually paid to or received by anglers. When comparing scenarios with similar conservation outcomes, a lower positive CV indicates a smaller cost to anglers, and a more negative CV indicates a larger improvement in angler well-being.
 
-### Angler Satisfaction Figures
+### Compensating Variation Figures
 
-Select the Angler Satisfaction box to add two figures, one for cod and one for haddock. Each figure plots compensating variation on the horizontal axis, in millions of dollars, against that species' total recreational mortality on the vertical axis. A reference line marks the sub-ACL. These figures show the trade-off between conservation outcomes and changes in angler well-being. Two regulatory scenarios that produce similar mortality can have substantially different CV values. Scenarios farther to the left have lower CV and therefore represent better outcomes for anglers, all else equal. When comparing scenarios with similar mortality, look for the one with the lower CV.
+Select the CV box to add two figures, one for cod and one for haddock. Each figure plots compensating variation on the horizontal axis, in millions of dollars, against that species' total recreational mortality on the vertical axis. A reference line marks the sub-ACL. These figures show the trade-off between conservation outcomes and changes in angler well-being. Two regulatory scenarios that produce similar mortality can have substantially different CV values. Scenarios farther to the left have lower CV and therefore represent better outcomes for anglers, all else equal. When comparing scenarios with similar mortality, the policy with the lowest CV is most ideal for anglers.
 
 ------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 
 Recreational Decision Support Tool (RecDST) for Gulf of Maine Cod and Haddock.
 
-Last updated August 26, 2026
+Last updated September 10, 2026
 
 ## Overview
 
@@ -21,7 +21,7 @@ This repository is the closely related to **flukeRDM** (summer flounder, black s
 | `Code/helpers/` | Leaf utilities sourced by other scripts: `developer_setup.R` / `developer_setup_stata.do` (path bootstrap), Google Drive auth, NAA helpers, WHAM version installer. Not orchestrators. |
 | `Code/test_code/` | Development and QA scratch scripts. Not called by any wrapper; several hard-code developer-specific absolute paths. Archive candidate. |
 | `RecDST/` | `model_run.R` — the single unified cod/haddock projection runner invoked by `Run_Model.R`. |
-| `docs/` | `Run_Summary.Rmd` / `.html` — rendered analysis summary. |
+| `docs/` | `Run_Summary.Rmd` / `.html` — rendered analysis summary; `USER_GUIDE_GROUNDFISH.md`; `GulfofMaineCodandHaddockSurvey2025.pdf`; `figures/`. |
 | `input_data/` | Local raw and reference inputs (assessment NAA files, trawl data). Empty in a fresh checkout. |
 | `Data/` | Pipeline output consumed downstream. Gitignored; empty in a fresh checkout. |
 | `keda/` | KEDA (Kubernetes Event-Driven Autoscaling) configuration — queue-creation scripts, `consume_and_run.sh` worker entrypoint, `scaledjobgroundfish.yaml`. |
@@ -99,40 +99,54 @@ One command runs the whole pipeline. groundfishRDM chains its two wrappers: the 
 do Code/pre_sim/model_wrapper.do
 ```
 
-Execution order, with the controlling toggle and its committed default:
+Execution order and the controlling toggle for each step:
 
-```         
- 0.                                      developer_setup_stata.do          (unconditional)
- 1.  pull_assessment            = 1      get_assessment_from_gdrive.do
- 2.  pull_MRIP                  = 1      get_mrip_oracle.R → tidyup_mrip_data_fromR.do
- 3.  processMRIP                = 0 OFF  MRIP_column_cases.do              ["dead code" per source]
- 4.  assemblemriplists          = 0 OFF  MRIP_lists.do                     ["dead code" per source]
- 5.  estimate_dtrips            = 1      directed_trips_calibration.do
-       5a.                               └─ set_regulations.do             (nested, unconditional)
- 6.  costs_per_trip             = 1      survey_trip_costs.do
- 7.  draw_angler_preferences    = 1      estimate_angler_preferences.do
- 8.  catch_per_trip1            = 1      calibration_catch_per_trip_part1.do
- 9.  copula_in_R                = 1      copula_modeling_calibration.R
-10.  catch_per_trip2            = 1      calibration_catch_per_trip_part2.do
-11.  compare_calibration_MRIP   = 1      compare_calibration_data_to_MRIP.do
-12.  prep_cpt_for_dashboard     = 1      rdb_processing_catch_per_trip.do
-13.  Rpush_cpt_to_gdrive        = 1      rdb_catch_per_trip_to_drive.R
-14.  angler_demogs              = 1      additional_angler_dems.do
-15.  generate_baseline          = 1      catch_at_length_calibration.do
-16.  prep_catch_at_length_for_dash = 1   rdb_catch_at_length.do
-17.  Rpush_catch_at_length_to_gdrive = 1 rdb_catch_at_len_to_drive.R
-18.  catch_at_length_project    = 1      catch_at_length_projection.do
-19.  run_calibration            = 1      Code/sim/R code wrapper.R
-       19a.                              ├─ developer_setup.R
-       19b.                              ├─ calibrate_rec_catch0.R              ["STEP 1"]
-       19c.                              ├─ calibration_routine.R               ["STEP 2"]
-                                         │    └─ calibrate_rec_catch1.R  (re-sourced in loops)
-       19d.                              └─ export_to_GoogleDrive.R
+```
+ 0.                                   developer_setup_stata.do          (unconditional)
+ 1.  pull_assessment                  get_assessment_from_gdrive.do
+ 2.  pull_MRIP                        get_mrip_oracle.R → tidyup_mrip_data_fromR.do
+ 3.  processMRIP                      MRIP_column_cases.do              ["dead code" per source]
+ 4.  assemblemriplists                MRIP_lists.do                     ["dead code" per source]
+ 5.  estimate_dtrips                  directed_trips_calibration.do
+       5a.                            └─ set_regulations.do             (nested, unconditional)
+ 6.  costs_per_trip                   survey_trip_costs.do
+ 7.  draw_angler_preferences          estimate_angler_preferences.do
+ 8.  catch_per_trip1                  calibration_catch_per_trip_part1.do
+ 9.  copula_in_R                      copula_modeling_calibration.R
+10.  catch_per_trip2                  calibration_catch_per_trip_part2.do
+11.  compare_calibration_MRIP         compare_calibration_data_to_MRIP.do
+12.  prep_cpt_for_dashboard           rdb_processing_catch_per_trip.do
+13.  Rpush_cpt_to_gdrive              rdb_catch_per_trip_to_drive.R
+14.  angler_demogs                    additional_angler_dems.do
+15.  generate_baseline                catch_at_length_calibration.do
+                                        └─ catch_at_length_programs.do  (loaded, not toggled)
+16.  prep_catch_at_length_for_dash    rdb_catch_at_length.do
+17.  Rpush_catch_at_length_to_gdrive  rdb_catch_at_len_to_drive.R
+18.  catch_at_length_project          catch_at_length_projection.do
+                                        └─ catch_at_length_programs.do  (loaded, not toggled)
+19.  run_calibration                  Code/sim/R code wrapper.R
+       19a.                           ├─ developer_setup.R
+       19b.                           ├─ calibrate_rec_catch0.R              ["STEP 1"]
+       19c.                           ├─ calibration_routine.R               ["STEP 2"]
+                                      │    └─ calibrate_rec_catch1.R  (re-sourced in loops)
+       19d.                           └─ export_to_GoogleDrive.R
 ```
 
-**About the toggles.** All 19 are Stata *locals* (not globals), defined in one contiguous block under the `EXECUTION CONTROL` banner at `model_wrapper.do` lines 168–187, uniformly `0`/`1`, uniformly checked via `` if `toggle' ``. Setting one to `0` deletes nothing — it just skips that step, which is normal when its output already exists on disk. Seventeen default ON; the two that default OFF (`processMRIP`, `assemblemriplists`) are labeled "(dead code)" in the wrapper's own comments.
+**About the toggles.** All 19 are Stata *locals* (not globals), defined in one contiguous
+block in Section D ("Execution control") of `model_wrapper.do`, uniformly `0`/`1`,
+uniformly checked via `` if `toggle' ``. Setting one to `0` deletes nothing — it just
+skips that step, which is normal when its output already exists on disk. **The committed
+values are not defaults.** They are whatever the last developer ran, and they change from
+commit to commit; check Section D before every run and set each toggle for the run you
+intend. `processMRIP` and `assemblemriplists` are labeled "(dead code)" in the wrapper's
+own comments and are expected to stay `0`.
 
-A 20th flag, `proto` (line 192, **default 0/OFF**), gates no script — it overwrites `$ndraws` from 101 to 3 for fast prototyping runs. The committed default is therefore a full production run.
+A 20th flag, `proto`, sits just below the toggles. It gates no script: when it is `1` the
+wrapper overwrites `$ndraws` (set to 101 in Section A) with a small number for fast
+prototyping runs. Like the toggles, its committed value reflects the last run, not a
+default; a production run needs `proto = 0`. The wrapper prints a reminder at the end of
+its log when `proto` was on.
+
 
 Two steps are slow enough to look hung but are not: `pull_MRIP` (the Oracle pull) and `copula_in_R` — the latter carries an explicit "this takes a while and will look like it's hung. it's not" comment. Two steps are commented "run 1x" (`costs_per_trip`, `draw_angler_preferences`), implying they are not meant to be re-run every pass.
 
@@ -148,7 +162,13 @@ Rscript Run_Model.R <Run_Name>
 
 This path has **no code-level link** to either wrapper or to `app.R`. It consumes files the wrappers produce, but the connection is a shared-filesystem convention rather than a call. In production, `app.R` enqueues an Azure Storage queue message and a separate worker (`keda/consume_and_run.sh`, running the `Dockerfile.RmodelGroundFish` image) picks it up and executes this command.
 
-Scripts with no confirmed caller anywhere in the repo — `RP_data_analysis.do`, `baseline_and_projected_NAL.do`, `compile_input_data_for_dashboard.do`, `get_cod_assessment_data.R`, `get_haddock_assessment_data.R`, `get_commercial_landings.R` — are legacy, exploratory, or run manually. The two `get_*_assessment_data.R` scripts appear to be how the pre-computed assessment files that step 1 downloads are generated in the first place, but that link is inferred from role, not from any code reference.
+Scripts with no confirmed caller anywhere in the repo — `RP_data_analysis.do`,
+`baseline_and_projected_NAL.do`, `get_cod_assessment_data.R`,
+`get_haddock_assessment_data.R`, `get_commercial_landings.R`
+— are legacy, exploratory, or run manually. 
+
+The two `get_*_assessment_data.R` scripts are how the the pre-computed assessment files that step 1 downloads are generated in
+the first place
 
 ## Data Flow Summary
 
@@ -218,7 +238,10 @@ Neither `output/` nor `saved_regs/` is in the repository — both are gitignored
 | File | Contents |
 |----|----|
 | `Model_Summary.Rmd` / `.html` | Long-form description of the model and its outputs. |
+| `GLOSSARY_GROUNDFISH.md` | Full glossary of Stata, R and modeling terms (the table below is the short version). |
+| `docs/USER_GUIDE_GROUNDFISH.md` | User guide for the decision support tool: how the model works, an app walkthrough, and how to read results. |
 | `docs/Run_Summary.Rmd` / `.html` | Rendered summary of a model run. |
+| `docs/GulfofMaineCodandHaddockSurvey2025.pdf` | Reference PDF, 2025 Gulf of Maine cod and haddock survey. |
 | `shiny-deployment/README.md` | Kubernetes / ShinyProxy deployment instructions. |
 | `shiny-deployment/prometheus.md` | Monitoring setup. |
 | `shiny-deployment/deployment/README.md`, `.../overlays/1-namespaced/README.md` | Kustomize overlay notes. |
