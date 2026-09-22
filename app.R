@@ -479,7 +479,7 @@ server <- function(input, output, session){
       plotly::renderPlotly({
 
 
-        welfare <-  df %>% #outputs() %>%
+        welfare <-  outputs() %>%
           dplyr::filter(metric == c("CV"),
                         mode == "all modes") %>%
           dplyr::group_by(model,  draw) %>%
@@ -492,7 +492,7 @@ server <- function(input, output, session){
           dplyr::ungroup() %>%
           dplyr::mutate(CV = value)
 
-        catch<- df %>% #outputs() %>%
+        catch<- outputs() %>%
           dplyr::filter(metric %in% c("keep_weight", "discmort_weight"),
                         mode == "all modes")%>%
           dplyr::group_by(model, species,draw) %>%
@@ -514,7 +514,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=0)) +
           ggplot2::xlab("CV ($M)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "<b>Cod Mortality (mt) compared to CV ($M)</b> - negative CV values indicate economic gains for anglers)",
+          ggplot2::labs(title = "<b>Cod Mortality (mt) compared to CV ($M)</b> - negative CV values indicate economic gains for anglers",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -611,7 +611,7 @@ server <- function(input, output, session){
           ggplot2::geom_text(ggplot2::aes(label=model), check_overlap = TRUE)+
           ggplot2::xlab("CV ($M)")+
           ggplot2::ylab("Total Recreational Cod Mortality (mt)")+
-          ggplot2::labs(title = "<b>Cod Mortality (mt) compared to CV ($M)</b> - negative CV values indicate economic gains for anglers)",
+          ggplot2::labs(title = "<b>Cod Mortality (mt) compared to CV ($M)</b> - negative CV values indicate economic gains for anglers",
                         subtitle = "testing")+
           ggplot2::theme(legend.position = "none")
 
@@ -879,6 +879,7 @@ server <- function(input, output, session){
     queue_url <- Sys.getenv("GROUNDFISH_AZURE_STORAGE_QUEUE_URL",unset = NA_character_)
     message("Queue URL set: ", !is.na(queue_url) && nzchar(queue_url))
     message("Queue URL length: ", ifelse(is.na(queue_url), 0, nchar(queue_url)))
+    # message(queue_url)
 
     #' @title Put a run request on the Azure Storage queue
     #' @description Posts a small JSON payload naming the run. Authentication
@@ -895,12 +896,16 @@ server <- function(input, output, session){
 
       # Clean and ensure /messages endpoint
       queue_url_sas <- trimws(queue_url_sas, whitespace = "\" ")
-      post_url <- if (grepl("/messages/?$", queue_url_sas)) {
-        queue_url_sas
-      } else {
-        paste0(sub("/$", "", queue_url_sas), "/messages")
-      }
-
+      message(queue_url_sas)
+      post_url <- queue_url_sas
+      # post_url <- if (grepl("/messages/?$", queue_url_sas)) {
+      # queue_url_sas
+      # } else {
+      #  paste0(sub("/$", "", queue_url_sas), "/messages")
+      # }
+      
+      message(post_url)
+      
       payload <- list(
         runName = run_name,
         submissionId = UUIDgenerate(),
