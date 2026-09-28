@@ -15,11 +15,10 @@
                directory must already be the project root so that `here'
                resolves correctly (the header comment below describes the
                profile.do trick for this).
-			   
-			   User-written commands: here, dsconcat, renvarlab, xsvmat, gammafit, grc1leg 
-               (`ssc install` each once). 
-			   forked rscript (improved error handling) installed with 
-			      net install rscript, from("https://raw.githubusercontent.com/mle2718/rscript/master") replace
+
+			   User-written commands: here, dsconcat, renvarlab, xsvmat, gammafit,
+			   grc1leg, and rscript (at least version 1.2.1, 27Sept2026 )
+               (`ssc install` each once).
 			   Code/helpers/developer_setup_stata.do.
                Google Drive mounted to D: (for get_assessment_from_gdrive.do).
                Oracle connection required to extract MRIP data.
