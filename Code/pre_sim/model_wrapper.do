@@ -23,11 +23,11 @@
                Google Drive mounted to D: (for get_assessment_from_gdrive.do).
                Oracle connection required to extract MRIP data.
 			   Some R scripts that are called will copy files from Google Drive or write files to
-			   Google Drive.  
+			   Google Drive.
 			   If you have not already connected to google drive,
 			   run "Code/helpers/googledrivesetup.R".  If you do not the
 			   the R scripts that use googledrive will fail ungracefully.
-			   
+
  Pipeline:     Step 0 / very top of the whole pipeline. Each toggle below runs
                one pre_sim script (execution order: README.md, "Running the
                Pipeline"); the final toggle hands off to
@@ -171,6 +171,9 @@ used by catch_at_length_projection.do*/
 
 global trawl_survey_start_year 2022
 
+* toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
+global uncertain 1
+
 
 
 /******************************************************************************/
@@ -296,6 +299,15 @@ if `copula_modeling_calibration' {
 
 		rscript using "$input_code_cd\copula_modeling_calibration.R", args($ndraws)
     	di "Copula in R estimated"
+
+}
+
+if `copula_uncertain_R' {
+	 /* this takes a while and will look like it's hung. it's not */
+    	di "Estimating uncertainty copula in R. This takes a while and will look like it's hung"
+
+		rscript using "$input_code_cd\copula_both.R", args($ndraws $uncertain)
+    	di "Copula (uncertainty project) in R estimated"
 
 }
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips

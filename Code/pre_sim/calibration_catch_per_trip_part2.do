@@ -74,7 +74,6 @@ program define sample_with_replacement ;
     sample `n', count ;
 end ;
 
-
 /******************************************************************************/
 /******************************************************************************/
 /* Section A: Build the angler demographics pool (age and avidity)            */
@@ -94,6 +93,7 @@ end ;
       The data may include records that are highly influential with respect
       to 12-month effort and any estimates may be highly variable.
       Wave data will produce independent estimates of 12-month effort."
+  
    I will use the most recent year of FES survey data available (2023). */
 
 global dems ;
@@ -101,7 +101,9 @@ local wvs 1 2 3 4 5 6 ;
 foreach w of local wvs {;
 
     u  "$misc_data_cd\fes_person_final_2023`w'.dta", clear ;
-
+					 
+					   
+ 
     /* PRESERVED: this state block has no ME (23) or NH (33) lines, unlike
        part1's, and the next keep drops every unlabelled state. The pool
        therefore ends up MA-only after the inlist() at the end of Section A
@@ -163,7 +165,6 @@ keep age total_trips_12 wave state ;
 keep if inlist(state, "ME", "NH", "MA") ;
 save "$misc_data_cd\angler_dems.dta", replace ;
 
-
 /******************************************************************************/
 /******************************************************************************/
 /* Section B: Generate the per-iteration catch-draw files                     */
@@ -172,7 +173,6 @@ save "$misc_data_cd\angler_dems.dta", replace ;
 di "Section B: generating catch-draw files for $ndraws iterations" ;
 
 import delimited using "$misc_data_cd\directed_trip_draws.csv", clear ;
-
 /* PRESERVED: the next block relies on Stata variable-name abbreviation
    exactly as the original does. "format date %td" on the first line below
    runs before a variable named date exists, so it formats date_num (the
@@ -207,6 +207,11 @@ save `base', replace ;
 /*-----------------------------------------
   Loop draws
 -----------------------------------------*/
+*uses the uncertainty project "calib_catch_draws_raw_uc_`i'.dta" if uncertain global == 1 in model_wrapper.do
+local suffix "" ;
+if "$uncertain" == "1" { ;
+    local suffix "_uc" ;
+} ;
 quietly forvalues i=1/$ndraws {;
     noisily disp "Draw `i' started" ;
     use `base', clear ;
@@ -233,7 +238,7 @@ quietly forvalues i=1/$ndraws {;
         local n_`md' = `r(ndistinct)' ;
     };
 
-    /* PRESERVED: no explicit sort before "by mode:". It works because
+	    /* PRESERVED: no explicit sort before "by mode:". It works because
        duplicates drop leaves the data sorted on mode date tripid (dataset
        variable order). The month and wave blocks below sort explicitly. The
        three blocks are deliberately left verbatim. */
@@ -268,6 +273,8 @@ quietly forvalues i=1/$ndraws {;
         local n_wave`w' = `r(ndistinct)' ;
     };
 
+						 
+
     preserve ;
     keep date wave tripid ;
     duplicates drop ;
@@ -299,10 +306,8 @@ quietly forvalues i=1/$ndraws {;
             keep if mode=="`md'" ;
 
             local n_needed = cond("`md'"=="pr", `n_pr', `n_fh') ;
-
             sample_with_replacement, n(`n_needed') ;
             gen int mode_id = _n ;
-
             keep mode mode_id cost ;
             append using `costs50' ;
             save `costs50', replace ;
@@ -310,7 +315,6 @@ quietly forvalues i=1/$ndraws {;
     restore ;
 
     merge m:1 mode mode_id using `costs50', keep(3) nogen ;
-
     /*--------------------------------
       Dems: resample ONCE per draw
     --------------------------------*/
@@ -318,13 +322,11 @@ quietly forvalues i=1/$ndraws {;
         use "$misc_data_cd\angler_dems.dta", clear ;
         tempfile demspool ;
         save `demspool', replace ;
-    restore ;
-
+    restore ;													   
     preserve ;
         clear ;
         tempfile dems50 ;
         save `dems50', emptyok replace ;
-
         forvalues w=1/6 {;
             use `demspool', clear ;
             keep if wave==`w' ;
@@ -334,9 +336,7 @@ quietly forvalues i=1/$ndraws {;
                              cond(`w'==3, `n_wave3',
                              cond(`w'==4, `n_wave4',
                              cond(`w'==5, `n_wave5', `n_wave6'))))) ;
-
             sample_with_replacement, n(`n_needed') ;
-
             gen wave_id = _n ;
             keep wave wave_id age total_trips_12 ;
             append using `dems50' ;
@@ -359,6 +359,7 @@ quietly forvalues i=1/$ndraws {;
     restore ;
 
     /*---------------------------------------
+	   
       Sample catch outcomes by (mode, month)
     ---------------------------------------*/
     egen long g = group(mode month) ;
@@ -368,6 +369,7 @@ quietly forvalues i=1/$ndraws {;
 
     tempfile trips_expanded ;
     save `trips_expanded', replace ;
+
 
     /* Build catch outcomes dataset with keys (g, gid) */
     clear ;
@@ -397,11 +399,13 @@ quietly forvalues i=1/$ndraws {;
             continue ;
         };
 
+
         gen long g   = `gg' ;
         gen long gid = _n ;
 
         tempfile chunk ;
         save `chunk', replace ;
+ 
 
         if (`seeded'==0) {;
             use `chunk', clear ;
@@ -422,6 +426,7 @@ quietly forvalues i=1/$ndraws {;
     drop g gid n_g ;
     compress ;
 
+
     sort date tripid catch_ ;
     gen cod_cat  = cod_keep + cod_rel ;
     gen hadd_cat = hadd_keep + hadd_rel ;
@@ -433,14 +438,26 @@ quietly forvalues i=1/$ndraws {;
           tripid catch_draw age total_trips_12 cost ;
 
     renvarlab cod_keep cod_cat cod_rel hadd_keep hadd_rel hadd_cat, postfix(_sim) ;
+  
 
     order mode date tripid catch ;
     sort mode date tripid catch ;
     compress ;
-
-    save "$calib_catch_draws_cd\calib_catch_draws_`i'.dta", replace ;
+					
+		  
+			save "$calib_catch_draws_cd\calib_catch_draws`suffix'_`i'.dta", replace;
     noisily disp "Draw `i' finished" ;
 
-};
+																		
+									 
+  };
 
-#delimit cr
+
+	#delimit cr
+		
+
+			
+			
+
+
+
