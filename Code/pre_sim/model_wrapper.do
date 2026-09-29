@@ -201,7 +201,7 @@ loc Rcodewrapper=1								// Run calibration routine in R
 /******************************************************************************/
 
 * toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
-global uncertain 1
+global uncertain 0
 local copula_both=0								// Copula both model in R
 
 
