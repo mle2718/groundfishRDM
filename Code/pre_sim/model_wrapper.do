@@ -187,10 +187,10 @@ loc get_mrip_oracle = 1		 					// Pull MRIP data.
 loc directed_trips_calibration = 1				// Estimate Directed Trips
 loc survey_trip_costs = 1  						// Create Distributions of costs per trip (run 1x)
 loc estimate_angler_preferences = 1				// Create draw of angler preference parameters (run 1x)
-loc calibration_catch_per_trip_part1 = 1		// Part 1 of catch per trip
+loc calib_catch_per_trip_part1 = 1				// Part 1 of catch per trip
 loc copula_modeling_calibration = 1				// Copula model in R
-loc calibration_catch_per_trip_part2 = 1		// Part 2 of catch per trip
-loc compare_calibration_data_to_MRIP = 1		// compare calibration output to MRIP
+loc calib_catch_per_trip_part2 = 1				// Part 2 of catch per trip
+loc compare_calib_data_to_MRIP = 1				// compare calibration output to MRIP
 loc additional_angler_dems	=1					// add additional angler demographics
 loc catch_at_length_calibration=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1					// Generate projection-year catch-at-length
@@ -293,7 +293,7 @@ if `draw_angler_preferences' {
 }
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historical data when they are missing.
-if `calibration_catch_per_trip_part1' {
+if `calib_catch_per_trip_part1' {
 	di "Estimate catch-per-trip at the month and mode level"
 
 	do "$input_code_cd\calibration_catch_per_trip_part1.do"
@@ -319,7 +319,7 @@ if `copula_both' {
 
 }
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-if `calibration_catch_per_trip_part2' {
+if `calib_catch_per_trip_part2' {
     	di "Generating estimates of simulated total harvest based on random draws"
 
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
@@ -327,7 +327,7 @@ if `calibration_catch_per_trip_part2' {
 
 	}
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-if `compare_calibration_data_to_MRIP' {
+if `compare_calib_data_to_MRIP' {
     	di "Comparing calibration output to MRIP"
 		cd $here
 
