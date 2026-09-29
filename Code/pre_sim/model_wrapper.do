@@ -16,10 +16,9 @@
                resolves correctly (the header comment below describes the
                profile.do trick for this).
 
-			   User-written commands: here, dsconcat, renvarlab, xsvmat, gammafit, grc1leg
+			   User-written commands: here, dsconcat, renvarlab, xsvmat, gammafit,
+			   grc1leg, and rscript (at least version 1.2.1, 27Sept2026 )
                (`ssc install` each once).
-			   forked rscript (improved error handling) installed with
-			      net install rscript, from("https://raw.githubusercontent.com/mle2718/rscript/master") replace
 			   Code/helpers/developer_setup_stata.do.
                Google Drive mounted to D: (for get_assessment_from_gdrive.do).
                Oracle connection required to extract MRIP data.
@@ -47,10 +46,7 @@
    - NEFSC trawl-survey data (recent years) used to build age-length keys.
    - MRIP source data come from Oracle
 
- Forked rscript install. Monitor https://github.com/reifjulian/rscript/pull/13. When merged, you can simply do:
-	net install rscript, from("https://raw.githubusercontent.com/reifjulian/rscript/master") replace
-
-
+   
  THESE GLOBALS AND REGULATIONS MUST BE UPDATED EVERY YEAR (see Section A).
 *******************************************************************************/
 
@@ -187,26 +183,26 @@ global uncertain 1
 /******************************************************************************/
 
 // Control which modules to run (set to 0 to skip)
-loc pull_assessment = 0		 		// Pull Assessment data
-loc pull_MRIP = 0		 			// Pull MRIP data.
-loc processMRIP = 0	 			// deal with casing MRIP data
-loc assemblemriplists =0		 	// deal with casing MRIP data
-loc estimate_dtrips = 0				// Estimate Directed Trips
-loc costs_per_trip = 0  			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
-loc catch_per_trip1 = 0				// Part 1 of catch per trip
-loc copula_in_R = 0					// Copula model in R
-loc copula_uncertain_R = 1		    // Copula model in R, no MRIP sampling uncertainty
-loc catch_per_trip2 = 0				// Part 2 of catch per trip
-loc compare_calibration_MRIP = 0	// compare calibration output to MRIP
-loc prep_cpt_for_dashboard= 0		// prep data for dashboard
-loc Rpush_cpt_to_gdrive =0 			// Push to google drive in R
-loc angler_demogs	=0				// add additional angler demographics
-loc generate_baseline=0				// Generate baseline-year catch-at-length
-loc prep_catch_at_length_for_dash= 0		// Prep catch at length data for dashboard
-loc Rpush_catch_at_length_to_gdrive =0 			// Push catch at length data to  google drive in R
-loc catch_at_length_project=0			// Generate projection-year catch-at-length
-loc run_calibration=0						// Run calibration routine in R
+loc get_assessment_from_gdrive = 1				// Pull Assessment data
+loc get_mrip_oracle = 1		 					// Pull MRIP data.
+
+loc directed_trips_calibration = 1				// Estimate Directed Trips
+loc survey_trip_costs = 1  						// Create Distributions of costs per trip (run 1x)
+loc estimate_angler_preferences = 1				// Create draw of angler preference parameters (run 1x)
+loc calibration_catch_per_trip_part1 = 1		// Part 1 of catch per trip
+loc copula_modeling_calibration = 1				// Copula model in R
+loc calibration_catch_per_trip_part2 = 1		// Part 2 of catch per trip
+loc compare_calibration_data_to_MRIP = 1		// compare calibration output to MRIP
+loc additional_angler_dems	=1					// add additional angler demographics
+loc catch_at_length_calibration=1				// Generate baseline-year catch-at-length
+loc catch_at_length_project=1					// Generate projection-year catch-at-length
+loc Rcodewrapper=1								// Run calibration routine in R
+
+/********************* Dashboard related *************************************/
+loc rdb_processing_catch_per_trip= 0	// prep data for dashboard
+loc rdb_catch_per_trip_to_drive =0 		// Push to google drive in R
+loc rdb_catch_at_length= 0	// Prep catch at length data for dashboard
+loc rdb_catch_at_len_to_drive =0 	// Push catch at length data to  google drive in R
 
 
 
@@ -226,7 +222,7 @@ if `proto' {
 // 0) Pull Assessment data from google.
 
 /* This code requires you to mount your google drive to D on your computer */
-if `pull_assessment' {
+if `get_assessment_from_gdrive' {
 	di "Pulling Assessment data from google"
 
 	do "$input_code_cd\get_assessment_from_gdrive.do"
@@ -245,7 +241,7 @@ global sizelist  "$misc_data_cd/mrip_size.dta"
 
 
 
-if `pull_MRIP' {
+if `get_mrip_oracle' {
   	di "Pulling MRIP data from oracle, this takes a few minutes"
 		rscript using "$input_code_cd\get_mrip_oracle.R", args($mrip_cal_type $first_mrip_year $last_mrip_year)
     di "Oracle Data Pull Finished"
@@ -259,28 +255,9 @@ if `pull_MRIP' {
 
 
 
-// 1) Process MRIP data - this block of code is intended to be retired.
-
-
-if `processMRIP' {
-	di "Processing MRIP data"
-
-	do "$input_code_cd\MRIP_column_cases.do"
-	di "MRIP data processed"
-}
-
-if `assemblemriplists' {
-	di "Assembling Lists of MRIP files"
-
-	do "$input_code_cd\MRIP_lists.do"
-	di "Lists of MRIP files assembled"
-
-}
-
-
 // 2) Estimate directed trips at the month, mode, kind-of day level
 
-if `estimate_dtrips' {
+if `directed_trips_calibration' {
 	di "Estimating Directed trips"
 	*This file calls "set_regulations.do". In it you must enter the SQ regulations in the calibration and projection year.
 	*THIS NEEDS TO BE ADJUSTED EVERY YEAR.
@@ -292,7 +269,7 @@ if `estimate_dtrips' {
 
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
-if `costs_per_trip' {
+if `survey_trip_costs' {
 	di "Creating distributions of cost per trip"
 
 	do "$input_code_cd\survey_trip_costs.do"
@@ -308,7 +285,7 @@ if `draw_angler_preferences' {
 }
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historical data when they are missing.
-if `catch_per_trip1' {
+if `calibration_catch_per_trip_part1' {
 	di "Estimate catch-per-trip at the month and mode level"
 
 	do "$input_code_cd\calibration_catch_per_trip_part1.do"
@@ -316,7 +293,7 @@ if `catch_per_trip1' {
 
 }
 		//b) use copula model (in R) to simulate harvest and discards per-trip
-if `copula_in_R' {
+if `copula_modeling_calibration' {
 	 /* this takes a while and will look like it's hung. it's not */
     	di "Estimating copula in R. This takes a while and will look like it's hung"
 
@@ -334,7 +311,7 @@ if `copula_uncertain_R' {
 
 }
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-if `catch_per_trip2' {
+if `calibration_catch_per_trip_part2' {
     	di "Generating estimates of simulated total harvest based on random draws"
 
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
@@ -342,7 +319,7 @@ if `catch_per_trip2' {
 
 	}
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-if `compare_calibration_MRIP' {
+if `compare_calibration_data_to_MRIP' {
     	di "Comparing calibration output to MRIP"
 		cd $here
 
@@ -351,7 +328,7 @@ if `compare_calibration_MRIP' {
 
 	}
 // 7) Process catch-per-trip and format it for the rec dashboard
-if `prep_cpt_for_dashboard'{
+if `rdb_processing_catch_per_trip'{
     	di "Processing and formatting catch-per-trip for dashboard"
 
 		do "$input_code_cd\rdb_processing_catch_per_trip.do"
@@ -359,7 +336,7 @@ if `prep_cpt_for_dashboard'{
 
 		}
 		//run this script in R to read in the catch per trip processed for the rec dashboard, save it as an Rds, and push it to Google Drive
-if `Rpush_cpt_to_gdrive'{
+if `rdb_catch_per_trip_to_drive'{
     	di "Pushing rec dashboard data to gdrive using R"
 
 		rscript using "$input_code_cd\rdb_catch_per_trip_to_drive.R"
@@ -367,7 +344,7 @@ if `Rpush_cpt_to_gdrive'{
 
 }
 // 8) add additional angler demographics based on results of utility model
-if `angler_demogs'{
+if `additional_angler_dems'{
     	di "Adding additional angler demographics"
 
 		do "$input_code_cd\additional_angler_dems.do"
@@ -375,7 +352,7 @@ if `angler_demogs'{
 
 		}
 // 9) Generate baseline-year catch-at-length, using the simulated harvest/discard totals from step 5
-if `generate_baseline'{
+if `catch_at_length_calibration'{
     	di "Generating baseline catch-at-length"
 
 		do "$input_code_cd\catch_at_length_calibration.do"
@@ -383,7 +360,7 @@ if `generate_baseline'{
 
 		}
 		//Process catch at length and format it for the rec dashboard
-if `prep_catch_at_length_for_dash'{
+if `rdb_catch_at_length'{
     	di "Processing and formatting catch-at-length for dashboard"
 
 		do "$input_code_cd\rdb_catch_at_length.do"
@@ -391,7 +368,7 @@ if `prep_catch_at_length_for_dash'{
 
 		}
 		//run this script in R to read in the catch at length processed for the rec dashboard, save it as an Rds, and push it to Google Drive
-if `Rpush_catch_at_length_to_gdrive'{
+if `rdb_catch_at_len_to_drive'{
     	di "Pushing rec dashboard catch at length data to gdrive using R"
 
 		rscript using "$input_code_cd\rdb_catch_at_len_to_drive.R"
@@ -408,7 +385,7 @@ if `catch_at_length_project'{
 		}
 di "The calibration and projection routines can now be run in R "
 // 11) Run the calibration routine in R, export files to Google Drive
-if `run_calibration'{
+if `Rcodewrapper'{
 		di "Running calibration routine in R"
 	cd $here
 
