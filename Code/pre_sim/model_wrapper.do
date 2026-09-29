@@ -46,9 +46,6 @@
    - NEFSC trawl-survey data (recent years) used to build age-length keys.
    - MRIP source data come from Oracle
 
- Forked rscript install. Monitor https://github.com/reifjulian/rscript/pull/13. When merged, you can simply do:
-	net install rscript, from("https://raw.githubusercontent.com/reifjulian/rscript/master") replace
-
    
  THESE GLOBALS AND REGULATIONS MUST BE UPDATED EVERY YEAR (see Section A).
 *******************************************************************************/
