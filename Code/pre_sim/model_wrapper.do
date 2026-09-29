@@ -285,7 +285,7 @@ if `survey_trip_costs' {
 
 }
 // 4) Create draw of angler preference parameters - only needs to be run once
-if `draw_angler_preferences' {
+if `estimate_angler_preferences' {
 	di "Creating draws of angler preference parameters"
 	do "$input_code_cd\estimate_angler_preferences.do"
 	di "Draws of angler preference parameters Done"
