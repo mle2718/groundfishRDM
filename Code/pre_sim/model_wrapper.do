@@ -171,8 +171,6 @@ used by catch_at_length_projection.do*/
 
 global trawl_survey_start_year 2022
 
-* toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
-global uncertain 1
 
 
 
@@ -197,6 +195,16 @@ loc additional_angler_dems	=1					// add additional angler demographics
 loc catch_at_length_calibration=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1					// Generate projection-year catch-at-length
 loc Rcodewrapper=1								// Run calibration routine in R
+
+/********************* Uncertainty Project Toggles *************************************/
+/********************* These should be set to zero for anything on main **********************/
+/******************************************************************************/
+
+* toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
+global uncertain 1
+local copula_both=0
+
+
 
 /********************* Dashboard related *************************************/
 loc rdb_processing_catch_per_trip= 0	// prep data for dashboard
@@ -302,7 +310,7 @@ if `copula_modeling_calibration' {
 
 }
 
-if `copula_uncertain_R' {
+if `copula_both' {
 	 /* this takes a while and will look like it's hung. it's not */
     	di "Estimating uncertainty copula in R. This takes a while and will look like it's hung"
 
