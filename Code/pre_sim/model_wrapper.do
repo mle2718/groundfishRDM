@@ -183,9 +183,6 @@ global trawl_survey_start_year 2022
 loc get_assessment_from_gdrive = 1				// Pull Assessment data
 loc get_mrip_oracle = 1		 					// Pull MRIP data.
 
-loc processMRIP = 0	 							// deal with casing MRIP data, this should be retired
-loc assemblemriplists =0		 				// deal with casing MRIP data, this should be retired
-
 loc directed_trips_calibration = 1				// Estimate Directed Trips
 loc survey_trip_costs = 1  						// Create Distributions of costs per trip (run 1x)
 loc estimate_angler_preferences = 1				// Create draw of angler preference parameters (run 1x)
@@ -253,25 +250,6 @@ if `get_mrip_oracle' {
 }
 
 
-
-
-// 1) Process MRIP data - this block of code is intended to be retired.
-
-
-if `processMRIP' {
-	di "Processing MRIP data"
-
-	do "$input_code_cd\MRIP_column_cases.do"
-	di "MRIP data processed"
-}
-
-if `assemblemriplists' {
-	di "Assembling Lists of MRIP files"
-
-	do "$input_code_cd\MRIP_lists.do"
-	di "Lists of MRIP files assembled"
-
-}
 
 
 // 2) Estimate directed trips at the month, mode, kind-of day level
