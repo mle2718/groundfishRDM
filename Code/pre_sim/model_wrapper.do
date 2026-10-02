@@ -23,11 +23,11 @@
                Google Drive mounted to D: (for get_assessment_from_gdrive.do).
                Oracle connection required to extract MRIP data.
 			   Some R scripts that are called will copy files from Google Drive or write files to
-			   Google Drive.  
+			   Google Drive.
 			   If you have not already connected to google drive,
 			   run "Code/helpers/googledrivesetup.R".  If you do not the
 			   the R scripts that use googledrive will fail ungracefully.
-			   
+
  Pipeline:     Step 0 / very top of the whole pipeline. Each toggle below runs
                one pre_sim script (execution order: README.md, "Running the
                Pipeline"); the final toggle hands off to
@@ -173,6 +173,7 @@ global trawl_survey_start_year 2022
 
 
 
+
 /******************************************************************************/
 /******************************************************************************/
 /* Section D: Execution control (toggle each pipeline step on/off) */
@@ -186,14 +187,24 @@ loc get_mrip_oracle = 1		 					// Pull MRIP data.
 loc directed_trips_calibration = 1				// Estimate Directed Trips
 loc survey_trip_costs = 1  						// Create Distributions of costs per trip (run 1x)
 loc estimate_angler_preferences = 1				// Create draw of angler preference parameters (run 1x)
-loc calibration_catch_per_trip_part1 = 1		// Part 1 of catch per trip
+loc calib_catch_per_trip_part1 = 1				// Part 1 of catch per trip
 loc copula_modeling_calibration = 1				// Copula model in R
-loc calibration_catch_per_trip_part2 = 1		// Part 2 of catch per trip
-loc compare_calibration_data_to_MRIP = 1		// compare calibration output to MRIP
+loc calib_catch_per_trip_part2 = 1				// Part 2 of catch per trip
+loc compare_calib_data_to_MRIP = 1				// compare calibration output to MRIP
 loc additional_angler_dems	=1					// add additional angler demographics
 loc catch_at_length_calibration=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1					// Generate projection-year catch-at-length
 loc Rcodewrapper=1								// Run calibration routine in R
+
+/********************* Uncertainty Project Toggles *************************************/
+/********************* These should be set to zero for anything on main **********************/
+/******************************************************************************/
+
+* toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
+global uncertain 0
+local copula_both=0								// Copula both model in R
+
+
 
 /********************* Dashboard related *************************************/
 loc rdb_processing_catch_per_trip= 0	// prep data for dashboard
@@ -274,7 +285,7 @@ if `survey_trip_costs' {
 
 }
 // 4) Create draw of angler preference parameters - only needs to be run once
-if `draw_angler_preferences' {
+if `estimate_angler_preferences' {
 	di "Creating draws of angler preference parameters"
 	do "$input_code_cd\estimate_angler_preferences.do"
 	di "Draws of angler preference parameters Done"
@@ -282,7 +293,7 @@ if `draw_angler_preferences' {
 }
 // 5) Estimate catch-per-trip at the month and mode level
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historical data when they are missing.
-if `calibration_catch_per_trip_part1' {
+if `calib_catch_per_trip_part1' {
 	di "Estimate catch-per-trip at the month and mode level"
 
 	do "$input_code_cd\calibration_catch_per_trip_part1.do"
@@ -298,8 +309,17 @@ if `copula_modeling_calibration' {
     	di "Copula in R estimated"
 
 }
+
+if `copula_both' {
+	 /* this takes a while and will look like it's hung. it's not */
+    	di "Estimating uncertainty copula in R. This takes a while and will look like it's hung"
+
+		rscript using "$input_code_cd\copula_both.R", args($ndraws $uncertain)
+    	di "Copula (uncertainty project) in R estimated"
+
+}
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-if `calibration_catch_per_trip_part2' {
+if `calib_catch_per_trip_part2' {
     	di "Generating estimates of simulated total harvest based on random draws"
 
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
@@ -307,7 +327,7 @@ if `calibration_catch_per_trip_part2' {
 
 	}
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
-if `compare_calibration_data_to_MRIP' {
+if `compare_calib_data_to_MRIP' {
     	di "Comparing calibration output to MRIP"
 		cd $here
 
