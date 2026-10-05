@@ -7,10 +7,8 @@
 # Inputs:       Local FST/CSV/XLSX/DTA files in the final_process_* folders (set by
 #               "R code wrapper.R"); the corresponding shared-drive folders.
 # Outputs:      Files uploaded to Google Drive; a printed report of missing files.
-# Dependencies: Requires a cached Drive token (.secrets) and the
-#               final_process_* path objects defined by the calling
-#               "R code wrapper.R".
-# Pipeline:     Sourced by "R code wrapper.R" (Section D) after calibration.
+# Dependencies: Requires a cached Drive token (.secrets)
+# Pipeline:     Sourced by "model_wrapper.do"  after calibration.
 ################################################################################
 
 library(googledrive)
@@ -54,6 +52,15 @@ folder_info <- drive_get(
   shared_drive = "NMFS NEC READ SSB"
 )
 miscellaneous_path<-folder_info$id
+
+
+# Local Folder setup
+final_process_data_cd=gf.data.dir
+final_process_outcomes_cd=file.path(final_process_data_cd, "base_outcomes")
+final_process_choice_occasions_cd=file.path(final_process_data_cd,"n_choice_occasions")
+final_process_misc_cd=file.path(final_process_data_cd,"miscellaneous")
+final_process_calib_catch_cd=file.path(final_process_data_cd,"calib_catch_draws")
+
 
 
 ################################################################################
