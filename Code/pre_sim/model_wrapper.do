@@ -397,10 +397,20 @@ if `Rcodewrapper'{
 		di "Running calibration routine in R"
 	cd $here
 
-		rscript using "$here\Code\sim\R code wrapper.R", args($ndraws)
+		rscript using "$here\Code\sim\R_code_wrapper.R", args($ndraws)
     	di "Simulation model calibrated and files exported to Google Drive"
 
 		}
+
+if `export_all_to_GoogleDrive'{
+
+di "Exporting calibration outputs to Google Drive ..."
+  rscript using "$here\Code\sim\export_all_to_GoogleDrive.R", args($ndraws)
+di "Export complete."
+
+}
+
+
 
 
 log close

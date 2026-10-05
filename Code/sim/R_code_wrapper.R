@@ -202,15 +202,9 @@ message("STEP 2 complete.")
 
 ################################################################################
 ################################################################################
-# Section D: Export calibration outputs to Google Drive
+# Next step is to push to Google Drive
 ################################################################################
 ################################################################################
-
-message("Exporting calibration outputs to Google Drive ...")
-source(file.path(code_cd, "export_to_GoogleDrive.R"))
-message("Export complete.")
-
-
 
 
 
