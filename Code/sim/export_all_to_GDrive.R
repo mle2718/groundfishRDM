@@ -11,6 +11,20 @@
 # Pipeline:     Sourced by "model_wrapper.do"  after calibration.
 ################################################################################
 
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1) {
+  stop("Error: This script requires exactly one arguments.", call. = FALSE)
+}
+
+#read in arguments. Ensure they are numeric
+n_simulations  <- as.numeric(args[1]) # Number of model iterations.
+
+# Show them, just in case.
+cat("Number of Simulations :", n_simulations, "\n")
+
+
+
+
 library(googledrive)
 
 # Connect to Google Drive
@@ -195,7 +209,7 @@ library(googledrive)
 library(data.table)
 
 # Expected draw IDs
-draws <- 1:5
+draws <- 1:n_simulations
 modes <- c("pr", "fh")
 seasons <- c("summer", "winter")
 
