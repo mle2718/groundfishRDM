@@ -188,7 +188,7 @@ library(googledrive)
 library(data.table)
 
 # Expected draw IDs
-draws <- 1:101
+draws <- 1:5
 modes <- c("pr", "fh")
 seasons <- c("summer", "winter")
 
