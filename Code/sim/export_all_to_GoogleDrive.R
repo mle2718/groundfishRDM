@@ -1,5 +1,5 @@
 ################################################################################
-# Script:       export_to_GoogleDrive.R
+# Script:       export_all_to_GDrive.R
 # Purpose:      Uploads the calibration outputs (miscellaneous, base_outcomes,
 #               n_choice_occasions, calib_catch_draws) from the local data folders
 #               to their Google Drive counterparts, then compares the expected vs
