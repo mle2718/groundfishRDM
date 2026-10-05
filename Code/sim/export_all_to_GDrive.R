@@ -22,6 +22,26 @@ n_simulations  <- as.numeric(args[1]) # Number of model iterations.
 # Show them, just in case.
 cat("Number of Simulations :", n_simulations, "\n")
 
+library(here)
+library(tidyverse)
+library(conflicted)
+conflicts_prefer(here::here)
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::mutate)
+conflicts_prefer(dplyr::rename)
+conflicts_prefer(dplyr::summarize)
+conflicts_prefer(dplyr::summarise)
+conflicts_prefer(dplyr::count)
+
+
+
+
+
+#Set up R globals for input/output data and code scripts
+code_cd=here("Code", "sim")
+source(here("Code", "helpers", "developer_setup.R"))
+
 
 
 
