@@ -402,10 +402,10 @@ if `Rcodewrapper'{
 
 		}
 
-if `export_all_to_GoogleDrive'{
+if `export_all_to_GDrive'{
 
 di "Exporting calibration outputs to Google Drive ..."
-  rscript using "$here\Code\sim\export_all_to_GoogleDrive.R", args($ndraws)
+  rscript using "$here\Code\sim\export_all_to_GDrive.R", args($ndraws)
 di "Export complete."
 
 }
