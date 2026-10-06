@@ -366,6 +366,8 @@ project_one_cod_hadd_both_modes <- function(s,
                                             common_inputs,
                                             modes = mode_draw,
                                             final_process_calib_catch_cd,
+                                            final_process_outcomes_cd,
+                                            final_process_choice_occasions_cd,
                                             n_draws = get("n_draws", envir = .GlobalEnv)) {
 
   directed_trips_sd <- common_inputs$directed_trips[draw == dr & season == s & mode %in% modes]
@@ -671,6 +673,8 @@ run_cod_hadd_projection <- function(season_draw = get("season_draw", envir = .Gl
       s = s,
       dr = dr,
       final_process_calib_catch_cd,
+      final_process_outcomes_cd,
+      final_process_choice_occasions_cd,
       common_inputs = common_inputs,
       modes = mode_draw,
       n_draws = n_draws
