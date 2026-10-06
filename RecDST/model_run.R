@@ -37,7 +37,7 @@ conflicts_prefer(data.table::month)
 
 final_process_data_cd=here::here("Data")
 final_process_outcomes_cd=here::here("Data/base_outcomes")
-final_process_choice_occasions_cd=here::here("Data/n_choice_occassions")
+final_process_choice_occasions_cd=here::here("Data/n_choice_occasions")
 final_process_misc_cd=here::here("Data/miscellaneous")
 final_process_calib_catch_cd=here::here("Data/calib_catch_draws")
 
