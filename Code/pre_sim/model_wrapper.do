@@ -195,22 +195,31 @@ loc additional_angler_dems	=1					  // add additional angler demographics
 loc catch_at_length_calibration=1			   	// Generate baseline-year catch-at-length
 loc catch_at_length_project=1					    // Generate projection-year catch-at-length
 loc Rcodewrapper=1								        // Run calibration routine in R
-loc export_all_to_GDrive = 1             // Export calibration and all data to Google
+
+
+/********************* Push to google drive toggles*************************************/
+/********************* (versions on main should be set to 0)****************************/
+loc export_all_to_GDrive = 0             // Export calibration and all data to Google
+
+
+/********************* Dashboard Toggles  *************************************/
+/********************* (versions on main should be set to 0)****************************/
+
+loc rdb_processing_catch_per_trip= 0  	  // prep data for dashboard
+loc rdb_catch_per_trip_to_drive =0 	  	  // Push to google drive in R
+loc rdb_catch_at_length= 0	              // Prep catch at length data for dashboard
+loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  google drive in R
+
+
+
 /********************* Uncertainty Project Toggles *************************************/
-/********************* These should be set to zero for anything on main **********************/
-/******************************************************************************/
+/********************* (versions on main should be set to 0)****************************/
+/***************************************************************************************/
 
 * toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
 global uncertain 0
 local copula_both=0								        // Copula both model in R
 
-
-
-/********************* Dashboard related *************************************/
-loc rdb_processing_catch_per_trip= 0  	  // prep data for dashboard
-loc rdb_catch_per_trip_to_drive =0 	  	  // Push to google drive in R
-loc rdb_catch_at_length= 0	              // Prep catch at length data for dashboard
-loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  google drive in R
 
 
 
