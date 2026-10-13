@@ -228,8 +228,16 @@ ui <- fluidPage(
 
 server <- function(input, output, session){
 
+  # observeEvent(input$runmeplease, {
+  #   output$displaymessage <- renderText(paste0("Policy ", input$Run_Name, " saved - your model run has been queued. ..."))
+  # })
+
   observeEvent(input$runmeplease, {
-    output$displaymessage <- renderText(paste0("Policy ", input$Run_Name, " saved - your model run has been queued. ..."))
+    policy_name <- input$Run_Name   # captured once, at click time
+    output$displaymessage <- renderText(
+      paste0("Policy ", policy_name, " saved - your model run has been queued. ",
+             "Be sure to change the policy name before submitting again.")
+    )
   })
 
   library(magrittr)
@@ -326,9 +334,9 @@ server <- function(input, output, session){
   output$DTout <- DT::renderDT({
     # Total recreational mortality = landed weight + dead discards, summed
     # across seasons within a draw, then converted from pounds to metric tons.
-    # under_acl is the percentage of iterations in which that total stayed
-    # under the ACL (count under / number of iterations x 100), rounded to a
-    # whole percent.
+    # under_acl counts the draws in which that total stayed under the ACL; the
+    # column is later labelled "%", which is only literally true when the model
+    # is run with 100 draws.
     catch_agg<- outputs() %>%
         dplyr::filter(metric %in% c("tot_keep_cod_weight_lb_new", "tot_discmort_cod_weight_lb_new",
                                     "tot_keep_hadd_weight_lb_new", "tot_discmort_hadd_weight_lb_new"),
@@ -340,7 +348,7 @@ server <- function(input, output, session){
         dplyr::mutate(under_acl = dplyr::case_when(species == "cod" & Value <= cod_acl() ~ 1, TRUE ~ 0),
                       under_acl = dplyr::case_when(species == "hadd" & Value <= had_acl() ~ 1, TRUE ~ under_acl)) %>%
         dplyr::group_by(policy_name, species) %>%
-        dplyr::summarise(under_acl = round(100 * sum(under_acl) / dplyr::n_distinct(iteration), 0),
+        dplyr::summarise(under_acl = sum(under_acl),
                          Value = round(median(Value),0)) %>%
         tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl))
 
@@ -1016,8 +1024,6 @@ server <- function(input, output, session){
 
   })
 
-  observeEvent(input$runmeplease, {
-    output$message <- renderText(paste0("Policy ", input$Run_Name," saved - your model run has been queued. Results will appear when the processing completes. Be sure to change the policy name before submitting again."))
-  })
+
 }
   shiny::shinyApp(ui = ui, server = server)
