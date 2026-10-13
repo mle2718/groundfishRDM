@@ -51,7 +51,7 @@ conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::mutate)
 conflicts_prefer(dplyr::summarise)
 
-here::i_am("Code/pre_sim/copula_modeling_calibration.R")
+here::i_am("Code/pre_sim/copula_both.R")
 source(here("Code", "helpers", "developer_setup.R"))
 
 # ---- controls ----
