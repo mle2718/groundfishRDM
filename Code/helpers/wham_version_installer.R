@@ -38,7 +38,7 @@ haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
 dir.create(file.path(cod_wham_lib), showWarnings = FALSE)
 dir.create(file.path(haddock_wham_lib), showWarnings = FALSE)
 
-# If you get a cannot create, No such file or directory error message then you might
+# If the dir.create() lines fail with a "No such file or directory" error message then you might
 #  not have R_LIBS_USER in .libPaths(). Check with:
 #
 #     Sys.getenv("R_LIBS_USER")
