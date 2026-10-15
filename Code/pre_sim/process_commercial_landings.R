@@ -8,11 +8,11 @@
 # Inputs:       Oracle CAMS tables: cams_garfo.cfg_statarea_stock,
 #               cams_garfo.cams_land, cams_garfo.cams_discard_all_years,
 #               cams_garfo.cams_subtrip.
-# Outputs:      commercial_CY_removals_<date>.Rds and
-#               commercial_FY_removals_<date>.Rds in the BLAST source_data folder.
-# Dependencies: Oracle credentials (id, novapw, tns_alias) and network access
-#               to the BLAST share (//nefscfile/...).
-# Pipeline:     Standalone / unwrapped — no confirmed caller in the repository.
+# Outputs:      commercial_CY_removals_<date>.Rds (calendar year) and
+#               commercial_FY_removals_<date>.Rds (fishing year) in the miscellanous folder.
+# Dependencies: Oracle credentials (set up in object nefscdb_con)
+#
+# Pipeline:     Called in model_wrapper.do as an early "data collection" step.
 ################################################################################
 
 ###################################################
