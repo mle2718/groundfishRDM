@@ -219,7 +219,8 @@ loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  googl
 * toggle to generate alternative data for the uncertainty project (1 = yes, 0 = no)
 global uncertain 0
 local copula_both=0			/* Copula model with uncertainty removed to examine catch per trip uncertainty (there's 
-                                 a manual toggle in here to control species)  */
+                                 a manual toggle in here to control species). Turn off copula_modeling_calibration 
+								 local above to save time */
 local uncertain=0
 
 /* toggle the local uncertain to 1 to save the alternative data in its own 'uncertainty' folders
