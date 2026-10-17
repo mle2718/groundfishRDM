@@ -216,13 +216,15 @@ loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  googl
 /********************* (versions on main should be set to 0)****************************/
 /***************************************************************************************/
 
-* toggle to generate alternative data for the uncertainty project (1 = yes, 0 = no)
+* toggles to generate alternative data for the uncertainty project (1 = yes, 0 = no)
 global uncertain 0
-local copula_both=0			/* Copula model with uncertainty removed to examine catch per trip uncertainty (there's 
+local copula_both=0			    /* Copula model with uncertainty removed to examine catch per trip uncertainty (there's 
                                  a manual toggle in there to control species). Turn off copula_modeling_calibration 
 								 local above to save time */
 local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to examine catch at length uncertainty  
 									(there's a manual toggle in there to control species).  */
+local directed_trip_uncertain=0   /* Removes uncertainty in simulated directed trips (there's a manual 
+								    toggle in there to control whether to take median trips or mean trips).  */
 local uncertain=0
 
 /* toggle the local uncertain to 1 to save the alternative data in its own 'uncertainty' folders
@@ -301,7 +303,12 @@ if `directed_trips_calibration' {
 	di "Directed trips Estimated"
 
 }
-
+// 2b) Remove uncertainty in simulated trips for the uncertainty project
+if `directed_trip_uncertain' {
+	di "Collapsing Directed trips"
+	do "$input_code_cd\directed_trip_uncertain.do"
+	di "Directed trips prepped for uncertainty project"
+}
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
 if `survey_trip_costs' {
