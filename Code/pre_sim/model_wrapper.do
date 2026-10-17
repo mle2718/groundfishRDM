@@ -219,8 +219,10 @@ loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  googl
 * toggle to generate alternative data for the uncertainty project (1 = yes, 0 = no)
 global uncertain 0
 local copula_both=0			/* Copula model with uncertainty removed to examine catch per trip uncertainty (there's 
-                                 a manual toggle in here to control species). Turn off copula_modeling_calibration 
+                                 a manual toggle in there to control species). Turn off copula_modeling_calibration 
 								 local above to save time */
+local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to examine catch at length uncertainty  
+									(there's a manual toggle in there to control species).  */
 local uncertain=0
 
 /* toggle the local uncertain to 1 to save the alternative data in its own 'uncertainty' folders
@@ -406,6 +408,13 @@ if `rdb_catch_at_len_to_drive'{
 
 		rscript using "$input_code_cd\rdb_catch_at_len_to_drive.R"
 	    di "Rec dashboard catch at length data pushed to gdrive "
+
+}
+// Re-write projected NAA files for uncertainty project
+if `projected_naa_uncertain' {
+    	di "Estimating uncertainty project NAA "
+		do "$input_code_cd\projected_naa_uncertain.do"
+    	di "NAA overwritten to examine projected catch at length uncertainty"
 
 }
 // 10) Generate projection-year catch-at-length, incorporating the stock assessment data
