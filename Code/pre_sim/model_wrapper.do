@@ -225,12 +225,12 @@ local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to ex
 									(there's a manual toggle in there to control species).  */
 local directed_trip_uncertain=0   /* Removes uncertainty in simulated directed trips (there's a manual 
 								    toggle in there to control whether to take median trips or mean trips).  */
-local uncertain=0
+local uncertain_loc=0
 
-/* toggle the local uncertain to 1 to save the alternative data in its own 'uncertainty' folders
-If the uncertain global is set to 1, make sure the uncertain local is set to 1 as well
+/* toggle the local uncertain_loc to 1 to save the alternative data in its own 'uncertainty' folders
+If the uncertain global is set to 1, make sure the local is set to 1 as well
 Currently, only Tess has the ability to set up the gfdatadirunc directory */
-if `uncertain' {
+if `uncertain_loc' {
 	global misc_data_cd "${gfdatadirunc}/miscellaneous"
 	global calib_catch_draws_cd "${gfdatadirunc}/calib_catch_draws"
 	global figure_cd  "${gfdatadirunc}/figures"
