@@ -18,11 +18,9 @@
 * Toggle for which species to set deterministic in projected catch at length 
 local cod_catl_certain=1
 local haddock_catl_certain=0
-local cod=1
-local haddock=0
 
 * Take mean projected NAA and expand it out to 500 draws for cod
-if `cod' {
+if `cod_catl_certain' {
 use "$misc_data_cd/WGOM_Cod_projected_NAA.dta", clear
 
 split metric, parse(" ") 
@@ -60,7 +58,7 @@ save "$misc_data_cd\WGOM_Cod_projected_NAA.dta", replace
 
 
 * Take mean projected NAA and expand it out to 500 draws for haddock
-if `haddock' {
+if `haddock_catl_certain' {
 use "$misc_data_cd/GOM_Haddock_projected_NAA.dta", clear
 
 split metric, parse(" ") 
