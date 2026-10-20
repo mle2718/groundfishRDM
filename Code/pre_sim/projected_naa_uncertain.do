@@ -15,9 +15,21 @@
 
 
 *** MANUAL TOGGLE ***
-* Toggle for which species to set deterministic in projected catch at length 
-local cod_catl_certain=1
-local haddock_catl_certain=0
+* Argument set in model_wrapper.do for which species to set deterministic in projected catch at length 
+if `1'=="cod"{
+local cod_catl_certain =1
+}
+else if `1'=="haddock"{
+local haddock_catl_certain =1
+}
+else if `1'=="both"{
+local cod_catl_certain =1
+local cod_catl_certain =1
+} 
+else{
+di "Warning message" or stop
+}
+
 
 * Take mean projected NAA and expand it out to 500 draws for cod
 if `cod_catl_certain' {
