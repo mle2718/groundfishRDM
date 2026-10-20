@@ -15,7 +15,9 @@
 
 
 *** MANUAL TOGGLE ***
-* Toggle for which species to remove uncertainty for in projected catch at length 
+* Toggle for which species to set deterministic in projected catch at length 
+local cod_catl_certain=1
+local haddock_catl_certain=0
 local cod=1
 local haddock=0
 
