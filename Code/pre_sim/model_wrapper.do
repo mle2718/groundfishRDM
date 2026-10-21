@@ -226,6 +226,16 @@ local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to ex
 local directed_trip_uncertain=0   /* Removes uncertainty in simulated directed trips (there's a manual 
 								    toggle in there to control whether to take median trips or mean trips).  */
 local uncertain_loc=0
+*Only TP can do the uncertainty project, this block of code sets all the uncertainty toggles to 0 if you are not TP:
+
+if (inlist("$developer","TP")==0) {
+	global uncertain=0
+	local copula_both=0			   
+	local projected_naa_uncertain=0  
+	local directed_trip_uncertain=0   
+	local uncertain_loc=0
+}
+/********************* End of Uncertainty Project Toggles *************************************/
 
 /* toggle the local uncertain_loc to 1 to save the alternative data in its own 'uncertainty' folders
 If the uncertain global is set to 1, make sure the local is set to 1 as well
