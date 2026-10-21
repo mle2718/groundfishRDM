@@ -12,7 +12,7 @@
 * Toggle for whether to take median trips at day-mode level or mean trips 
 local median=1
 local mean=0
-
+assert `median'+`mean'==1
 if `median' {
 import delimited "$misc_data_cd\directed_trip_draws.csv", clear
 
