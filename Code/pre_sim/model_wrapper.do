@@ -222,12 +222,13 @@ local copula_both=0			    /* Copula model with uncertainty removed to examine ca
                                  a manual toggle in there to control species). Turn off copula_modeling_calibration 
 								 local above to save time */
 local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to examine catch at length uncertainty  
-									(there's a manual toggle in there to control species).  */
+									(Manually change species in code below to cod, haddock, or both, ctrl+f: 
+									do "$input_code_cd\projected_naa_uncertain.do"    ) */
 local directed_trip_uncertain=0   /* Removes uncertainty in simulated directed trips (there's a manual 
-								    toggle in there to control whether to take median trips or mean trips).  */
+								    toggle in the do file to take median trips or mean trips).  */
 local uncertain_loc=0
-*Only TP can do the uncertainty project, this block of code sets all the uncertainty toggles to 0 if you are not TP:
 
+*Only TP can do the uncertainty project, this block of code sets all the uncertainty toggles to 0 if you are not TP:
 if (inlist("$developer","TP")==0) {
 	global uncertain=0
 	local copula_both=0			   
