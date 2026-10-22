@@ -66,7 +66,9 @@ dir.create(file.path(haddock_wham_lib), showWarnings = FALSE)
 assessment_file_in<-"mod_base_2023_noBLLS.rds"
 readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","cod_assessment",assessment_file_in)
 file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
+# break if this matches more than 1 file.
 
+stopifnot(length(file_id)==1)
 temp_path <- tempfile(fileext = ".rds")
 
 # Download
@@ -84,12 +86,25 @@ mod_accepted <- read_rds(temp_path)
 
 # The model stores its provenance string as "...@<commit>)"; pull out the commit
 # hash (text after "@") and strip the trailing ")".
-model_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
-model_wham_commit<-gsub(")", "", model_wham_commit)
+cod_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
+cod_wham_commit<-gsub(")", "", cod_wham_commit)
 
 
-message("Installing cod WHAM version ", model_wham_commit, " (GitHub build; this can take a while) ...")
-remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=cod_wham_lib, auth_token=NULL , upgrade="never")
+
+installed_cod_sha <- utils::packageDescription("wham",
+                                                   lib.loc = cod_wham_lib,
+                                                   fields = "RemoteSha")
+skip_count<-0
+install_count<-0
+# install if it doesn't match.
+if (installed_cod_sha!=cod_wham_commit){
+  print(glue("Installing cod WHAM version {installed_cod_sha}. \n GitHub build; this can take a while ..."))
+  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=cod_wham_lib, auth_token=NULL, upgrade="never")
+  install_count<-install_count+1
+} else {
+  print(glue("Installed WHAM version {model_wham_commit} in cod directory matches assessment. Skipping ..."))
+  skip_count<-skip_count+1
+  }
 
 
 
@@ -107,6 +122,8 @@ assessment_file_in<-"mod_nola_dcpe_blls2.rds"
 readin<-file.path("socialsci","RecreationalDST","2027_management_cycle_data","groundfishRDM","haddock_assessment",assessment_file_in)
 file_id<-drive_get(path = readin, shared_drive = "NMFS NEC READ SSB")$id
 
+# break if this matches more than 1 file.
+stopifnot(length(file_id)==1)
 
 # Create a path for a temporary file
 temp_path <- tempfile(fileext = ".rds")
@@ -129,10 +146,27 @@ if (file.exists(temp_path)) {
 
 # The model stores its provenance string as "...@<commit>)"; pull out the commit
 # hash (text after "@") and strip the trailing ")".
-model_wham_commit<-strsplit(haddock_accepted$wham_commit,split="@")[[1]][2]
-model_wham_commit<-gsub(")", "", model_wham_commit)
+haddock_wham_commit<-strsplit(haddock_accepted$wham_commit,split="@")[[1]][2]
+haddock_wham_commit<-gsub(")", "", haddock_wham_commit)
 
 
-message("Installing haddock WHAM version ", model_wham_commit, " (GitHub build; this can take a while) ...")
-remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=haddock_wham_lib, auth_token=NULL, upgrade="never")
+installed_haddock_sha <- utils::packageDescription("wham",
+                                           lib.loc = haddock_wham_lib,
+                                           fields = "RemoteSha")
+
+# install if it doesn't match.
+if (installed_haddock_sha!=haddock_wham_commit){
+  print(glue("Installing haddock WHAM version {model_wham_commit}. \n GitHub build; this can take a while ..."))
+  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=haddock_wham_lib, auth_token=NULL, upgrade="never")
+  install_count<-install_count+1
+} else {
+  print(glue("Installed WHAM version {model_wham_commit} in haddock directory matches assessment. Skipping ..."))
+  skip_count<-skip_count+1
+  }
+
+
+# Wrap up message
+print(glue("Finished checking wham installation matches wham version used for assessment."))
+print(glue("{install_count} wham installls changed.  {skip_count} installs untouched."))
+
 
