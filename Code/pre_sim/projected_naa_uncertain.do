@@ -11,6 +11,7 @@
                get_haddock_assessment_data.R (write the NAA files which we are overwriting).
  Pipeline:     Gated by `projected_naa_uncertain' in model_wrapper.do. The outputs are
 			   then used in catch_at_length_projection.do. 
+This script expects exactly 1 argument, which is can be "cod", "haddock", or "both".  
 *******************************************************************************/
 
 
