@@ -30,10 +30,11 @@ drive_auth(cache = here(".secrets"), email = TRUE)
 # Section A: Housekeeping — per-model WHAM library locations
 ################################################################################
 ################################################################################
-#Set paths, input names, and savefile names.
+# Set paths, input names, and savefile names.
+# make subdirectory of the first entry in .libPaths
 
-cod_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "cod_wham_install")
-haddock_wham_lib <- file.path(Sys.getenv("R_LIBS_USER"), "haddock_wham_install")
+cod_wham_lib <- file.path(.libPaths()[[1]], "cod_wham_install")
+haddock_wham_lib <- file.path(.libPaths()[[1]], "haddock_wham_install")
 
 dir.create(file.path(cod_wham_lib), showWarnings = FALSE)
 dir.create(file.path(haddock_wham_lib), showWarnings = FALSE)
