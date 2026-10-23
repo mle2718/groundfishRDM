@@ -216,17 +216,19 @@ loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  googl
 /********************* (versions on main should be set to 0)****************************/
 /***************************************************************************************/
 
-* toggles to generate alternative data for the uncertainty project (1 = yes, 0 = no)
-global uncertain 0				/* Uncertainty project argument for passing into R code    */
-local copula_both=0			    /* Copula model with uncertainty removed to examine catch per trip uncertainty (there's 
-                                 a manual toggle in there to control species). Turn off copula_modeling_calibration 
+**** Toggles to generate alternative data for the uncertainty project (1 = yes, 0 = no)
+/* Be mindful that files are being overwritten with each test in the project and some data needs resetting 
+prior to generating the data for the next test. Eg, after testing projected NAA for cod, must rerun get_assessment_from_gdrive to replace WGOM_Cod_projected_NAA.dta with original version before the next test */
+global uncertain 0				/* Uncertainty project argument for passing into R code  */
+local copula_both=0			    /* Copula model with uncertainty removed to examine catch per trip uncertainty (use  
+                                 manual toggle in the R script to change species). Turn off copula_modeling_calibration 
 								 local above to save time */
 local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to examine catch at length uncertainty  
-									(Manually change species in code below to cod, haddock, or both, ctrl+f: 
-									do "$input_code_cd\projected_naa_uncertain.do"    ) */
+									(Manually change species in code below to cod, haddock, or both in this line: 
+									do "$input_code_cd\projected_naa_uncertain.do" above step 10) */
 local directed_trip_uncertain=0   /* Removes uncertainty in simulated directed trips (there's a manual 
 								    toggle in the do file to take median trips or mean trips).  */
-local uncertain_loc=0
+local uncertain_loc=0			  /* save the alternative data in its own 'uncertainty' folders */
 
 *Only TP can do the uncertainty project, this block of code sets all the uncertainty toggles to 0 if you are not TP:
 if (inlist("$developer","TP")==0) {
@@ -240,7 +242,7 @@ if (inlist("$developer","TP")==0) {
 
 /* toggle the local uncertain_loc to 1 to save the alternative data in its own 'uncertainty' folders
 If the uncertain global is set to 1, make sure the local is set to 1 as well
-Currently, only Tess has the ability to set up the gfdatadirunc directory */
+Currently, only TP has the ability to set up the gfdatadirunc directory */
 if `uncertain_loc' {
 	global misc_data_cd "${gfdatadirunc}/miscellaneous"
 	global calib_catch_draws_cd "${gfdatadirunc}/calib_catch_draws"
