@@ -88,21 +88,22 @@ mod_accepted <- read_rds(temp_path)
 # hash (text after "@") and strip the trailing ")".
 cod_wham_commit<-strsplit(mod_accepted$wham_commit,split="@")[[1]][2]
 cod_wham_commit<-gsub(")", "", cod_wham_commit)
+stopifnot(exists("cod_wham_commit"))
 
 
-
-installed_cod_sha <- utils::packageDescription("wham",
+# This will evaluate to either the
+installed_cod_commit <- utils::packageDescription("wham",
                                                    lib.loc = cod_wham_lib,
                                                    fields = "RemoteSha")
 skip_count<-0
 install_count<-0
 # install if it doesn't match.
-if (installed_cod_sha!=cod_wham_commit){
-  print(glue("Installing cod WHAM version {installed_cod_sha}. \n GitHub build; this can take a while ..."))
+if ((installed_cod_commit!=cod_wham_commit) | is.na(installed_cod_commit) ){
+  print(glue("Installed cod WHAM is {installed_cod_commit}.  Installing cod WHAM version {model_wham_commit}. \n GitHub build; this can take a while ..."))
   remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=cod_wham_lib, auth_token=NULL, upgrade="never")
   install_count<-install_count+1
 } else {
-  print(glue("Installed WHAM version {model_wham_commit} in cod directory matches assessment. Skipping ..."))
+  print(glue("Installed WHAM version {installed_cod_commit} in cod directory matches assessment. Skipping ..."))
   skip_count<-skip_count+1
   }
 
@@ -148,19 +149,19 @@ if (file.exists(temp_path)) {
 # hash (text after "@") and strip the trailing ")".
 haddock_wham_commit<-strsplit(haddock_accepted$wham_commit,split="@")[[1]][2]
 haddock_wham_commit<-gsub(")", "", haddock_wham_commit)
+stopifnot(exists("haddock_wham_commit"))
 
-
-installed_haddock_sha <- utils::packageDescription("wham",
+installed_haddock_commit <- utils::packageDescription("wham",
                                            lib.loc = haddock_wham_lib,
                                            fields = "RemoteSha")
 
 # install if it doesn't match.
-if (installed_haddock_sha!=haddock_wham_commit){
-  print(glue("Installing haddock WHAM version {model_wham_commit}. \n GitHub build; this can take a while ..."))
-  remotes::install_github(glue("timjmiller/wham@{model_wham_commit}"), lib=haddock_wham_lib, auth_token=NULL, upgrade="never")
+if ((installed_haddock_commit!=haddock_wham_commit) | is.na(installed_haddock_commit)){
+  print(glue("Installed haddock WHAM is {installed_haddock_commit}.  Installing version {haddock_wham_commit}. \n GitHub build; this can take a while ..."))
+  remotes::install_github(glue("timjmiller/wham@{haddock_wham_commit}"), lib=haddock_wham_lib, auth_token=NULL, upgrade="never")
   install_count<-install_count+1
 } else {
-  print(glue("Installed WHAM version {model_wham_commit} in haddock directory matches assessment. Skipping ..."))
+  print(glue("Installed WHAM version {installed_haddock_commit} in haddock directory matches assessment {haddock_wham_commit}. Skipping ..."))
   skip_count<-skip_count+1
   }
 
