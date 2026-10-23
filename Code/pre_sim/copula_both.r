@@ -69,7 +69,8 @@ uncertain_flag <- as.numeric(args[2])
 # --- NEW MANUAL TOGGLE ---
 # When uncertain_flag == 1, specify which species should have their
 # sampling uncertainty removed. Options: "cod" for cod only, "hadd" for haddock only,
-# or c("cod", "hadd") for both
+# c("cod", "hadd") for both, "none" to keep sampling uncertainty for both (when testing other
+# uncertainty sources like catch per trip and catch at length)
 species_no_uncertainty <- c("cod", "hadd")
 # -------------------------
 
