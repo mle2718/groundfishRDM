@@ -217,12 +217,16 @@ loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  googl
 /***************************************************************************************/
 
 **** Toggles to generate alternative data for the uncertainty project (1 = yes, 0 = no)
-/* Be mindful that files are being overwritten with each test in the project and some data needs resetting 
-prior to generating the data for the next test. Eg, after testing projected NAA for cod, must rerun get_assessment_from_gdrive to replace WGOM_Cod_projected_NAA.dta with original version before the next test */
+/* Be mindful that files are being overwritten with each test and some data needs resetting 
+prior to generating data for the next test. Eg, after testing mean directed trips, must rerun 
+directed_trips_calibration to replace directed_trip_draws.csv with original version before testing
+median trips or another source of uncertainty. When not testing catch per trip uncertainty, must either
+run copula_modeling_calibration or run copula_both but set manual species toggle to "none" in copula_both.R. */
 global uncertain 0				/* Uncertainty project argument for passing into R code  */
-local copula_both=0			    /* Copula model with uncertainty removed to examine catch per trip uncertainty (use  
-                                 manual toggle in the R script to change species). Turn off copula_modeling_calibration 
-								 local above to save time */
+local copula_both=0			    /* Copula model with ability to remove sampling uncertainty for testing catch per 
+								trip uncertainty (use manual toggle 'species_no_uncertainty' in the R script to select 
+								one or both species, or neither when testing the other uncertainty sources). Turn off 
+								copula_modeling_calibration local above to save time when copula_both=1 */
 local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to examine catch at length uncertainty  
 									(Manually change species in code below to cod, haddock, or both in this line: 
 									do "$input_code_cd\projected_naa_uncertain.do" above step 10) */
