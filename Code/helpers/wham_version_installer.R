@@ -92,7 +92,7 @@ cod_needed_commit<-gsub(")", "", cod_needed_commit)
 stopifnot(exists("cod_needed_commit"))
 
 
-# This will evaluate to either the
+# This will evaluate to NA if wham isn't installed in the specified folder. That's not a problem.
 installed_cod_commit <- utils::packageDescription("wham",
                                                    lib.loc = cod_wham_lib,
                                                    fields = "RemoteSha")
@@ -152,6 +152,8 @@ haddock_needed_commit<-strsplit(haddock_accepted$wham_commit,split="@")[[1]][2]
 haddock_needed_commit<-gsub(")", "", haddock_needed_commit)
 stopifnot(exists("haddock_needed_commit"))
 
+
+# This will evaluate to NA if wham isn't installed in the specified folder. That's not a problem.
 installed_haddock_commit <- utils::packageDescription("wham",
                                            lib.loc = haddock_wham_lib,
                                            fields = "RemoteSha")
