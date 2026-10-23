@@ -14,7 +14,6 @@
 *******************************************************************************/
 
 
-*** MANUAL TOGGLE ***
 * Argument set in model_wrapper.do for which species to set deterministic in projected catch at length 
 if `1'=="cod"{
 local cod_catl_certain =1
