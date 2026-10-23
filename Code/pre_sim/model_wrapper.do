@@ -1,4 +1,4 @@
-/*******************************************************************************
+ /*******************************************************************************
  Script:       model_wrapper.do
  Purpose:      Master Stata wrapper for the GroundfishRDM pre-simulation
                pipeline. Sets the year-specific global parameters (calibration
@@ -243,9 +243,10 @@ if `proto' {
 /******************************************************************************/
 
 /* Process cod and haddock assessment data */
-	di "Getting Commerical Landings"
+if `process_commercial_landings' {
+    di "Getting Commerical Landings"
 		rscript using "$input_code_cd\process_commercial_landings.R"
-
+}
 if `process_cod_assess' {
 	di "Processing cod assessment"
 		rscript using "$input_code_cd\process_cod_assessment_data.R"
