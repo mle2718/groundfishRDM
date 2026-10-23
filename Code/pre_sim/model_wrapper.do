@@ -114,7 +114,7 @@ timer on 1           // Starts timing
 
 /* start log */
 cap log close
-log using "${log_dir}\model_wrapper_log_$S_DATE.smcl", replace
+log using "${log_dir}\model_wrapper_log_${S_DATE}_${S_TIME}.smcl", replace
 
 
 * set a global seed
