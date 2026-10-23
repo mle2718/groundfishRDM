@@ -463,7 +463,11 @@ di "Exporting calibration outputs to Google Drive ..."
 di "Export complete."
 
 }
-
+if `projected_naa_uncertain' & $developer=="TP"{
+	di "Resetting Assessment data from google"
+	
+	do "$input_code_cd\get_assessment_from_gdrive.do"
+}
 
 
 
