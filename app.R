@@ -45,10 +45,72 @@ library(shinyjs)
 # Section A: User interface
 ################################################################################
 ################################################################################
-
 ui <- fluidPage(
   useShinyjs(),
-  titlePanel("Western Gulf of Maine Cod and Haddock Recreational Fisheries Decision Support Tool"),
+
+  # ---- NOAA branding: colors, fonts, header/footer styling ---------------
+  # NOAA's official palette (per NOAA Digital Communications brand guidance):
+  #   NOAA blue  #0085CA, NOAA dark blue #003087, NOAA gray #6D6E70.
+  # These rules only restyle existing elements (tabs, buttons, header/footer);
+  # no inputs, ids, or server logic are touched.
+  tags$head(
+    tags$style(HTML("
+      body { font-family: 'Public Sans', 'Segoe UI', Arial, sans-serif; }
+
+      .noaa-header {
+        background-color: #003087;
+        color: #ffffff;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: -15px -15px 20px -15px; /* bleed to the edge of fluidPage's default padding */
+      }
+      .noaa-header img { height: 60px; }
+      .noaa-header .noaa-title-block { line-height: 1.25; }
+      .noaa-header .noaa-title-block .agency-line {
+        font-size: 13px;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #B0C8E8;
+      }
+      .noaa-header .noaa-title-block .app-title {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      /* Tabs and buttons picked up in NOAA blue instead of Bootstrap default */
+      .nav-tabs > li.active > a, .nav-tabs > li.active > a:focus, .nav-tabs > li.active > a:hover {
+        color: #003087;
+        font-weight: 600;
+        border-top: 3px solid #0085CA;
+      }
+      .btn-default, .btn { background-color: #0085CA; color: #ffffff; border-color: #0085CA; }
+      .btn-default:hover, .btn:hover { background-color: #003087; color: #ffffff; border-color: #003087; }
+
+      .noaa-footer {
+        margin-top: 30px;
+        padding: 15px 20px;
+        background-color: #f1f1f1;
+        border-top: 4px solid #0085CA;
+        color: #333333;
+        font-size: 12px;
+        text-align: center;
+      }
+    "))
+  ),
+
+  # NOAA masthead: logo + agency name + app title, replacing the plain
+  # titlePanel() that was here before.
+  div(class = "noaa-header",
+
+      tags$img(src = "https://www.fisheries.noaa.gov/themes/custom/noaa_components/images/fisheries_header_logo_jul2019.png",
+               alt = "NOAA logo"),
+      div(class = "noaa-title-block",
+          div(class = "agency-line", "National Oceanic and Atmospheric Administration"),
+          div(class = "app-title", "Western Gulf of Maine Cod and Haddock Recreational Fisheries Decision Support Tool")
+      )
+  ),
   # Two tabs: a read-only summary of completed runs, then the form used to
   # compose and submit a new run.
   tabsetPanel(
@@ -75,7 +137,7 @@ ui <- fluidPage(
                    "CV",
                    tags$a(
                      icon("circle-info"),
-                     href = "https://github.com/kimberly-bastille/groundfishRDM/blob/main/docs/USER_GUIDE_GROUNDFISH.md",
+                     href = "https://github.com/kimberly-bastille/groundfishRDM/blob/main/docs/USER_GUIDE_GROUNDFISH.md#Understanding-Compensating-Variation",
                      target = "_blank",
                      title = "Learn more about CV (compensating variation)",
                      style = "margin-left: 1px; color: #337ab7;"
@@ -97,11 +159,10 @@ ui <- fluidPage(
 
 
     tabPanel( "Regulation Selection",
-              strong(div("Use this page to set up the regulations that you would like to simulate.  Only click the button ONCE before clicking over to Results tab. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
+              strong(div("Use this page to set up the regulations that you would like to simulate. We have pre-loaded the status quo regulations.", style = "color:blue")), # Warning for users
               #Run Button
               actionButton("runmeplease", "Run Me"),
               textInput("Run_Name", "Please name this using your initials and the number of the run (ex. AB1)."),
-              textOutput("displaymessage"),
 
               fluidRow(
                 column(6,
@@ -218,7 +279,16 @@ ui <- fluidPage(
                                              column(6,
                                                     sliderInput(inputId = "HadPR_3_len", label = "Min Length",
                                                                 min = 15, max = 30, value = 17, step = 1)))))))
-    )))
+    )),
+
+  # NOAA/DOC attribution footer. NOAA's emblem-usage guidance requires the
+  # agency name and "U.S. Department of Commerce" to accompany any use of the
+  # logo, so that text lives here rather than only in the header.
+  div(class = "noaa-footer",
+      "National Oceanic and Atmospheric Administration", tags$br(),
+      "U.S. Department of Commerce"
+  )
+)
 
 ################################################################################
 ################################################################################
