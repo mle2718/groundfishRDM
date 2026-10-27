@@ -114,7 +114,7 @@ timer on 1           // Starts timing
 
 /* start log */
 cap log close
-log using "${log_dir}\model_wrapper_log_$S_DATE.smcl", replace
+log using "${log_dir}\model_wrapper_log_${S_DATE}_${S_TIME}.smcl", replace
 
 
 * set a global seed
@@ -222,9 +222,46 @@ loc rdb_catch_at_len_to_drive =0 	        // Push catch at length data to  googl
 /********************* (versions on main should be set to 0)****************************/
 /***************************************************************************************/
 
-* toggle to generate alternative catch per trip data for the uncertainty project (1 = yes, 0 = no)
-global uncertain 0
-local copula_both=0								        // Copula both model in R
+**** Toggles to generate alternative data for the uncertainty project (1 = yes, 0 = no)
+/* Be mindful that files are being overwritten with each test and some data needs resetting 
+prior to generating data for the next test. Eg, after testing mean directed trips, must rerun 
+directed_trips_calibration to replace directed_trip_draws.csv with original version before testing
+median trips or another source of uncertainty. When not testing catch per trip uncertainty, must either
+run copula_modeling_calibration or run copula_both but set manual species toggle to "none" in copula_both.R. */
+global uncertain 0				/* Uncertainty project argument for passing into R code  */
+local copula_both=0			    /* Copula model with ability to remove sampling uncertainty for testing catch per 
+								trip uncertainty (use manual toggle 'species_no_uncertainty' in the R script to select 
+								one or both species, or neither when testing the other uncertainty sources). Turn off 
+								copula_modeling_calibration local above to save time when copula_both=1 */
+local projected_naa_uncertain=0   /* Removes uncertainty in numbers at age to examine catch at length uncertainty  
+									(Manually change species in code below to cod, haddock, or both in this line: 
+									do "$input_code_cd\projected_naa_uncertain.do" above step 10) */
+local directed_trip_uncertain=0   /* Removes uncertainty in simulated directed trips (there's a manual 
+								    toggle in the do file to take median trips or mean trips).  */
+local uncertain_loc=0			  /* save the alternative data in its own 'uncertainty' folders */
+
+*Only TP can do the uncertainty project, this block of code sets all the uncertainty toggles to 0 if you are not TP:
+if (inlist("$developer","TP")==0) {
+	global uncertain=0
+	local copula_both=0			   
+	local projected_naa_uncertain=0  
+	local directed_trip_uncertain=0   
+	local uncertain_loc=0
+}
+/********************* End of Uncertainty Project Toggles *************************************/
+
+/* toggle the local uncertain_loc to 1 to save the alternative data in its own 'uncertainty' folders
+If the uncertain global is set to 1, make sure the local is set to 1 as well
+Currently, only TP has the ability to set up the gfdatadirunc directory */
+if `uncertain_loc' {
+	global misc_data_cd "${gfdatadirunc}/miscellaneous"
+	global calib_catch_draws_cd "${gfdatadirunc}/calib_catch_draws"
+	global figure_cd  "${gfdatadirunc}/figures"
+	
+	capture mkdir $misc_data_cd
+	capture mkdir $calib_catch_draws_cd
+	capture mkdir $figure_cd
+}
 
 
 
@@ -339,6 +376,16 @@ else {
 }
 
 
+// 2b) Remove uncertainty in simulated trips for the uncertainty project
+if `directed_trip_uncertain' {
+	di "Collapsing Directed trips"
+	do "$input_code_cd\directed_trip_uncertain.do"
+	di "Directed trips prepped for uncertainty project"
+ 	local executed_scripts `executed_scripts' directed_trip_uncertain.do
+}
+else {
+	local skipped_scripts `skipped_scripts' directed_trip_uncertain.do
+}
 
 // 3) Create distributions of costs per trip across strata - only needs to be run once
 if `survey_trip_costs' {
@@ -469,6 +516,18 @@ if `rdb_catch_at_len_to_drive'{
 else {
    local skipped_scripts `skipped_scripts' rdb_catch_at_len_to_drive.R
 }
+// Re-write projected NAA files for uncertainty project
+if `projected_naa_uncertain' {
+  di "Estimating uncertainty project NAA "
+  do "$input_code_cd\projected_naa_uncertain.do" cod 	//here put in cod, haddock or both for which species to set deterministic in projected catch at length
+ 	di "NAA overwritten to examine projected catch at length uncertainty"
+ 	local executed_scripts `executed_scripts' rdb_catch_at_len_to_drive.R
+}
+else {
+   local skipped_scripts `skipped_scripts' projected_naa_uncertain.do
+}
+
+
 
 // 10) Generate projection-year catch-at-length, incorporating the stock assessment data
 if `catch_at_length_project'{
@@ -484,24 +543,27 @@ di "The calibration and projection routines can now be run in R "
 if `Rcodewrapper'{
 	di "Running calibration routine in R"
 	cd $here
-    rscript using "$here\Code\sim\R_code_wrapper.R", args($ndraws)
+		  rscript using "$here\Code\sim\R_code_wrapper.R", args($ndraws $uncertain)
 	local executed_scripts `executed_scripts' R_code_wrapper.R
 	}
 else {
    local skipped_scripts `skipped_scripts' R_code_wrapper.R
 }
 
-
 if `export_all_to_GDrive'{
-
 di "Exporting calibration outputs to Google Drive ..."
-  rscript using "$here\Code\sim\export_all_to_GDrive.R", args($ndraws)
+  rscript using "$here\Code\sim\export_all_to_GDrive.R", args($ndraws $uncertain)
 	local executed_scripts `executed_scripts' export_all_to_GDrive.R
 	}
 else {
   local skipped_scripts `skipped_scripts' export_all_to_GDrive.R
+  di "Export complete."
 }
-
+if `projected_naa_uncertain' & $developer=="TP"{
+	di "Resetting Assessment data from google"
+	
+	do "$input_code_cd\get_assessment_from_gdrive.do"
+}
 
 display "model_wrapper.do: Stata pre-simulation stage complete."
 
