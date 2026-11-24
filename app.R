@@ -143,10 +143,11 @@ ui <- fluidPage(
                      style = "margin-left: 1px; color: #337ab7;"
                    )
                  ),
-                 "Discards",
+                 #"Discards",
+                 "Harvest mortality ratio",
                  "Trips"
                ),
-               choiceValues = list("CV", "Discards", "Trips"),
+               choiceValues = list("CV", "Harvest", "Trips"),
                inline = TRUE
              ),
 
@@ -154,6 +155,7 @@ ui <- fluidPage(
              uiOutput("addCVHad"),
              uiOutput("addReleaseCod"),
              uiOutput("addReleaseHad"),
+             uiOutput("addHarvMort"),
              uiOutput("addTripsCod"),
              uiOutput("addTripsHad")),
 
@@ -476,7 +478,7 @@ server <- function(input, output, session){
         mode    = stringr::str_extract(input, "(FH|PR)"),
         season  = stringr::str_extract(input, "\\d+"),
         bound   = stringr::str_extract(input, "(op|cl)"),
-        value    = stringr::str_remove(value, "^\\d{4}-")  # remove year
+      #  value    = stringr::str_remove(value, "^\\d{4}-")  # remove year
       ) %>%
       dplyr::group_by(model, species, mode, season) %>%
       dplyr::filter(!any(value == 0))
@@ -484,10 +486,14 @@ server <- function(input, output, session){
     seasons <- regs1 %>%
       dplyr::select(!input) %>%
       dplyr::filter(bound %in% c("op", "cl")) %>%
+      dplyr::mutate(
+        value = lubridate::ymd(value),
+        value = trimws(format(value, "%b %e"))
+      ) %>%
       tidyr::pivot_wider(names_from = bound,values_from = value) %>%
       dplyr::mutate(season_range = paste(op, "-", cl)) %>%
       dplyr::group_by(model, species, mode) %>%
-      dplyr::summarise(season = paste(season_range, collapse = " ; "),.groups = "drop") %>%
+      dplyr::summarise(season = paste(season_range, collapse = ",<br>"),.groups = "drop") %>%
       tidyr::pivot_wider(names_from = species, values_from = season, names_glue = "{species}season")
 
     bags <- regs1 %>%
@@ -522,7 +528,7 @@ server <- function(input, output, session){
                     `Cod Total Mortality` = Value_cod,
                     `Haddock Total Mortality` = Value_hadd)
 
-    DT::datatable(final_table)
+    DT::datatable(final_table, escape=FALSE)
   })
 
   output$totCatch <- plotly::renderPlotly({
@@ -540,58 +546,90 @@ server <- function(input, output, session){
       dplyr::group_by(policy_name, species) %>%
       dplyr::summarise(under_acl = (100/length(unique(iteration)))*sum(under_acl),
                        Value = round(median(Value),0))  %>%
-      tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl))
-
-    # Bin the draw counts into the discrete legend categories used by the
-    # colour scale. Written as a chain of case_when()s that each fall through
-    # to the previously assigned value rather than one multi-arm case_when.
-    catch_agg2<- catch_agg %>%
-      dplyr::mutate(under_acl_cod2 = dplyr::case_when(under_acl_cod < 50 ~ "Less than 50%", TRUE ~ ""),
-                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 50 & under_acl_cod < 60 ~ "50-59%", TRUE ~ under_acl_cod2),
-                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 60 & under_acl_cod < 70~ "60-69%", TRUE ~ under_acl_cod2),
-                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 70 & under_acl_cod < 80 ~ "70-79%", TRUE ~ under_acl_cod2),
-                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 80 & under_acl_cod < 90 ~ "80-89%", TRUE ~ under_acl_cod2),
-                    under_acl_cod2 = dplyr::case_when(under_acl_cod >= 90 & under_acl_cod <=100 ~ "90-100%", TRUE ~ under_acl_cod2)) %>%
-      dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_hadd < 50 ~ "Less than 50%", TRUE ~ ""),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 50 & under_acl_hadd < 60 ~ "50-59%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 60 & under_acl_hadd < 70~ "60-69%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 70 & under_acl_hadd < 80 ~ "70-79%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 80 & under_acl_hadd < 90 ~ "80-89%", TRUE ~ under_acl_had2),
-                    under_acl_had2 = dplyr::case_when(under_acl_hadd >= 90 & under_acl_hadd <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
+      tidyr::pivot_wider(names_from = species, values_from = c(Value, under_acl)) %>%
       dplyr::rename(`Cod Mortality`=Value_cod) %>%
       dplyr::rename(`Haddock Mortality`=Value_hadd) %>%
       dplyr::ungroup()
 
-    p<- catch_agg2 %>%
+    # Bin the draw counts into the discrete legend categories used by the
+    # colour scale. Written as a chain of case_when()s that each fall through
+    # to the previously assigned value rather than one multi-arm case_when.
+    # catch_agg2<- catch_agg %>%
+    #   dplyr::mutate(under_acl_cod2 = dplyr::case_when(under_acl_cod < 50 ~ "Less than 50%", TRUE ~ ""),
+    #                 under_acl_cod2 = dplyr::case_when(under_acl_cod >= 50 & under_acl_cod < 60 ~ "50-59%", TRUE ~ under_acl_cod2),
+    #                 under_acl_cod2 = dplyr::case_when(under_acl_cod >= 60 & under_acl_cod < 70~ "60-69%", TRUE ~ under_acl_cod2),
+    #                 under_acl_cod2 = dplyr::case_when(under_acl_cod >= 70 & under_acl_cod < 80 ~ "70-79%", TRUE ~ under_acl_cod2),
+    #                 under_acl_cod2 = dplyr::case_when(under_acl_cod >= 80 & under_acl_cod < 90 ~ "80-89%", TRUE ~ under_acl_cod2),
+    #                 under_acl_cod2 = dplyr::case_when(under_acl_cod >= 90 & under_acl_cod <=100 ~ "90-100%", TRUE ~ under_acl_cod2)) %>%
+    #   dplyr::mutate(under_acl_had2 = dplyr::case_when(under_acl_hadd < 50 ~ "Less than 50%", TRUE ~ ""),
+    #                 under_acl_had2 = dplyr::case_when(under_acl_hadd >= 50 & under_acl_hadd < 60 ~ "50-59%", TRUE ~ under_acl_had2),
+    #                 under_acl_had2 = dplyr::case_when(under_acl_hadd >= 60 & under_acl_hadd < 70~ "60-69%", TRUE ~ under_acl_had2),
+    #                 under_acl_had2 = dplyr::case_when(under_acl_hadd >= 70 & under_acl_hadd < 80 ~ "70-79%", TRUE ~ under_acl_had2),
+    #                 under_acl_had2 = dplyr::case_when(under_acl_hadd >= 80 & under_acl_hadd < 90 ~ "80-89%", TRUE ~ under_acl_had2),
+    #                 under_acl_had2 = dplyr::case_when(under_acl_hadd >= 90 & under_acl_hadd <=100 ~ "90-100%", TRUE ~ under_acl_had2)) %>%
+    #   dplyr::rename(`Cod Mortality`=Value_cod) %>%
+    #   dplyr::rename(`Haddock Mortality`=Value_hadd) %>%
+    #   dplyr::ungroup()
+
+    p<- catch_agg %>%
       ggplot2::ggplot(ggplot2::aes(x = `Cod Mortality`, y = `Haddock Mortality`))+
-      ggplot2::geom_point(ggplot2::aes(colour = under_acl_cod2, size = under_acl_had2,
+      ggplot2::geom_point(ggplot2::aes(#colour = under_acl_cod2, size = under_acl_had2,
                                        text = paste0("Policy: ", policy_name,
                                                      "<br>Cod mortality (mt): ", `Cod Mortality`,
                                                      "<br>Haddock mortality (mt): ", `Haddock Mortality`,
                                                      "<br>% under cod ACL: ", round(under_acl_cod, 1),
                                                      "<br>% under haddock ACL: ", round(under_acl_hadd, 1)))) +
-      ggplot2::scale_color_manual(values = c("50-59%" = "#A9DFBF", "60-69%" = "#7DCEA0",
-                                             "70-79%" = "#52BE80","80-89%" = "#27AE60",
-                                             "90-100%" = "#1B5E20", "Less than 50%" = "red3"))+
-      # Every size is mapped to 1 and the size legend is suppressed below, so
+      # ggplot2::scale_color_manual(values = c("50-59%" = "#A9DFBF", "60-69%" = "#7DCEA0",
+      #                                        "70-79%" = "#52BE80","80-89%" = "#27AE60",
+      #                                        "90-100%" = "#1B5E20", "Less than 50%" = "red3"))+
+      # # Every size is mapped to 1 and the size legend is suppressed below, so
       # the haddock ACL bin currently has no visible effect on the plot.
-      ggplot2::scale_size_manual(values = c("50-59%" = 1, "60-69%" = 1,
-                                            "70-79%" = 1,"80-89%" = 1,
-                                            "90-100%" = 1, "Less than 50%" = 1))+
+      # ggplot2::scale_size_manual(values = c("50-59%" = 1, "60-69%" = 1,
+      #                                       "70-79%" = 1,"80-89%" = 1,
+      #                                       "90-100%" = 1, "Less than 50%" = 1))+
       ggplot2::labs(colour="% of simulations under cod ACL",
                     size="% of simulations under haddock ACL")+
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
       ggplot2::geom_vline( xintercept =cod_acl(), linetype="dashed")+
-      ggplot2::geom_hline( yintercept =had_acl(), color="grey45")+
-      ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=520) +
-      ggplot2::annotate(geom="text", y=had_acl(), label="Had ACL", x=80) +
+      ggplot2::geom_hline( yintercept =had_acl())+
+      #ggplot2::annotate(geom="text", x=cod_acl(), label="Cod ACL", y=520) +
+      #ggplot2::annotate(geom="text", y=had_acl(), label="Haddock ACL", x=80) +
       ggplot2::guides(size = "none")+
       ggplot2::ggtitle("Cod and haddock mortality")+
       ggplot2::ylab("Recreational haddock mortality (mt)")+
       ggplot2::xlab("Recreational cod mortality (mt)")
 
     fig<- plotly::ggplotly(p, tooltip = "text") %>%
-      plotly::style(textposition = "top center")
+      plotly::style(textposition = "top center")%>%
+      plotly::layout(
+        title = list(font = list(size = 14)),
+        annotations= list(
+          # Add the yline for had_acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = had_acl(),       # Data coordinate for vertical placement
+            text = "Haddock ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
+          ),
+          list(
+            x = cod_acl()+0.5,               # 0 = left edge of the plot area (the y-axis)
+            y = 2,       # Data coordinate for vertical placement
+            text = "Cod ACL",
+            textangle = 90,
+            xref = "x",      # Anchors X to the viewport (won't move when panning)
+            yref = "paper",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "center",  # Centers the text exactly on the vertical line
+            yanchor = "bottom",  # Sits the text on top of the plot ceiling
+            showarrow = FALSE,
+            yshift = -475           # Optional: 5 pixels of padding from the axis line
+          )
+        )
+      )
     fig
   })
 
@@ -616,7 +654,7 @@ server <- function(input, output, session){
     if(any("CV" == input$fig)){
       div(
         style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
-        plotly::plotlyOutput("cvCodPlot", height = "100%")
+        plotly::plotlyOutput("cvCodPlot", height = "90%")
       )
     }
   })
@@ -660,9 +698,9 @@ server <- function(input, output, session){
         ggplot2::aes(text = paste0("Policy: ", policy_name,
                                    "<br>CV ($M): ", round(`CV($M)`, 2),
                                    "<br>Cod mortality (mt): ", cod))) +
-      ggplot2::geom_hline( yintercept =cod_acl())+
+      ggplot2::geom_hline( yintercept =cod_acl(), linetype="dashed")+
+      ggplot2::geom_vline( xintercept =0,color="grey45") +
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
-      ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=catch$`CV($M)`[catch$policy_name == "SQ"])) +
       ggplot2::xlab("Compensating variation ($ millions)")+
       ggplot2::ylab("Recreational cod mortality (mt)")+
       ggplot2::labs(title = "<b>Cod mortality and economic effects on anglers</b><br>Negative compensating variation (CV) indicates aggregate economic gains to anglers relative to the November 2025 through October 2026 period; <br>positive values indicate economic losses.",
@@ -692,6 +730,7 @@ server <- function(input, output, session){
       plotly::layout(
         # fixed pixel margins: room for the 3-line title (t) and the
         # axis title + arrow + label below the plot (b)
+        xaxis = list(title = list(standoff = 5)),
         margin = list(t = 100, b = 95),
         title = list(font = list(size = 14)),
         annotations = list(
@@ -730,10 +769,21 @@ server <- function(input, output, session){
             showarrow = FALSE,
             text = arrow_text,
             font = list(size = 12)
+          ),
+          # Add the yline for cod_acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = cod_acl(),       # Data coordinate for vertical placement
+            text = "Cod ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
           )
         )
       )
-
     fig1
   })
 
@@ -742,7 +792,7 @@ server <- function(input, output, session){
     if(any("CV" == input$fig)){
       div(
         style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
-        plotly::plotlyOutput("cvHadPlot", height = "100%")
+        plotly::plotlyOutput("cvHadPlot", height = "90%")
       )
     }
   })
@@ -787,8 +837,8 @@ server <- function(input, output, session){
                                    "<br>CV ($M): ", round(`CV($M)`, 2),
                                    "<br>Haddock mortality (mt): ", hadd))) +
       ggplot2::geom_hline( yintercept =had_acl())+
+      ggplot2::geom_vline( xintercept =0,color="grey45") +
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
-      ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=catch$`CV($M)`[catch$policy_name == "SQ"])) +
       ggplot2::xlab("Compensating variation ($ millions)")+
       ggplot2::ylab("Recreational haddock mortality (mt)")+
       ggplot2::labs(title = "<b>Haddock  mortality and economic effects on anglers</b><br>Negative compensating variation (CV) indicates aggregate economic gains to anglers relative to the November 2025 through October 2026 period; <br>positive values indicate economic losses.",
@@ -818,10 +868,11 @@ server <- function(input, output, session){
       plotly::layout(
         # fixed pixel margins: room for the 3-line title (t) and the
         # axis title + arrow + label below the plot (b)
+        xaxis = list(title = list(standoff = 5)),
         margin = list(t = 100, b = 95),
         title = list(font = list(size = 14)),
         annotations = list(
-          # All three below-axis annotations sit at the bottom edge of the
+          # the first two below-axis annotations sit at the bottom edge of the
           # plot area (y = 0) and are pushed down a fixed number of pixels
           # with yshift, so they stay the same distance from the axis at
           # any plot size.
@@ -856,6 +907,18 @@ server <- function(input, output, session){
             showarrow = FALSE,
             text = arrow_text,
             font = list(size = 12)
+          ),
+          # Add the yline for had_acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = had_acl(),       # Data coordinate for vertical placement
+            text = "Haddock ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
           )
         )
       )
@@ -863,12 +926,72 @@ server <- function(input, output, session){
     fig2
   })
 
+  output$addHarvMort <- renderUI({
+    if(any("Harvest" == input$fig)){
+      div(
+        style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
+        plotly::plotlyOutput("harvmortPlot", height = "90%")
+      )
+    }
+  })
+
+  output$harvmortPlot <- plotly::renderPlotly({
+    req(any("Harvest" == input$fig))
+    harvmort <-  outputs() %>%
+      dplyr::filter(metric %in% c("tot_keep_cod_weight_lb_new", "tot_keep_hadd_weight_lb_new"),
+                    mode == "all modes") %>%
+      dplyr::mutate(species = stringr::str_extract(metric, "cod|hadd")) %>%
+      dplyr::group_by(policy_name, iteration, species, mode) %>%
+      dplyr::summarise(harv_mort = sum(as.numeric(value)) * lb_to_mt(), .groups = "drop")
+
+    catch<- outputs() %>%
+      dplyr::filter(metric %in% c("tot_keep_cod_weight_lb_new", "tot_discmort_cod_weight_lb_new",
+                                  "tot_keep_hadd_weight_lb_new", "tot_discmort_hadd_weight_lb_new"),
+                    mode == "all modes") %>%
+      dplyr::mutate(species = stringr::str_extract(metric, "cod|hadd")) %>%
+      dplyr::group_by(policy_name, species, iteration) %>%
+      dplyr::summarise(Value = sum(as.numeric(value))) %>%
+      dplyr::mutate(Value = Value * lb_to_mt()) %>%
+      dplyr::group_by(policy_name, iteration, species) %>%
+      dplyr::summarise(tot_mort =round(median(Value),0)) %>%
+      dplyr::ungroup() %>%
+
+      dplyr::left_join(harvmort) %>%
+      dplyr::mutate(harvmort_ratio = harv_mort/tot_mort) %>%
+      dplyr::select(policy_name, mode, species, iteration, harvmort_ratio) %>%
+      tidyr::pivot_wider(names_from = species, values_from = c(harvmort_ratio)) %>%
+      dplyr::group_by(policy_name) %>%
+      dplyr::summarise(`Cod harvest mortality ratio` = median(cod),
+                       `Haddock harvest mortality ratio` = median(hadd)) %>%
+      dplyr::ungroup()
+
+
+    p3<- catch %>% ggplot2::ggplot(ggplot2::aes(x = `Cod harvest mortality ratio`, y = `Haddock harvest mortality ratio`))+
+      ggplot2::geom_point(
+        ggplot2::aes(text = paste0("Policy: ", policy_name,
+                                   "<br>Cod harvest mortality ratio: ", round(`Cod harvest mortality ratio`, 2),
+                                   "<br>Haddock harvest mortality ratio: ", round(`Haddock harvest mortality ratio`, 2)))) +
+      ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
+      ggplot2::xlab("Cod harvest mortality ratio")+
+      ggplot2::ylab("Haddock harvest mortality ratio")+
+      ggplot2::labs(title = paste0("<b>Cod harvest mortality ratio and haddock harvest mortality ratio</b>",
+                    "<br>Harvest mortality ratio calculated by dividing weight of kept fish (mt) ",
+                    "by weight of total mortality (mt)"))+
+      ggplot2::theme(legend.position = "none")
+
+    fig3<- plotly::ggplotly(p3, tooltip = "text")%>%
+      plotly::style(textposition = "top center") %>%
+      plotly::layout(
+        title = list(font = list(size = 14)))
+    fig3
+  })
+
 
   output$addReleaseCod <- renderUI({
     if(any("Discards" == input$fig)){
       div(
         style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
-        plotly::plotlyOutput("releaseCodPlot", height = "100%")
+        plotly::plotlyOutput("releaseCodPlot", height = "90%")
       )
     }
   })
@@ -907,9 +1030,8 @@ server <- function(input, output, session){
         ggplot2::aes(text = paste0("Policy: ", policy_name,
                                    "<br>Cod discard mortality (mt): ", round(`Cod Discard Mortality`, 1),
                                    "<br>Cod mortality (mt): ", `Cod Total Mortality`))) +
-      ggplot2::geom_hline( yintercept =cod_acl())+
+      ggplot2::geom_hline( yintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
-      ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=catch$`Cod Discard Mortality`[catch$policy_name == "SQ"])) +
       ggplot2::xlab("Cod discard mortality (mt)")+
       ggplot2::ylab("Recreational cod mortality (mt)")+
       ggplot2::labs(title = "<b>Cod mortality and cod discard mortality</b>",
@@ -919,15 +1041,30 @@ server <- function(input, output, session){
     fig3<- plotly::ggplotly(p3, tooltip = "text")%>%
       plotly::style(textposition = "top center") %>%
       plotly::layout(
-        title = list(font = list(size = 14)))
-    fig3
+        title = list(font = list(size = 14)),
+        annotations= list(
+          # Add the yline for had_acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = cod_acl(),       # Data coordinate for vertical placement
+            text = "Cod ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
+            )
+          )
+      )
+   fig3
   })
 
   output$addReleaseHad <- renderUI({
     if(any("Discards" == input$fig)){
       div(
         style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
-        plotly::plotlyOutput("releaseHadPlot", height = "100%")
+        plotly::plotlyOutput("releaseHadPlot", height = "90%")
       )
     }
   })
@@ -968,7 +1105,6 @@ server <- function(input, output, session){
                                    "<br>Haddock mortality (mt): ", `Haddock Total Mortality`))) +
       ggplot2::geom_hline( yintercept =had_acl())+
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
-      ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=catch$`Cod Discard Mortality`[catch$policy_name == "SQ"])) +
       ggplot2::xlab("Haddock discard mortality (mt)")+
       ggplot2::ylab("Recreational haddock mortality (mt)")+
       ggplot2::labs(title = "<b>Haddock mortality and haddock discard mortality</b>",
@@ -978,7 +1114,23 @@ server <- function(input, output, session){
     fig4<- plotly::ggplotly(p4, tooltip = "text")%>%
       plotly::style(textposition = "top center")%>%
       plotly::layout(
-        title = list(font = list(size = 14)))
+        title = list(font = list(size = 14)),
+        annotations= list(
+        # Add the yline for had_acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = had_acl(),       # Data coordinate for vertical placement
+            text = "Haddock ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
+          )
+      )
+    )
+
     fig4
   })
 
@@ -986,7 +1138,7 @@ server <- function(input, output, session){
     if(any("Trips" == input$fig)){
       div(
         style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
-        plotly::plotlyOutput("tripsCodPlot", height = "100%")
+        plotly::plotlyOutput("tripsCodPlot", height = "90%")
       )
     }
   })
@@ -1022,9 +1174,8 @@ server <- function(input, output, session){
         ggplot2::aes(text = paste0("Policy: ", policy_name,
                                    "<br>Trips: ", format(round(Trips), big.mark = ","),
                                    "<br>Cod mortality (mt): ", cod))) +
-      ggplot2::geom_hline( yintercept = cod_acl())+
+      ggplot2::geom_hline( yintercept =cod_acl(), linetype="dashed")+
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
-      ggplot2::geom_text(ggplot2::aes(y=cod_acl(), label="Cod ACL", x=catch$`Trips`[catch$policy_name == "SQ"]), angle=90) +
       ggplot2::xlab("Number of trips")+
       ggplot2::ylab("Recreational cod mortality (mt)")+
       ggplot2::labs(title = "<b>Cod mortality and total trips</b>",
@@ -1033,8 +1184,24 @@ server <- function(input, output, session){
 
     fig5<- plotly::ggplotly(p5, tooltip = "text")%>%
       plotly::style(textposition = "top center")%>%
+      plotly::style(textposition = "top center")%>%
       plotly::layout(
-        title = list(font = list(size = 14)))
+        title = list(font = list(size = 14)),
+        annotations= list(
+          # Add the yline for Cod acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = cod_acl(),       # Data coordinate for vertical placement
+            text = "Cod ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
+          )
+        )
+      )
     fig5
   })
 
@@ -1043,7 +1210,7 @@ server <- function(input, output, session){
     if(any("Trips" == input$fig)){
       div(
         style = "width: 100%; aspect-ratio: 16 / 9;",   # change the ratio here
-        plotly::plotlyOutput("tripsHadPlot", height = "100%")
+        plotly::plotlyOutput("tripsHadPlot", height = "90%")
       )
     }
   })
@@ -1082,7 +1249,6 @@ server <- function(input, output, session){
                                    "<br>Haddock mortality (mt): ", hadd))) +
       ggplot2::geom_hline( yintercept = had_acl())+
       ggplot2::geom_text(ggplot2::aes(label = policy_name), check_overlap = TRUE)+
-      ggplot2::geom_text(ggplot2::aes(y=had_acl(), label="Had ACL", x=catch$`Trips`[catch$policy_name == "SQ"])) +
       ggplot2::xlab("Number of trips")+
       ggplot2::ylab("Recreational haddock mortality (mt)")+
       ggplot2::labs(title = "<b>Haddock mortality and total trips</b>",
@@ -1092,7 +1258,22 @@ server <- function(input, output, session){
     fig6<- plotly::ggplotly(p6, tooltip = "text")%>%
       plotly::style(textposition = "top center")%>%
       plotly::layout(
-        title = list(font = list(size = 14)))
+        title = list(font = list(size = 14)),
+        annotations= list(
+          # Add the yline for had_acl() with better anchoring
+          list(
+            x = 0,               # 0 = left edge of the plot area (the y-axis)
+            y = had_acl(),       # Data coordinate for vertical placement
+            text = "Haddock ACL",
+            xref = "paper",      # Anchors X to the viewport (won't move when panning)
+            yref = "y",          # Anchors Y to the data (will move if zooming Y)
+            xanchor = "left",    # Left-align text against the axis
+            yanchor = "bottom",  # Sits just above the ACL line
+            showarrow = FALSE,
+            xshift = 5           # Optional: 5 pixels of padding from the axis line
+          )
+        )
+      )
     fig6
   })
 
